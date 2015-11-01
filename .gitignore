@@ -1,6 +1,7 @@
 *.swp
-/Debug
-/*.suo
-/*.sdf
-/Slisp/Debug
 *.user
+*.suo
+*.sdf
+*.opensdf
+Debug
+Debug(staticlib)
