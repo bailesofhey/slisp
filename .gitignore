@@ -1,0 +1,6 @@
+*.swp
+/Debug
+/*.suo
+/*.sdf
+/Slisp/Debug
+*.user

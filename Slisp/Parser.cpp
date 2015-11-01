@@ -1,0 +1,142 @@
+#include <iostream>
+#include <memory>
+
+#include "Tokenizer.h"
+#include "Parser.h"
+
+using std::cout;
+using std::endl;
+
+//=============================================================================
+
+Parser::Parser(CommandInterface &commandInterface, const std::string &defaultSexp, bool debug):
+  CommandInterface_ { commandInterface },
+  Tokenizer_ { },
+  DefaultSexp { defaultSexp },
+  Debug { debug }
+{
+}
+
+bool Parser::Parse() {
+  Reset();
+
+  std::string line;
+  if (CommandInterface_.ReadInputLine(line)) {
+    Tokenizer_.SetLine(line);
+    
+    ++Tokenizer_;
+    bool parseResult = true;
+    while (parseResult && (*Tokenizer_).Type != TokenTypes::NONE) {
+      parseResult = ParseToken(*ExprTree);
+      ++Tokenizer_;
+    }
+    return parseResult;
+  }
+
+  return false;
+}
+
+const std::string& Parser::Error() const {
+  return Error_;
+}
+
+std::unique_ptr<Sexp> Parser::ExpressionTree() const {
+  return std::unique_ptr<Sexp>(static_cast<Sexp*>(ExprTree->Clone().release()));
+}
+
+void Parser::Reset() {
+  ExprTree = std::unique_ptr<Sexp>(new Sexp);
+  ExprTree->Args.push_back(ExpressionPtr { new Symbol { DefaultSexp } });
+  Error_ = "";
+  Depth = 0;
+}
+
+bool Parser::ParseToken(Sexp &root) {
+  if (Debug)
+    cout << static_cast<std::string>(*Tokenizer_) << endl;
+
+  auto &tokenType = (*Tokenizer_).Type;
+  if (tokenType == TokenTypes::NUMBER)
+    return ParseNumber(root);
+  else if (tokenType == TokenTypes::STRING)
+    return ParseString(root);
+  else if (tokenType == TokenTypes::SYMBOL)
+    return ParseSymbol(root);
+  else if (tokenType == TokenTypes::PARENOPEN)
+    return ParseParenOpen(root);
+  else if (tokenType == TokenTypes::PARENCLOSE)
+    return ParseParenClose(root);
+  else if (tokenType == TokenTypes::UNKNOWN)
+    return ParseUnknown(root);
+  else if (tokenType == TokenTypes::NONE)
+    return ParseNone(root);
+  else {
+    Error_ = "Unexpected token: " + static_cast<std::string>(*Tokenizer_);
+    return false;
+  }
+}
+
+bool Parser::ParseNumber(Sexp &root) {
+  root.Args.push_back(ExpressionPtr { new Number { std::atoll((*Tokenizer_).Value.c_str()) } });
+  return true;
+}
+
+bool Parser::ParseString(Sexp &root) {
+  root.Args.push_back(ExpressionPtr { new String { (*Tokenizer_).Value } });
+  return true;
+}
+
+bool Parser::ParseSymbol(Sexp &root) {
+  root.Args.push_back(ExpressionPtr { new Symbol { (*Tokenizer_).Value } });
+  return true;
+}
+
+bool Parser::ParseParenOpen(Sexp &root) {
+  ++Depth;
+  ++Tokenizer_;
+  auto currSexpExpr = ExpressionPtr { new Sexp };
+  auto currSexp = static_cast<Sexp*>(currSexpExpr.get());
+  return ParseSexpArgs(root, *currSexp);
+}
+
+bool Parser::ParseParenClose(Sexp &root) {
+  --Depth;
+  return true;
+}
+
+bool Parser::ParseSexpArgs(Sexp &root, Sexp &curr) {
+  bool parseResult = true;
+  while ((parseResult = ParseToken(curr)) &&
+         (*Tokenizer_).Type != TokenTypes::NONE &&
+         (*Tokenizer_).Type != TokenTypes::PARENCLOSE) {
+    ++Tokenizer_;
+  }
+
+  if (!parseResult)
+    return false;
+  else if ((*Tokenizer_).Type == TokenTypes::PARENCLOSE) {
+    root.Args.push_back(ExpressionPtr { curr.Clone() });
+    (*Tokenizer_).Type = TokenTypes::UNKNOWN;
+    return true;
+  }
+  else  {
+    if (Depth) {
+      std::string line;
+      CommandInterface_.ReadContinuedInputLine(line);
+      Tokenizer_.SetLine(line);
+      ++Tokenizer_;
+      return ParseSexpArgs(root, curr);
+    }
+    else
+      throw std::exception("Logic bug: NONE should only be reached with Depth > 0");
+  }
+}
+
+bool Parser::ParseUnknown(Sexp &root) {
+  Error_ = "Unknown token: " + (*Tokenizer_).Value;
+  return false;
+}
+
+bool Parser::ParseNone(Sexp &root) {
+  return true;
+}

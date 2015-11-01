@@ -1,0 +1,116 @@
+* Bugs
+* Support for type annotations
+  * (def pow(base:Int exp:Int) -> Int
+      ...)
+* Classes
+  * (class Person (extends Animal)
+        (def Person (self first:Str last:Str age:Int)
+          Animal self
+          self.First = first
+          self.Last = last
+          self.Age = age
+         )
+
+        (def To(self) -> Str
+          Str.format "{0}, {1} [{2}]" self.Last self.First self.Age
+        )
+     )
+* Interpreter
+  * PushError/EvalError - have a Function
+  * operator<< instead of ToString
+  * use Expression->ToString for printing 
+  * replace all dynamic_casts with comparing TypeInstace
+  * common type mismatch error for FuncDef and StdLib
+  * dont hard code list function in ReduceSexpList for implicit quoted list conversion for form that begins with number
+* Parser
+  * Default sexp
+    *   + 3 4 => (+ 3 4)
+    *   ls    => (ls) 
+* Shell
+  * (ls)
+  * (ls :la)
+  * (grep "foo.+bar" (ls))
+  * ls | grep "foo.+bar"
+  * (wc :l (grep "foo.+bar" (ls)))
+  * ls | grep "foo.+bar" | wc -l
+* Numeric
+  * (** 2 3) => 8
+* Bitwise
+  * (~ 4)
+* Lists
+  * (reduce + (list 1 2 3)) => 6
+  * (range 1 4) => (1 2 3 4)
+  * ([] (5 6 7 8) 1) => 6
+  * (reverse (1 2 3 4)) => (4 3 2 1)
+  * (foreach e myList
+      (set e (+ e 2))
+  * (foreach e in myList
+      (set e (+ e 2))
+* Boolean
+  * (and true true false) => false
+  * (or true true false) => true
+  * (not true) => false
+* Branching
+  * (switch
+      ((= a 4) "equal")
+      ((< a 3) "less")
+      (true    "greater")
+  * (cond
+      ((= a b) "equal")
+      ((< a b) "less than")
+      (true     "greater than"))
+* Scoping and Functions
+  * (map (fn (x) (+ x 2)) (range 1 4)) => (3 4 5 6)
+  * (apply myAdd (3 4)) => 7
+  * (myAdd a:3 b:7) => 7
+  * (def sumOfSquares (.. args)
+      (apply + (map (lambda (x) (* x x))
+                      args)))
+  * (def add (.. nums)
+      (let ((sum 0))
+        (foreach num nums
+          (+= sum num))
+        sum))
+* Vectors
+  * (vector 1 2 3) => [1 2 3]
+  * [1 2 3] => [1 2 3]
+  * ([] [5 6 7 8] 1) => 6
+  * (foreach e myVect
+      (set e (+ e 2)))
+* Objects
+  * (myVec.size) => 3
+  * (myVec.clear) => 0
+  * (myVec.push_back 3 4 5)
+* Strings
+  * (myStr.length) => 7
+  * (* "ab" 4) => "abababab"
+  * (upper "abc") => "ABC"
+  * ("ABC".lower) => "abc"
+  * (foreach c myStr
+      (set c (upper c)))
+  * ("%s: %d".format ("age" 45)) => "age: 45"
+* Symbol Table
+* I/O
+  * (read myLine)
+  * (write "foo")
+  * (set f (open "foo.txt" "w")) => <file>
+  * (f.write "foobar")
+  * (f.close)
+  * (let ((f (open "foo.txt" "w"))) (f.write "foo")) => automatically closes file
+  * (foreach line (open "foo.txt")
+      (print line))
+* Dictionaries/Hashtables 
+  * (dict (name "jon") (age 34)) => {name:"jon" age:7}
+  * (hashtable (name "jon") (age 34)) => {name:"jon" age:7}
+  * {name:"jon" age:7}
+  * (+ myDict {favoriteColor:"blue"})
+  * (foreach key myDict.keys ..)
+  * (foreach value myDict.values ..)
+  * (foreach kv myDict
+      (print (kv.key) ": " (kv.value)))
+* Misc
+  * 0x10 => 16
+  * (hex 16) => 0x10
+  * (dec 0x10) => 16
+  * 0b1101 => 13
+  * (bin 13) => 0b1101
