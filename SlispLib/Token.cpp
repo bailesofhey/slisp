@@ -4,6 +4,16 @@
 #include "Tokenizer.h"
 
 //=============================================================================
+Token::Token():
+  Token(TokenTypes::NONE, "")
+{
+}
+
+Token::Token(TokenTypes type, const std::string &value):
+  Type(type),
+  Value(value)
+{
+}
 
 Token::operator std::string() const {
   std::string str = "Token { Type: ";
@@ -34,4 +44,13 @@ Token::operator std::string() const {
   str += " }";
 
   return str;
+}
+
+bool Token::operator==(const Token& rhs) const {
+  return Type == rhs.Type
+      && Value == rhs.Value;
+}
+
+std::ostream& operator<<(std::ostream& os, const Token& token) {
+  return os << token.operator std::string();
 }

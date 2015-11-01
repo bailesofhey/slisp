@@ -4,5 +4,6 @@
   <ItemGroup>
     <ClCompile Include="gtest_main.cc" />
     <ClCompile Include="TestInterpreter.cpp" />
+    <ClCompile Include="TestTokenizer.cpp" />
   </ItemGroup>
 </Project>
