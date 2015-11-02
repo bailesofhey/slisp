@@ -5,7 +5,6 @@
 #include <memory>
 
 #include "Interpreter.h"
-#include "ExpressionTreeVisitor.h"
 #include "Expression.h"
 #include "FunctionDef.h"
 

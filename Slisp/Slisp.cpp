@@ -6,8 +6,6 @@
 #include "Parser.h"
 #include "ConsoleInterface.h"
 #include "Expression.h"
-#include "ExpressionTreeDumper.h"
-#include "ExpressionTreeIterator.h"
 #include "Interpreter.h"
 #include "StdLib\StdLib.h"
 
