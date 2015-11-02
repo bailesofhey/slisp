@@ -107,10 +107,9 @@ TEST(Tokenizer, TestSymbol) {
     { "?", { Token(TokenTypes::SYMBOL, "?") } },
     { "/", { Token(TokenTypes::SYMBOL, "/") } },
 
-    // These fail. Bug!
-    //{ "a0", { Token(TokenTypes::SYMBOL, "a0") } },
-    //{ "a0123456789", { Token(TokenTypes::SYMBOL, "a0123456789") } },
-    //{ "   fooBar3   ", { Token(TokenTypes::SYMBOL, "fooBar3") } },
+    { "a0", { Token(TokenTypes::SYMBOL, "a0") } },
+    { "a0123456789", { Token(TokenTypes::SYMBOL, "a0123456789") } },
+    { "   fooBar3   ", { Token(TokenTypes::SYMBOL, "fooBar3") } },
 
     { " foo  BAR  $baraaa**z", {
       Token(TokenTypes::SYMBOL, "foo"),
@@ -168,6 +167,8 @@ TEST(Tokenizer, TestParens) {
 
 TEST(Tokenizer, TestUnknown) {
   RunTests({
+    { "0a", { Token(TokenTypes::UNKNOWN, "0a") } },
+    { "3*", { Token(TokenTypes::UNKNOWN, "3*") } },
   });
 }
 

@@ -108,7 +108,7 @@ void Tokenizer::TokenizeSequence(TokenTypes tokenType, char &currChar, F pred, G
 }
 
 bool Tokenizer::SymbolPredicate(char c) {
-  return std::isalpha(c) || c == '\\' || c == '\''
+  return std::isdigit(c) || std::isalpha(c) || c == '\\' || c == '\''
       || c == '~' || c == '`' || c == '!' || c == '@' || c == '#' || c == '$'
       || c == '%' || c == '^' || c == '&' || c == '*' || c == '-' || c == '_'
       || c == '=' || c == '+' || c == '{' || c == '[' || c == '}' || c == ']'
