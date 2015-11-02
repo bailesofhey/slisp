@@ -22,39 +22,45 @@ struct TestCase {
     Tokens(tokens)
   {
   }
+
+  TestCase(const std::string &line, std::vector<Token> &tokens):
+    Line(line),
+    Tokens(tokens)
+  {
+  }
 };
 
-void RunTests(std::vector<TestCase> &tests) {
-  Tokenizer tokenizer;
-  for (auto &test : tests) {
-    tokenizer.SetLine(test.Line);
-    ASSERT_EQ(Token(), *tokenizer);
+void RunTest(Tokenizer &tokenizer, const TestCase &test) {
+  tokenizer.SetLine(test.Line);
+  ASSERT_EQ(Token(), *tokenizer) << "Leading tokens";
+  ++tokenizer;
+  for (size_t tokenNum = 0; tokenNum < test.Tokens.size(); ++tokenNum) {
+    auto &expectedToken = test.Tokens[tokenNum];
+    auto &actualToken = *tokenizer;
+    ASSERT_EQ(expectedToken, actualToken) << "TokenNum:" << tokenNum;
     ++tokenizer;
-    for (size_t tokenNum = 0; tokenNum < test.Tokens.size(); ++tokenNum) {
-      auto &expectedToken = test.Tokens[tokenNum];
-      auto &actualToken = *tokenizer;
-      ASSERT_EQ(expectedToken, actualToken) << "{{{ " << test.Line << " }}} TokenNum:" << tokenNum;
-      ++tokenizer;
-    }
-    RunNoneTest(tokenizer);
   }
+  ASSERT_NO_FATAL_FAILURE(RunNoneTest(tokenizer)) << "Trailing tokens";
+}
+
+void RunTests(std::initializer_list<TestCase> &&tests) {
+  Tokenizer tokenizer;
+  for (const auto &test : tests)
+    ASSERT_NO_FATAL_FAILURE(RunTest(tokenizer, test)) << "{{{ " << test.Line << " }}}";
 }
 
 TEST(Tokenizer, TestNone) {
   Tokenizer tokenizer;
-  RunNoneTest(tokenizer);
-  
-  std::vector<TestCase> tests = {
+  ASSERT_NO_FATAL_FAILURE(RunNoneTest(tokenizer));
+  RunTests({
     { "", { Token() } },
     { " ", { Token() } },
     { "     ", { Token() } },
-  };
-  RunTests(tests);
+  });
 }
 
-
 TEST(Tokenizer, TestNumber) {
-  std::vector<TestCase> tests = {
+  RunTests({
     { "0", { Token(TokenTypes::NUMBER, "0") } },
     { "000", { Token(TokenTypes::NUMBER, "000") } },
     { "3", { Token(TokenTypes::NUMBER, "3") } },
@@ -62,34 +68,140 @@ TEST(Tokenizer, TestNumber) {
     { "1234567890", { Token(TokenTypes::NUMBER, "1234567890") } },
 
     { "   123   ", { Token(TokenTypes::NUMBER, "123") } },
-  };
-  RunTests(tests);
+    { " 1 23  345 ", { Token(TokenTypes::NUMBER, "1"), Token(TokenTypes::NUMBER, "23"), Token(TokenTypes::NUMBER, "345") } },
+  });
 }
 
 TEST(Tokenizer, TestSymbol) {
-  std::vector<TestCase> tests = {
+  RunTests({
     { "a", { Token(TokenTypes::SYMBOL, "a") } },
     { "A", { Token(TokenTypes::SYMBOL, "A") } },
     { "abcdefghijklmnopqrstuvwxyz", { Token(TokenTypes::SYMBOL, "abcdefghijklmnopqrstuvwxyz") } },
     
-    // These fail. Bug!
+    { "~", { Token(TokenTypes::SYMBOL, "~") } },
+    { "`", { Token(TokenTypes::SYMBOL, "`") } },
+    { "!", { Token(TokenTypes::SYMBOL, "!") } },
+    { "@", { Token(TokenTypes::SYMBOL, "@") } },
+    { "#", { Token(TokenTypes::SYMBOL, "#") } },
+    { "$", { Token(TokenTypes::SYMBOL, "$") } },
+    { "%", { Token(TokenTypes::SYMBOL, "%") } },
+    { "^", { Token(TokenTypes::SYMBOL, "^") } },
+    { "&", { Token(TokenTypes::SYMBOL, "&") } },
+    { "*", { Token(TokenTypes::SYMBOL, "*") } },
+    { "-", { Token(TokenTypes::SYMBOL, "-") } },
+    { "_", { Token(TokenTypes::SYMBOL, "_") } },
+    { "+", { Token(TokenTypes::SYMBOL, "+") } },
+    { "=", { Token(TokenTypes::SYMBOL, "=") } },
+    { "{", { Token(TokenTypes::SYMBOL, "{") } },
+    { "[", { Token(TokenTypes::SYMBOL, "[") } },
+    { "}", { Token(TokenTypes::SYMBOL, "}") } },
+    { "|", { Token(TokenTypes::SYMBOL, "|") } },
+    { "\\", { Token(TokenTypes::SYMBOL, "\\") } },
+    { ":", { Token(TokenTypes::SYMBOL, ":") } },
+    { ";", { Token(TokenTypes::SYMBOL, ";") } },
+    { "'", { Token(TokenTypes::SYMBOL, "'") } },
+    { "<", { Token(TokenTypes::SYMBOL, "<") } },
+    { ",", { Token(TokenTypes::SYMBOL, ",") } },
+    { ">", { Token(TokenTypes::SYMBOL, ">") } },
+    { ".", { Token(TokenTypes::SYMBOL, ".") } },
+    { "?", { Token(TokenTypes::SYMBOL, "?") } },
+    { "/", { Token(TokenTypes::SYMBOL, "/") } },
 
+    // These fail. Bug!
     //{ "a0", { Token(TokenTypes::SYMBOL, "a0") } },
     //{ "a0123456789", { Token(TokenTypes::SYMBOL, "a0123456789") } },
-
     //{ "   fooBar3   ", { Token(TokenTypes::SYMBOL, "fooBar3") } },
-  };
-  RunTests(tests);
+
+    { " foo  BAR  $baraaa**z", {
+      Token(TokenTypes::SYMBOL, "foo"),
+      Token(TokenTypes::SYMBOL, "BAR"),
+      Token(TokenTypes::SYMBOL, "$baraaa**z"),
+    }},
+
+  });
 }
 
 TEST(Tokenizer, TestString) {
+  RunTests({
+    { "\"\"", { Token(TokenTypes::STRING, "") } },
+    { "\"Hello, world!\"", { Token(TokenTypes::STRING, "Hello, world!") } },
+    { "\" \"", { Token(TokenTypes::STRING, " ") } },
 
+    { "   \"   \"   ", { Token(TokenTypes::STRING, "   ") } },
+    { "   \" a  \"   ", { Token(TokenTypes::STRING, " a  ") } },
+
+    { " \" \" \" \"   \"a\"   \"  a\" \"a   \" \"  a b \"  ", {
+      Token(TokenTypes::STRING, " "),
+      Token(TokenTypes::STRING, " "),
+      Token(TokenTypes::STRING, "a"),
+      Token(TokenTypes::STRING, "  a"),
+      Token(TokenTypes::STRING, "a   "),
+      Token(TokenTypes::STRING, "  a b "),
+    }},
+
+    // TODO: need to support escape characters: \" \\ \n \r \t
+  });
 }
 
 TEST(Tokenizer, TestParens) {
+  RunTests({
+    { "(", { Token(TokenTypes::PARENOPEN, "(") } },
+    { "  (   ", { Token(TokenTypes::PARENOPEN, "(") } },
 
+    { ")", { Token(TokenTypes::PARENCLOSE, ")") } },
+    { "  )   ", { Token(TokenTypes::PARENCLOSE, ")") } },
+
+    { "()", { Token(TokenTypes::PARENOPEN, "("), Token(TokenTypes::PARENCLOSE, ")") } },
+    { " ( ())) )  () ", {
+      Token(TokenTypes::PARENOPEN, "("),
+      Token(TokenTypes::PARENOPEN, "("),
+      Token(TokenTypes::PARENCLOSE, ")"),
+      Token(TokenTypes::PARENCLOSE, ")"),
+      Token(TokenTypes::PARENCLOSE, ")"),
+      Token(TokenTypes::PARENCLOSE, ")"),
+      Token(TokenTypes::PARENOPEN, "("),
+      Token(TokenTypes::PARENCLOSE, ")"),
+    }},
+
+  });
 }
 
 TEST(Tokenizer, TestUnknown) {
+  RunTests({
+  });
+}
 
+TEST(Tokenizer, TestSimpleSexp) {
+  std::vector<Token> tokens = {
+    Token(TokenTypes::PARENOPEN, "("),
+    Token(TokenTypes::SYMBOL, "+"),
+    Token(TokenTypes::NUMBER, "2"),
+    Token(TokenTypes::NUMBER, "3"),
+    Token(TokenTypes::PARENCLOSE, ")"),
+  };
+  RunTests({
+    { "(+ 2 3)", tokens},
+    { "  (  +   2   3  )   ", tokens },
+  });
+}
+
+TEST(Tokenizer, TestComplex) {
+  RunTests({
+    { "(if (< a 0) \"less than\" (+ \"greater than\" \"or equal to\") ) ", {
+      Token(TokenTypes::PARENOPEN, "("),
+        Token(TokenTypes::SYMBOL, "if"),
+          Token(TokenTypes::PARENOPEN, "("),
+            Token(TokenTypes::SYMBOL, "<"),
+            Token(TokenTypes::SYMBOL, "a"),
+            Token(TokenTypes::NUMBER, "0"),
+          Token(TokenTypes::PARENCLOSE, ")"),
+          Token(TokenTypes::STRING, "less than"),
+          Token(TokenTypes::PARENOPEN, "("),
+            Token(TokenTypes::SYMBOL, "+"),
+            Token(TokenTypes::STRING, "greater than"),
+            Token(TokenTypes::STRING, "or equal to"),
+          Token(TokenTypes::PARENCLOSE, ")"),
+      Token(TokenTypes::PARENCLOSE, ")"),
+    }},
+  });
 }
