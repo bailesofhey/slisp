@@ -60,4 +60,28 @@ TEST(Expression, TestQuote) {
 }
 
 TEST(Expression, TestSexp) {
+  Sexp s;
+  s.Args.push_back(ExpressionPtr { new Symbol("+") });
+  s.Args.push_back(ExpressionPtr { new Number(3) });
+  s.Args.push_back(ExpressionPtr { new Number(4) });
+
+  ExpressionPtr sCopyExpr { s.Clone() };
+  Sexp *sCopy = static_cast<Sexp*>(sCopyExpr.get());
+  ExpressionPtr arg1 = std::move(sCopy->Args.front());
+  sCopy->Args.pop_front();
+  ExpressionPtr arg2 = std::move(sCopy->Args.front());
+  sCopy->Args.pop_front();
+  ExpressionPtr arg3 = std::move(sCopy->Args.front());
+  sCopy->Args.pop_front();
+
+  auto argSym = dynamic_cast<Symbol*>(arg1.get());
+  auto argNum1 = dynamic_cast<Number*>(arg2.get());
+  auto argNum2 = dynamic_cast<Number*>(arg3.get());
+  ASSERT_TRUE(argSym != nullptr);
+  ASSERT_TRUE(argNum1 != nullptr);
+  ASSERT_TRUE(argNum2 != nullptr);
+
+  ASSERT_EQ(Symbol("+"), *argSym);
+  ASSERT_EQ(Number(3), *argNum1);
+  ASSERT_EQ(Number(4), *argNum2);
 }

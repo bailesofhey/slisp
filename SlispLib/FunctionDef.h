@@ -32,7 +32,7 @@ class VarArgDef: public ArgDef {
     static const int NO_ARGS = 0;
     static const int ANY_ARGS = -1;
 
-    VarArgDef(const TypeInfo& type, int nargs);
+    explicit VarArgDef(const TypeInfo& type, int nargs);
     virtual std::unique_ptr<ArgDef> Clone() const;
     virtual const std::string ToString() const;
 
@@ -48,7 +48,7 @@ class VarArgDef: public ArgDef {
 
 class ListArgDef: public ArgDef {
   public:
-    ListArgDef(std::initializer_list<const TypeInfo*> types);
+    explicit ListArgDef(std::initializer_list<const TypeInfo*> &&types);
     virtual std::unique_ptr<ArgDef> Clone() const;
     virtual const std::string ToString() const;
 
@@ -69,9 +69,9 @@ class FuncDef {
     static std::unique_ptr<ArgDef> AnyArgs(const TypeInfo& type);
     static std::unique_ptr<ArgDef> AnyArgs();
     static std::unique_ptr<ArgDef> ManyArgs(const TypeInfo& type, int nargs);
-    static std::unique_ptr<ArgDef> Args(std::initializer_list<const TypeInfo*> args);
+    static std::unique_ptr<ArgDef> Args(std::initializer_list<const TypeInfo*> &&args);
 
-    FuncDef(std::unique_ptr<ArgDef> &in, std::unique_ptr<ArgDef> &out);
+    explicit FuncDef(std::unique_ptr<ArgDef> &in, std::unique_ptr<ArgDef> &out);
     FuncDef(const FuncDef &val);
     FuncDef(FuncDef &&rval);
     FuncDef& operator=(FuncDef);
@@ -89,8 +89,8 @@ struct Function: public Literal {
 
   FuncDef Def;
 
-  Function();
-  Function(FuncDef &&func);
+  explicit Function();
+  explicit Function(FuncDef &&func);
 };
 
 struct CompiledFunction: public Function {
@@ -98,8 +98,8 @@ struct CompiledFunction: public Function {
 
   SlipFunction Fn;
 
-  CompiledFunction();
-  CompiledFunction(FuncDef &&def, SlipFunction fn);
+  explicit CompiledFunction();
+  explicit CompiledFunction(FuncDef &&def, SlipFunction fn);
   ExpressionPtr Clone() const;
   const std::string ToString() const;
   CompiledFunction& operator=(CompiledFunction rhs);

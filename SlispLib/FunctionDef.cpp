@@ -142,9 +142,9 @@ bool VarArgDef::ValidateArgTypes(ExpressionEvaluator evaluator, ArgList &args, s
 
 //=============================================================================
 
-ListArgDef::ListArgDef(std::initializer_list<const TypeInfo*> types):
+ListArgDef::ListArgDef(std::initializer_list<const TypeInfo*> &&types):
   ArgDef {},
-  Types { types }
+  Types { std::move(types) }
 {
 }
 
@@ -202,11 +202,11 @@ std::unique_ptr<ArgDef> FuncDef::ManyArgs(const TypeInfo& type, int nargs) {
   return std::unique_ptr<ArgDef> { new VarArgDef { type, nargs } };
 }
 
-std::unique_ptr<ArgDef> FuncDef::Args(std::initializer_list<const TypeInfo*> args) {
-  return std::unique_ptr<ArgDef> { new ListArgDef { args } };
+std::unique_ptr<ArgDef> FuncDef::Args(std::initializer_list<const TypeInfo*> &&args) {
+  return std::unique_ptr<ArgDef> { new ListArgDef { std::move(args) } };
 }
 
-FuncDef::FuncDef( std::unique_ptr<ArgDef> &in, std::unique_ptr<ArgDef> &out):
+FuncDef::FuncDef(std::unique_ptr<ArgDef> &in, std::unique_ptr<ArgDef> &out):
   In { std::move(in) },
   Out { std::move(out) }
 {
