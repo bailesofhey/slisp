@@ -64,7 +64,6 @@
     <ClInclude Include="Library.h" />
     <ClInclude Include="Parser.h" />
     <ClInclude Include="StdLib\StdLib.h" />
-    <ClInclude Include="SymbolTable.h" />
     <ClInclude Include="Token.h" />
     <ClInclude Include="Tokenizer.h" />
     <ClInclude Include="CommandInterface.h" />

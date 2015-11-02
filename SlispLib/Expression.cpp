@@ -65,8 +65,16 @@ bool Bool::operator==(const Bool &rhs) const {
   return Value == rhs.Value;
 }
 
+bool Bool::operator!=(const Bool &rhs) const {
+  return !(*this == rhs);
+}
+
 bool Bool::operator<(const Bool &rhs) const {
   return Value < rhs.Value;
+}
+
+bool Bool::operator>=(const Bool &rhs) const {
+  return !(*this < rhs);
 }
 
 Bool& Bool::operator=(Bool rhs) {
@@ -78,6 +86,9 @@ void Bool::Swap(Bool &rhs) {
   Value = rhs.Value;
 }
 
+std::ostream& operator<<(std::ostream& os, const Bool& value) {
+  return os << value.ToString();
+}
 //=============================================================================
 
 const TypeInfo Number::TypeInstance("number");
@@ -105,8 +116,16 @@ bool Number::operator==(const Number &rhs) const {
   return Value == rhs.Value;
 }
 
+bool Number::operator!=(const Number &rhs) const {
+  return !(*this == rhs);
+}
+
 bool Number::operator<(const Number &rhs) const {
   return Value < rhs.Value;
+}
+
+bool Number::operator>=(const Number &rhs) const {
+  return !(*this < rhs);
 }
 
 Number& Number::operator=(Number rhs) {
@@ -118,6 +137,9 @@ void Number::Swap(Number &rhs) {
   Value = rhs.Value;
 }
 
+std::ostream& operator<<(std::ostream& os, const Number& value) {
+  return os << value.ToString();
+}
 //=============================================================================
 
 const TypeInfo String::TypeInstance("string");
@@ -145,8 +167,16 @@ bool String::operator==(const String &rhs) const {
   return Value == rhs.Value;
 }
 
+bool String::operator!=(const String &rhs) const {
+  return !(*this == rhs);
+}
+
 bool String::operator<(const String &rhs) const {
   return Value < rhs.Value;
+}
+
+bool String::operator>=(const String &rhs) const {
+  return !(*this < rhs);
 }
 
 String& String::operator=(String rhs) {
@@ -156,6 +186,10 @@ String& String::operator=(String rhs) {
 
 void String::Swap(String &rhs) {
   Value = rhs.Value;
+}
+
+std::ostream& operator<<(std::ostream& os, const String& value) {
+  return os << value.ToString();
 }
 
 //=============================================================================
@@ -168,21 +202,16 @@ Quote::Quote(ExpressionPtr &&expr):
 {
 }
 
-Quote& Quote::operator=(Quote rhs) {
-  Swap(rhs);
-  return *this;
-}
-
-void Quote::Swap(Quote &rhs) {
-  Value = std::move(rhs.Value);
-}
-
 ExpressionPtr Quote::Clone() const {
-  return ExpressionPtr { new Quote(Value->Clone()) };
+  return ExpressionPtr { new Quote(std::move(Value->Clone())) };
 }
 
 const std::string Quote::ToString() const {
   return "Quote { " + Value->ToString() + " }";
+}
+
+std::ostream& operator<<(std::ostream& os, const Quote& value) {
+  return os << value.ToString();
 }
 
 //=============================================================================
@@ -207,8 +236,16 @@ bool Symbol::operator==(const Symbol& rhs) const {
   return Value == rhs.Value;
 }
 
+bool Symbol::operator!=(const Symbol& rhs) const {
+  return !(*this == rhs);
+}
+
 bool Symbol::operator<(const Symbol &rhs) const {
   return Value < rhs.Value;
+}
+
+bool Symbol::operator>=(const Symbol &rhs) const {
+  return !(*this < rhs);
 }
 
 Symbol& Symbol::operator=(Symbol rhs) {
@@ -218,6 +255,10 @@ Symbol& Symbol::operator=(Symbol rhs) {
 
 void Symbol::Swap(Symbol &rhs) {
   Value = rhs.Value;
+}
+
+std::ostream& operator<<(std::ostream& os, const Symbol& value) {
+  return os << value.ToString();
 }
 
 //=============================================================================
@@ -241,3 +282,6 @@ const std::string Sexp::ToString() const {
   return "Sexp { }";
 }
 
+std::ostream& operator<<(std::ostream& os, const Sexp& value) {
+  return os << value.ToString();
+}

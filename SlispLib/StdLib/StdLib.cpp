@@ -845,8 +845,10 @@ bool StdLib::PredicateHelper(const std::string &name, Interpreter &interpreter, 
   if (last) {
     while (!args.empty()) {
       auto curr = dynamic_cast<T*>(args.front().get());
-      if (curr)
-        result = fn(result, *last, *curr);
+      if (curr) {
+        R tmp { fn(result, *last, *curr) };
+        result = tmp;
+      }
       else
         return TypeError(interpreter, name, T::TypeInstance.TypeName, args.front());
 

@@ -113,7 +113,7 @@ struct InterpretedFunction: public Function {
   ArgList         Args;
   SymbolTableType Closure;
 
-  InterpretedFunction(FuncDef &&def, ExpressionPtr &&code, ArgList &&args);
+  explicit InterpretedFunction(FuncDef &&def, ExpressionPtr &&code, ArgList &&args);
   ExpressionPtr Clone() const;
   const std::string ToString() const;
 };

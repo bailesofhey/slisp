@@ -14,7 +14,7 @@ struct EvalError {
   std::string Where; //TODO: Function
   std::string What;
 
-  EvalError(const std::string &where, const std::string &what);
+  explicit EvalError(const std::string &where, const std::string &what);
 };
 
 class SymbolTable {
@@ -36,7 +36,7 @@ class SymbolTable {
 
 class Scope {
   public:
-    Scope(SymbolTable &symbols);
+    explicit Scope(SymbolTable &symbols);
     ~Scope();
     void PutSymbol(const std::string &symbolName, ExpressionPtr &value);
 
@@ -50,7 +50,7 @@ class Interpreter;
 
 class StackFrame {
   public:
-    StackFrame(Interpreter &interp, Function &func);
+    explicit StackFrame(Interpreter &interp, Function &func);
     ~StackFrame();
     void PutLocalSymbol(const std::string &symbolName, ExpressionPtr &value);
     void PutDynamicSymbol(const std::string &symbolName, ExpressionPtr &value);
@@ -70,7 +70,7 @@ class Interpreter {
   public:    
     using SymbolFunctor = std::function<void(const std::string&, ExpressionPtr&)>;
 
-    Interpreter();
+    explicit Interpreter();
     
     bool Evaluate(ExpressionPtr &expr);
 

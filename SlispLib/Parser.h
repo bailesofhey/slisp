@@ -9,7 +9,7 @@
 
 class Parser {
   public:
-    Parser(CommandInterface &commandInterface, const std::string &defaultSexp, bool debug = false);
+    explicit Parser(CommandInterface &commandInterface, const std::string &defaultSexp, bool debug = false);
     Parser() = delete;
     Parser(const Parser&) = delete;
     Parser(Parser &&) = delete;

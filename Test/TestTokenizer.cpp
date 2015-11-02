@@ -206,3 +206,17 @@ TEST(Tokenizer, TestComplex) {
     }},
   });
 }
+
+TEST(Tokenizer, TestSetLine) {
+  Tokenizer tokenizer;
+  tokenizer.SetLine("(+ 2 3)");
+  ++tokenizer;
+  ASSERT_EQ(Token(TokenTypes::PARENOPEN, "("), *tokenizer);
+  ++tokenizer;
+  ASSERT_EQ(Token(TokenTypes::SYMBOL, "+"), *tokenizer);
+  tokenizer.SetLine("\"foo\"");
+  ++tokenizer;
+  ASSERT_EQ(Token(TokenTypes::STRING, "foo"), *tokenizer);
+  ++tokenizer;
+  RunNoneTest(tokenizer);
+}

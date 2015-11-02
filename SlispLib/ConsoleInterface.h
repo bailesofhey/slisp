@@ -6,8 +6,8 @@
 
 class ConsoleInterface: public CommandInterface {
   public:
-    ConsoleInterface();
-    ConsoleInterface(std::istream &in, std::ostream &out);
+    explicit ConsoleInterface();
+    explicit ConsoleInterface(std::istream &in, std::ostream &out);
     ConsoleInterface(const ConsoleInterface&)             = delete;
     ConsoleInterface(ConsoleInterface &&)                 = delete;
     ConsoleInterface& operator=(const ConsoleInterface &) = delete;

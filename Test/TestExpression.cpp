@@ -1,0 +1,63 @@
+#include "gtest\gtest.h"
+
+#include "Expression.h"
+
+template <class E>
+void RunExpressionTest(E &defaultValue, E &emptyValue, E &otherValue) {
+  ASSERT_EQ(defaultValue, emptyValue);
+  ASSERT_NE(defaultValue, otherValue);
+  ASSERT_NE(emptyValue, otherValue);
+
+  ASSERT_LT(emptyValue, otherValue);
+  ASSERT_GE(otherValue, emptyValue);
+
+  ASSERT_NE("", otherValue.ToString());
+  ASSERT_NE("", emptyValue.ToString());
+  ASSERT_NE(otherValue.ToString(), emptyValue.ToString());
+
+  ExpressionPtr defaultCopy = defaultValue.Clone(),
+                emptyCopy = emptyValue.Clone(),
+                otherCopy = otherValue.Clone();
+  ASSERT_EQ(defaultValue, static_cast<E&>(*defaultCopy));
+  ASSERT_EQ(otherValue, static_cast<E&>(*otherCopy));
+  ASSERT_EQ(emptyValue, static_cast<E&>(*emptyCopy));
+
+  ASSERT_EQ(emptyValue.ToString(), emptyCopy->ToString());
+  ASSERT_EQ(otherValue.ToString(), otherCopy->ToString());
+
+  emptyValue = otherValue;
+  ASSERT_EQ(emptyValue, otherValue);
+  ASSERT_EQ(emptyValue.ToString(), otherValue.ToString());
+}
+
+TEST(Expression, TestBool) {
+  RunExpressionTest(Bool(), Bool(false), Bool(true));
+}
+
+TEST(Expression, TestNumber) {
+  RunExpressionTest(Number(), Number(0), Number(5));
+}
+
+TEST(Expression, TestString) {
+  RunExpressionTest(String(), String(""), String("Foo"));
+}
+
+TEST(Expression, TestSymbol) {
+  RunExpressionTest(Symbol(""), Symbol(""), Symbol("a"));
+}
+
+TEST(Expression, TestQuote) {
+  Quote qThree { ExpressionPtr { new Number(3) } };
+  Quote qFoo { ExpressionPtr { new String("Foo") } };
+  ASSERT_NE("", qThree.ToString());
+  ASSERT_NE(qThree.ToString(), qFoo.ToString());
+
+  ExpressionPtr threeCopyExpr { qThree.Clone() };
+  Quote *threeCopy = static_cast<Quote*>(threeCopyExpr.get());
+  ASSERT_EQ(qThree.ToString(), threeCopy->ToString());
+
+  //TODO: Value that contained expression is identical
+}
+
+TEST(Expression, TestSexp) {
+}
