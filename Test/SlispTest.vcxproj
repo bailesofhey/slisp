@@ -83,6 +83,7 @@
   <ItemGroup>
     <ClCompile Include="gtest_main.cc" />
     <ClCompile Include="TestExpression.cpp" />
+    <ClCompile Include="TestFuncDef.cpp" />
     <ClCompile Include="TestInterpreter.cpp" />
     <ClCompile Include="TestTokenizer.cpp" />
   </ItemGroup>

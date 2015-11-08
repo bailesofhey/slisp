@@ -6,6 +6,8 @@
 #include <memory>
 #include <map>
 
+//TODO: need global type list
+
 struct TypeInfo {
   const std::string TypeName;
 

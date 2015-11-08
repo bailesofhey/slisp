@@ -9,12 +9,17 @@
 
 #include "Expression.h"
 
+class Interpreter;
+class ArgDef;
+
+using SlipFunction = std::function<bool(Interpreter &, ExpressionPtr&, ArgList&)>;
 using ExpressionEvaluator = std::function<bool(ExpressionPtr&)>;
+using ArgDefPtr = std::unique_ptr<ArgDef>;
 
 class ArgDef {
   public:
     virtual ~ArgDef();
-    virtual std::unique_ptr<ArgDef> Clone() const = 0;
+    virtual ArgDefPtr Clone() const = 0;
     virtual const std::string ToString() const = 0;
     bool Validate(ExpressionEvaluator evaluator, ExpressionPtr &expr, std::string &error) const;
     static bool TypeMatches(const TypeInfo &expected, const TypeInfo& actual);
@@ -27,51 +32,16 @@ class ArgDef {
     bool CheckArg(ExpressionEvaluator evaluator, ExpressionPtr &arg, const TypeInfo &expectedType, int argNum, std::string &error) const;
 };
 
-class VarArgDef: public ArgDef {
-  public:
-    static const int NO_ARGS = 0;
-    static const int ANY_ARGS = -1;
-
-    explicit VarArgDef(const TypeInfo& type, int nargs);
-    virtual std::unique_ptr<ArgDef> Clone() const;
-    virtual const std::string ToString() const;
-
-  private:
-    const TypeInfo& Type;
-    int NArgs;
-
-    virtual bool ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const;
-
-    bool ValidateArgCount(ArgList &args, std::string &error) const;
-    bool ValidateArgTypes(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const;
-};
-
-class ListArgDef: public ArgDef {
-  public:
-    explicit ListArgDef(std::initializer_list<const TypeInfo*> &&types);
-    virtual std::unique_ptr<ArgDef> Clone() const;
-    virtual const std::string ToString() const;
-
-  private:
-    std::vector<const TypeInfo*> Types;
-
-    virtual bool ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const;
-};
-
-class Interpreter;
-
-using SlipFunction = std::function<bool(Interpreter &, ExpressionPtr&, ArgList&)>;
-
 class FuncDef {
   public:
-    static std::unique_ptr<ArgDef> NoArgs();
-    static std::unique_ptr<ArgDef> OneArg(const TypeInfo& type);
-    static std::unique_ptr<ArgDef> AnyArgs(const TypeInfo& type);
-    static std::unique_ptr<ArgDef> AnyArgs();
-    static std::unique_ptr<ArgDef> ManyArgs(const TypeInfo& type, int nargs);
-    static std::unique_ptr<ArgDef> Args(std::initializer_list<const TypeInfo*> &&args);
+    static ArgDefPtr NoArgs();
+    static ArgDefPtr OneArg(const TypeInfo& type);
+    static ArgDefPtr AnyArgs(const TypeInfo& type);
+    static ArgDefPtr AnyArgs();
+    static ArgDefPtr ManyArgs(const TypeInfo& type, int nargs);
+    static ArgDefPtr Args(std::initializer_list<const TypeInfo*> &&args);
 
-    explicit FuncDef(std::unique_ptr<ArgDef> &in, std::unique_ptr<ArgDef> &out);
+    explicit FuncDef(ArgDefPtr &in, ArgDefPtr &out);
     FuncDef(const FuncDef &val);
     FuncDef(FuncDef &&rval);
     FuncDef& operator=(FuncDef);
@@ -80,8 +50,39 @@ class FuncDef {
     bool ValidateArgs(ExpressionEvaluator evaluator, ExpressionPtr &expr, std::string &error);
 
   private:
-    std::unique_ptr<ArgDef> In;
-    std::unique_ptr<ArgDef> Out;
+    class VarArgDef: public ArgDef {
+      public:
+        static const int NO_ARGS = 0;
+        static const int ANY_ARGS = -1;
+
+        explicit VarArgDef(const TypeInfo& type, int nargs);
+        virtual ArgDefPtr Clone() const;
+        virtual const std::string ToString() const;
+
+      private:
+        const TypeInfo& Type;
+        int NArgs;
+
+        virtual bool ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const;
+
+        bool ValidateArgCount(ArgList &args, std::string &error) const;
+        bool ValidateArgTypes(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const;
+    };
+
+    class ListArgDef: public ArgDef {
+      public:
+        explicit ListArgDef(std::initializer_list<const TypeInfo*> &&types);
+        virtual ArgDefPtr Clone() const;
+        virtual const std::string ToString() const;
+
+      private:
+        std::vector<const TypeInfo*> Types;
+
+        virtual bool ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const;
+    };
+
+    ArgDefPtr In;
+    ArgDefPtr Out;
 };
 
 struct Function: public Literal {

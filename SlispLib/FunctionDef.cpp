@@ -14,23 +14,27 @@ ArgDef::~ArgDef() {
 }
 
 bool ArgDef::Validate(ExpressionEvaluator evaluator, ExpressionPtr &expr, std::string &error) const {
-  if (auto sexp = dynamic_cast<Sexp*>(expr.get())) {
-    auto &args = sexp->Args;
-    if (!args.empty()) {
-      ExpressionPtr fnExpr = std::move(args.front());
-      args.pop_front();
-      auto fn = dynamic_cast<Function*>(fnExpr.get());
-      if (fn) {
-        ValidateArgs(evaluator, args, error);
+  if (expr) {
+    if (auto sexp = dynamic_cast<Sexp*>(expr.get())) {
+      auto &args = sexp->Args;
+      if (!args.empty()) {
+        ExpressionPtr fnExpr = std::move(args.front());
+        args.pop_front();
+        auto fn = dynamic_cast<Function*>(fnExpr.get());
+        if (fn) {
+          ValidateArgs(evaluator, args, error);
+        }
+        else
+          throw std::exception("first argument in sexp must be a function");
       }
       else
-        throw std::exception("first argument in sexp must be a function");
+        throw std::exception("sexp requires at least one argument");
     }
     else
-      throw std::exception("sexp requires at least one argument");
+      error = "Expected: Sexp. Actual: " + expr->Type().TypeName;
   }
   else
-    error = "Expected: Sexp. Actual: " + expr->Type().TypeName;
+    throw std::exception("ExpressionPtr is empty");
 
   return error.empty();
 }
@@ -90,18 +94,18 @@ bool ArgDef::CheckArg(ExpressionEvaluator evaluator, ExpressionPtr &arg, const T
 
 //=============================================================================
 
-VarArgDef::VarArgDef(const TypeInfo& type, int nargs):
+FuncDef::VarArgDef::VarArgDef(const TypeInfo& type, int nargs):
   ArgDef { },
   Type { type },
   NArgs { nargs }
 {
 }
 
-std::unique_ptr<ArgDef> VarArgDef::Clone() const {
-  return std::unique_ptr<ArgDef> { new VarArgDef { *this } };
+ArgDefPtr FuncDef::VarArgDef::Clone() const {
+  return ArgDefPtr { new VarArgDef { *this } };
 }
 
-const std::string VarArgDef::ToString() const {
+const std::string FuncDef::VarArgDef::ToString() const {
   if (NArgs == NO_ARGS)
     return "";
   else if (NArgs == ANY_ARGS) 
@@ -114,7 +118,7 @@ const std::string VarArgDef::ToString() const {
   }
 }
 
-bool VarArgDef::ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const {
+bool FuncDef::VarArgDef::ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const {
   if (ValidateArgCount(args, error)) {
    // if (!TypeMatches(Type, Quote::TypeInstance))
       ValidateArgTypes(evaluator, args, error);
@@ -123,14 +127,14 @@ bool VarArgDef::ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, std::
   return error.empty();
 }
 
-bool VarArgDef::ValidateArgCount(ArgList &args, std::string &error) const {
+bool FuncDef::VarArgDef::ValidateArgCount(ArgList &args, std::string &error) const {
   if (NArgs == ANY_ARGS)
     return true;
   else 
     return CheckArgCount(NArgs, args, error);
 }
 
-bool VarArgDef::ValidateArgTypes(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const {
+bool FuncDef::VarArgDef::ValidateArgTypes(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const {
   int argNum = 0;
   for (auto &arg : args) {
     ++argNum;
@@ -142,17 +146,17 @@ bool VarArgDef::ValidateArgTypes(ExpressionEvaluator evaluator, ArgList &args, s
 
 //=============================================================================
 
-ListArgDef::ListArgDef(std::initializer_list<const TypeInfo*> &&types):
+FuncDef::ListArgDef::ListArgDef(std::initializer_list<const TypeInfo*> &&types):
   ArgDef {},
   Types { std::move(types) }
 {
 }
 
-std::unique_ptr<ArgDef> ListArgDef::Clone() const {
-  return std::unique_ptr<ArgDef> { new ListArgDef { *this } };
+ArgDefPtr FuncDef::ListArgDef::Clone() const {
+  return ArgDefPtr { new ListArgDef { *this } };
 }
 
-const std::string ListArgDef::ToString() const {
+const std::string FuncDef::ListArgDef::ToString() const {
   std::stringstream ss;
   for (auto type : Types) {
     ss << " " << type->TypeName;
@@ -160,7 +164,7 @@ const std::string ListArgDef::ToString() const {
   return ss.str();
 }
 
-bool ListArgDef::ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const {
+bool FuncDef::ListArgDef::ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const {
   if (CheckArgCount(Types.size(), args, error)) {
     int argNum = 0;
     auto currExpectedArg = Types.begin();
@@ -182,31 +186,31 @@ bool ListArgDef::ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, std:
   
 //=============================================================================
 
-std::unique_ptr<ArgDef> FuncDef::NoArgs() {
+ArgDefPtr FuncDef::NoArgs() {
   return ManyArgs(Void::TypeInstance, VarArgDef::NO_ARGS);
 }
 
-std::unique_ptr<ArgDef> FuncDef::OneArg(const TypeInfo& type) {
+ArgDefPtr FuncDef::OneArg(const TypeInfo& type) {
   return ManyArgs(type, 1);
 }
 
-std::unique_ptr<ArgDef> FuncDef::AnyArgs(const TypeInfo& type) {
+ArgDefPtr FuncDef::AnyArgs(const TypeInfo& type) {
   return ManyArgs(type, VarArgDef::ANY_ARGS);
 }
 
-std::unique_ptr<ArgDef> FuncDef::AnyArgs() {
+ArgDefPtr FuncDef::AnyArgs() {
   return ManyArgs(Sexp::TypeInstance, VarArgDef::ANY_ARGS);
 }
 
-std::unique_ptr<ArgDef> FuncDef::ManyArgs(const TypeInfo& type, int nargs) {
-  return std::unique_ptr<ArgDef> { new VarArgDef { type, nargs } };
+ArgDefPtr FuncDef::ManyArgs(const TypeInfo& type, int nargs) {
+  return ArgDefPtr { new VarArgDef { type, nargs } };
 }
 
-std::unique_ptr<ArgDef> FuncDef::Args(std::initializer_list<const TypeInfo*> &&args) {
-  return std::unique_ptr<ArgDef> { new ListArgDef { std::move(args) } };
+ArgDefPtr FuncDef::Args(std::initializer_list<const TypeInfo*> &&args) {
+  return ArgDefPtr { new ListArgDef { std::move(args) } };
 }
 
-FuncDef::FuncDef(std::unique_ptr<ArgDef> &in, std::unique_ptr<ArgDef> &out):
+FuncDef::FuncDef(ArgDefPtr &in, ArgDefPtr &out):
   In { std::move(in) },
   Out { std::move(out) }
 {
@@ -258,7 +262,7 @@ const TypeInfo Function::TypeInstance("function");
 
 Function::Function():
   Function {
-    FuncDef { std::unique_ptr<ArgDef> { }, std::unique_ptr<ArgDef> { } } 
+    FuncDef { ArgDefPtr {}, ArgDefPtr {} }
   }
 {
 }
@@ -331,4 +335,3 @@ ExpressionPtr InterpretedFunction::Clone() const {
 const std::string InterpretedFunction::ToString() const {
   return "InterpretedFunction { }";
 }
-
