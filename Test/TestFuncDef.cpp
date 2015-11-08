@@ -1,7 +1,18 @@
 #include "gtest\gtest.h"
 #include "FunctionDef.h"
 
+ExpressionPtr PrimitiveExpressions[] {
+  ExpressionPtr { new Bool() },
+  ExpressionPtr { new Number() },
+  ExpressionPtr { new String() },
+  ExpressionPtr { new Symbol("+") },
+};
+
 bool TestEvaluator(ExpressionPtr &) {
+  return true;
+}
+
+bool TestSlispFn(Interpreter &, ExpressionPtr&, ArgList&) {
   return true;
 }
 
@@ -17,20 +28,6 @@ void AssertValidateThrow(FuncDef &funcDef, ExpressionPtr &&expr) {
   std::string error;
   ASSERT_THROW(funcDef.ValidateArgs(TestEvaluator, expr, error), std::exception) << copy->ToString();
 }
-
-bool TestSlispFn(Interpreter &, ExpressionPtr&, ArgList&) {
-  return true;
-}
-
-//TODO: Need global type list
-//=============================================================================
-
-ExpressionPtr PrimitiveExpressions[] {
-  ExpressionPtr { new Bool() },
-  ExpressionPtr { new Number() },
-  ExpressionPtr { new String() },
-  ExpressionPtr { new Symbol("+") },
-};
 
 void TestBadExpressions(FuncDef &funcDef) {
   ASSERT_NO_FATAL_FAILURE(AssertValidateThrow(funcDef, ExpressionPtr {}));
@@ -69,10 +66,24 @@ void TestArgs(FuncDef &funcDef, int maxArgs, std::function<bool(const Sexp &)> a
   ASSERT_NO_FATAL_FAILURE(TestArgRecursive(funcDef, s, maxArgs, 0, argSuccessFn));
 }
 
+static const int ANY_NARGS = -1;
+bool HomogeneousArgSuccessFn(int expectedNArgs, const ExpressionPtr &expr, const Sexp &sexp) {
+  if (expectedNArgs == ANY_NARGS || sexp.Args.size() == (expectedNArgs + 1)) { // (func arg[1] ... arg[expectedNArgs])
+    int argNum = 0;
+    for (auto &arg : sexp.Args) {
+      if (argNum && &arg->Type() != &expr->Type())
+        return false;
+      ++argNum;
+    }
+    return true;
+  }
+  return false;
+}
+
 TEST(FuncDef, TestFuncDef_NoArgs) {
   FuncDef funcDef(FuncDef::NoArgs(), FuncDef::NoArgs());
   ASSERT_NO_FATAL_FAILURE(TestArgs(funcDef, 1, [](const Sexp &sexp) {
-    return sexp.Args.size() == 1; // (func)
+    return HomogeneousArgSuccessFn(0, nullptr, sexp);
   }));
 }
 
@@ -80,16 +91,7 @@ TEST(FuncDef, TestFuncDef_OneArg) {
   for (const auto &expr : PrimitiveExpressions) {
     FuncDef funcDef(FuncDef::OneArg(expr->Type()), FuncDef::NoArgs());
     ASSERT_NO_FATAL_FAILURE(TestArgs(funcDef, 2, [&expr](const Sexp &sexp) {
-      if (sexp.Args.size() == 2) {
-        int argNum = 0;
-        for (auto &arg : sexp.Args) {
-          if (argNum)
-            return &arg->Type() == &expr->Type();
-          else
-            ++argNum;
-        }
-      }
-      return false;
+      return HomogeneousArgSuccessFn(1, expr, sexp);
     })) << expr->ToString();
   }
 }
@@ -98,13 +100,7 @@ TEST(FuncDef, TestFuncDef_AnyArgs_Homogeneous) {
   for (const auto &expr : PrimitiveExpressions) {
     FuncDef funcDef(FuncDef::AnyArgs(expr->Type()), FuncDef::NoArgs());
     ASSERT_NO_FATAL_FAILURE(TestArgs(funcDef, 3, [&expr](const Sexp &sexp) {
-      int argNum = 0;
-      for (auto &arg : sexp.Args) {
-        if (argNum && &arg->Type() != &expr->Type())
-          return false;
-        ++argNum;
-      }
-      return true;
+      return HomogeneousArgSuccessFn(ANY_NARGS, expr, sexp);
     })) << expr->ToString();
   }
 }
@@ -122,23 +118,60 @@ TEST(FuncDef, TestFuncDef_ManyArgs) {
     for (const auto &expr : PrimitiveExpressions) {
       FuncDef funcDef(FuncDef::ManyArgs(expr->Type(), expectedNArgs), FuncDef::NoArgs());
       ASSERT_NO_FATAL_FAILURE(TestArgs(funcDef, maxExpectedNArgs + 1, [&expectedNArgs, &expr](const Sexp &sexp) {
-        if (sexp.Args.size() == (expectedNArgs + 1)) { // (func arg[1] ... arg[expectedNArgs])
-          int argNum = 0;
-          for (auto &arg : sexp.Args) {
-            if (argNum && &arg->Type() != &expr->Type())
-              return false;
-            ++argNum;
-          }
-          return true;
-        }
-        return false;
+        return HomogeneousArgSuccessFn(expectedNArgs, expr, sexp);
       })) << expr->ToString();
     }
   }
 }
 
-TEST(FuncDef, TestFuncDef_Args) {
+bool ThreeArgSuccessFn(const Sexp &sexp, const ExpressionPtr &arg1, const ExpressionPtr &arg2, const ExpressionPtr &arg3) {
+  int expectedNArgs = 0;
+  for (auto *arg : { &arg1, &arg2, &arg3 }) {
+    if (*arg)
+      ++expectedNArgs;
+  }
+
+  if (sexp.Args.size() == (expectedNArgs + 1)) {
+    int argNum = 0;
+    for (auto &sexpArg : sexp.Args) {
+      auto sexpArgType = &sexpArg->Type();
+      if (argNum == 1 && sexpArgType != &arg1->Type())
+        return false;
+      else if (argNum == 2 && sexpArgType != &arg2->Type())
+        return false;
+      else if (argNum == 3 && sexpArgType != &arg3->Type())
+        return false;
+      ++argNum;
+    }
+    return true;
+  }
+  return false;
 }
 
-TEST(FuncDef, TestFuncDef_Explicit) {
+TEST(FuncDef, TestFuncDef_Args) {
+  FuncDef noArgFuncDef(FuncDef::Args({}), FuncDef::NoArgs());
+  ASSERT_NO_FATAL_FAILURE(TestArgs(noArgFuncDef, 1, [](const Sexp &sexp) {
+    return ThreeArgSuccessFn(sexp, nullptr, nullptr, nullptr);
+  }));
+
+  for (const auto &arg1 : PrimitiveExpressions) {
+    FuncDef oneArgFuncDef(FuncDef::Args({ &arg1->Type() }), FuncDef::NoArgs());
+    ASSERT_NO_FATAL_FAILURE(TestArgs(oneArgFuncDef, 2, [&arg1](const Sexp &sexp){
+      return ThreeArgSuccessFn(sexp, arg1, nullptr, nullptr);
+    }));
+    
+    for (const auto &arg2 : PrimitiveExpressions) {
+      FuncDef twoArgFuncDef(FuncDef::Args({ &arg1->Type(), &arg2->Type() }), FuncDef::NoArgs());
+      ASSERT_NO_FATAL_FAILURE(TestArgs(twoArgFuncDef, 3, [&arg1, &arg2](const Sexp &sexp) {
+        return ThreeArgSuccessFn(sexp, arg1, arg2, nullptr);
+      }));
+      
+      for (const auto &arg3 : PrimitiveExpressions) {
+        FuncDef threeArgFuncDef(FuncDef::Args({ &arg1->Type(), &arg2->Type(), &arg3->Type() }), FuncDef::NoArgs());
+        ASSERT_NO_FATAL_FAILURE(TestArgs(threeArgFuncDef, 4, [&arg1, &arg2, &arg3](const Sexp &sexp) {
+          return ThreeArgSuccessFn(sexp, arg1, arg2, arg3);
+        }));
+      }
+    }
+  }
 }
