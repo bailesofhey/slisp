@@ -1,6 +1,5 @@
 #include "gtest\gtest.h"
-#include <iostream>
-#include <sstream>
+#include <initializer_list>
 
 #include "Parser.h"
 #include "CommandInterface.h"
@@ -41,6 +40,31 @@ class TestTokenizer: public ITokenizer {
     virtual Token& operator*() { return CurrToken; }
 };
 
+void TestParse(Parser &parser, const std::string &defaultSexp, TestTokenizer &tokenizer, std::initializer_list<Token> &&tokens, bool expectSuccess, std::initializer_list<Expression*> &&expectedArgs) {
+  tokenizer.Tokens = tokens;
+  ASSERT_TRUE(parser.Parse());
+  ASSERT_TRUE(parser.Error().empty());
+  auto exprTree = parser.ExpressionTree();
+  ASSERT_EQ(2, exprTree->Args.size());
+  auto sym = dynamic_cast<Symbol*>(exprTree->Args.front().get());
+  ASSERT_TRUE(sym != nullptr);
+  ASSERT_EQ(defaultSexp, sym->Value);
+  exprTree->Args.pop_front();
+
+  ArgList expected;
+  for (auto *expectedArg : expectedArgs)
+    expected.push_back(expectedArg->Clone());
+  ASSERT_TRUE(ArgListHelper::AreEqual(exprTree->Args, expected));
+}
+
+void TestParseFail(Parser &parser, const std::string &defaultSexp, TestTokenizer &tokenizer, std::initializer_list<Token> &&tokens) {
+  TestParse(parser, defaultSexp, tokenizer, std::move(tokens), false, {});
+}
+
+void TestParseOk(Parser &parser, const std::string &defaultSexp, TestTokenizer &tokenizer, std::initializer_list<Token> &&tokens, std::initializer_list<Expression*> &&expectedArgs) {
+  TestParse(parser, defaultSexp, tokenizer, std::move(tokens), true, std::move(expectedArgs));
+}
+
 TEST(Parser, Test) {
   std::string defaultSexp = "default";
   TestCommandInterface cmdInterface;
@@ -53,22 +77,11 @@ TEST(Parser, Test) {
   auto exprTree = parser.ExpressionTree();
   ASSERT_EQ(1, exprTree->Args.size());
   Symbol *sym = dynamic_cast<Symbol*>(exprTree->Args.front().get());
-  ASSERT_TRUE(sym);
-  ASSERT_EQ(defaultSexp, sym->Value);
-
-  tokenizer.Tokens = { Token(TokenTypes::PARENOPEN, ""), Token(TokenTypes::SYMBOL, "foo"), Token(TokenTypes::PARENCLOSE, "") };
-  ASSERT_TRUE(parser.Parse());
-  ASSERT_TRUE(parser.Error().empty());
-  exprTree = parser.ExpressionTree();
-  ASSERT_EQ(2, exprTree->Args.size());
-  sym = dynamic_cast<Symbol*>(exprTree->Args.front().get());
   ASSERT_TRUE(sym != nullptr);
   ASSERT_EQ(defaultSexp, sym->Value);
-  exprTree->Args.pop_front();
-  Sexp *sexp = dynamic_cast<Sexp*>(exprTree->Args.front().get());
-  ASSERT_TRUE(sexp != nullptr);
-  ASSERT_EQ(1, sexp->Args.size());
-  Symbol *fnSym = dynamic_cast<Symbol*>(sexp->Args.front().get());
-  ASSERT_TRUE(fnSym != nullptr);
-  ASSERT_EQ(Symbol("foo"), *fnSym);
+
+  ASSERT_NO_FATAL_FAILURE(TestParseOk(parser, defaultSexp, tokenizer,
+    { Token(TokenTypes::PARENOPEN, ""), Token(TokenTypes::SYMBOL, "foo"), Token(TokenTypes::PARENCLOSE, "") },
+    { new Sexp({ ExpressionPtr { new Symbol("foo") } }) }
+  ));
 }

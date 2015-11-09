@@ -25,6 +25,17 @@ const TypeInfo& Expression::Type() const {
   return _Type;
 }
 
+bool Expression::operator!=(const Expression &rhs) const {
+  return !(rhs == *this);
+}
+
+bool Expression::AreEqual(const ExpressionPtr &lhs, const ExpressionPtr &rhs) {
+  if (lhs && rhs)
+    return *lhs == *rhs;
+  else
+    return static_cast<bool>(lhs) == static_cast<bool>(rhs);
+}
+
 //=============================================================================
 
 const TypeInfo Void::TypeInstance { "" };
@@ -59,6 +70,11 @@ ExpressionPtr Bool::Clone() const {
 
 const std::string Bool::ToString() const {
   return "Bool { " + std::to_string(Value) + " }";
+}
+
+bool Bool::operator==(const Expression &rhs) const {
+  return &rhs.Type() == &Bool::TypeInstance
+      && dynamic_cast<const Bool&>(rhs) == *this;
 }
 
 bool Bool::operator==(const Bool &rhs) const {
@@ -112,6 +128,11 @@ const std::string Number::ToString() const {
   return "Number { " + std::to_string(Value) + " }";
 }
 
+bool Number::operator==(const Expression &rhs) const {
+  return &rhs.Type() == &Number::TypeInstance
+      && dynamic_cast<const Number&>(rhs) == *this;
+}
+
 bool Number::operator==(const Number &rhs) const {
   return Value == rhs.Value;
 }
@@ -163,6 +184,11 @@ const std::string String::ToString() const {
   return "String { \"" + Value + "\" }";
 }
 
+bool String::operator==(const Expression &rhs) const {
+  return &rhs.Type() == &String::TypeInstance
+      && dynamic_cast<const String&>(rhs) == *this;
+}
+
 bool String::operator==(const String &rhs) const {
   return Value == rhs.Value;
 }
@@ -210,6 +236,19 @@ const std::string Quote::ToString() const {
   return "Quote { " + Value->ToString() + " }";
 }
 
+bool Quote::operator==(const Expression &rhs) const {
+  return &rhs.Type() == &Quote::TypeInstance
+      && dynamic_cast<const Quote&>(rhs) == *this;
+}
+
+bool Quote::operator==(const Quote &rhs) const {
+  return AreEqual(Value, rhs.Value);
+}
+
+bool Quote::operator!=(const Quote &rhs) const {
+  return !(rhs == *this);
+}
+
 std::ostream& operator<<(std::ostream& os, const Quote& value) {
   return os << value.ToString();
 }
@@ -230,6 +269,11 @@ ExpressionPtr Symbol::Clone() const {
 
 const std::string Symbol::ToString() const {
   return "Symbol { " + Value + " }";
+}
+
+bool Symbol::operator==(const Expression &rhs) const {
+  return &rhs.Type() == &Symbol::TypeInstance
+      && dynamic_cast<const Symbol&>(rhs) == *this;
 }
 
 bool Symbol::operator==(const Symbol& rhs) const {
@@ -263,11 +307,41 @@ std::ostream& operator<<(std::ostream& os, const Symbol& value) {
 
 //=============================================================================
 
+bool ArgListHelper::AreEqual(const ArgList &lhs, const ArgList &rhs) {
+  if (lhs.size() == rhs.size()) {
+    auto lCurr = lhs.begin();
+    auto rCurr = rhs.begin();
+    while (lCurr != lhs.end() && rCurr != rhs.end()) {
+      if (!Expression::AreEqual(*lCurr, *rCurr))
+        return false;
+      ++lCurr;
+      ++rCurr;
+    }
+    return true;
+  }
+  return false;
+}
+
+//=============================================================================
+
 const TypeInfo Sexp::TypeInstance("sexp");
 
 Sexp::Sexp():
   Expression { TypeInstance }
 {
+}
+
+Sexp::Sexp(ArgList &&args):
+  Sexp()
+{
+  Args = std::move(args);
+}
+
+Sexp::Sexp(std::initializer_list<ExpressionPtr> &&args):
+  Sexp()
+{
+  for (auto &arg : args)
+    Args.push_back(arg->Clone());
 }
 
 ExpressionPtr Sexp::Clone() const {
@@ -280,6 +354,19 @@ ExpressionPtr Sexp::Clone() const {
 
 const std::string Sexp::ToString() const {
   return "Sexp { }";
+}
+
+bool Sexp::operator==(const Expression &rhs) const {
+  return &rhs.Type() == &Sexp::TypeInstance
+      && dynamic_cast<const Sexp&>(rhs) == *this;
+}
+
+bool Sexp::operator==(const Sexp &rhs) const {
+  return ArgListHelper::AreEqual(Args, rhs.Args);
+}
+
+bool Sexp::operator!=(const Sexp &rhs) const {
+  return !(rhs == *this);
 }
 
 std::ostream& operator<<(std::ostream& os, const Sexp& value) {

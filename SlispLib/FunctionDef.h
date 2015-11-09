@@ -20,6 +20,7 @@ class ArgDef {
   public:
     virtual ~ArgDef();
     virtual ArgDefPtr Clone() const = 0;
+    virtual bool operator==(const ArgDef &rhs) const = 0;
     virtual const std::string ToString() const = 0;
     bool Validate(ExpressionEvaluator evaluator, ExpressionPtr &expr, std::string &error) const;
     static bool TypeMatches(const TypeInfo &expected, const TypeInfo& actual);
@@ -44,6 +45,7 @@ class FuncDef {
     explicit FuncDef(ArgDefPtr &in, ArgDefPtr &out);
     FuncDef(const FuncDef &val);
     FuncDef(FuncDef &&rval);
+    bool operator==(const FuncDef &rhs) const;
     FuncDef& operator=(FuncDef);
     void Swap(FuncDef &func);
     const std::string ToString() const;
@@ -58,6 +60,8 @@ class FuncDef {
         explicit VarArgDef(const TypeInfo& type, int nargs);
         virtual ArgDefPtr Clone() const;
         virtual const std::string ToString() const;
+        virtual bool operator==(const ArgDef &rhs) const;
+        bool operator==(const VarArgDef &rhs) const;
 
       private:
         const TypeInfo& Type;
@@ -74,6 +78,8 @@ class FuncDef {
         explicit ListArgDef(std::initializer_list<const TypeInfo*> &&types);
         virtual ArgDefPtr Clone() const;
         virtual const std::string ToString() const;
+        virtual bool operator==(const ArgDef &rhs) const;
+        bool operator==(const ListArgDef &rhs) const;
 
       private:
         std::vector<const TypeInfo*> Types;
@@ -103,6 +109,9 @@ struct CompiledFunction: public Function {
   explicit CompiledFunction(FuncDef &&def, SlipFunction fn);
   ExpressionPtr Clone() const;
   const std::string ToString() const;
+  virtual bool operator==(const Expression &rhs) const;
+  bool operator==(const CompiledFunction &rhs) const;
+  bool operator!=(const CompiledFunction &rhs) const;
   CompiledFunction& operator=(CompiledFunction rhs);
   void Swap(CompiledFunction &rhs);
 };
@@ -117,4 +126,7 @@ struct InterpretedFunction: public Function {
   explicit InterpretedFunction(FuncDef &&def, ExpressionPtr &&code, ArgList &&args);
   ExpressionPtr Clone() const;
   const std::string ToString() const;
+  virtual bool operator==(const Expression &rhs) const;
+  bool operator==(const InterpretedFunction &rhs) const;
+  bool operator!=(const InterpretedFunction &rhs) const;
 };

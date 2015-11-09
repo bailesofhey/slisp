@@ -18,6 +18,11 @@ void RunExpressionTest(E &defaultValue, E &emptyValue, E &otherValue) {
   ExpressionPtr defaultCopy = defaultValue.Clone(),
                 emptyCopy = emptyValue.Clone(),
                 otherCopy = otherValue.Clone();
+  
+  ASSERT_EQ(defaultValue, *defaultCopy);
+  ASSERT_EQ(otherValue, *otherCopy);
+  ASSERT_EQ(emptyValue, *emptyCopy);
+
   ASSERT_EQ(defaultValue, static_cast<E&>(*defaultCopy));
   ASSERT_EQ(otherValue, static_cast<E&>(*otherCopy));
   ASSERT_EQ(emptyValue, static_cast<E&>(*emptyCopy));
@@ -51,12 +56,17 @@ TEST(Expression, TestQuote) {
   Quote qFoo { ExpressionPtr { new String("Foo") } };
   ASSERT_FALSE(qThree.ToString().empty());
   ASSERT_NE(qThree.ToString(), qFoo.ToString());
+  ASSERT_NE(qThree, qFoo);
 
   ExpressionPtr threeCopyExpr { qThree.Clone() };
   Quote *threeCopy = static_cast<Quote*>(threeCopyExpr.get());
   ASSERT_EQ(qThree.ToString(), threeCopy->ToString());
+  ASSERT_EQ(qThree, *threeCopy);
 
-  //TODO: Value that contained expression is identical
+  threeCopy->Value = ExpressionPtr { new Number(33) };
+  ASSERT_NE(qThree, *threeCopy);
+  threeCopy->Value = ExpressionPtr { new Number(3) };
+  ASSERT_EQ(qThree, *threeCopy);
 }
 
 TEST(Expression, TestSexp) {
@@ -67,8 +77,14 @@ TEST(Expression, TestSexp) {
 
   ExpressionPtr sCopyExpr { s.Clone() };
   Sexp *sCopy = static_cast<Sexp*>(sCopyExpr.get());
+  
+  ASSERT_EQ(s, *sCopy);
+  
   ExpressionPtr arg1 = std::move(sCopy->Args.front());
   sCopy->Args.pop_front();
+
+  ASSERT_NE(s, *sCopy);
+
   ExpressionPtr arg2 = std::move(sCopy->Args.front());
   sCopy->Args.pop_front();
   ExpressionPtr arg3 = std::move(sCopy->Args.front());

@@ -118,6 +118,16 @@ const std::string FuncDef::VarArgDef::ToString() const {
   }
 }
 
+bool FuncDef::VarArgDef::operator==(const ArgDef &rhs) const {
+  auto *varRhs = dynamic_cast<const VarArgDef*>(&rhs);
+  return varRhs && *varRhs == *this;
+}
+
+bool FuncDef::VarArgDef::operator==(const VarArgDef &rhs) const {
+  return &Type == &rhs.Type
+      && NArgs == rhs.NArgs;
+}
+
 bool FuncDef::VarArgDef::ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const {
   if (ValidateArgCount(args, error)) {
    // if (!TypeMatches(Type, Quote::TypeInstance))
@@ -162,6 +172,15 @@ const std::string FuncDef::ListArgDef::ToString() const {
     ss << " " << type->TypeName;
   }
   return ss.str();
+}
+
+bool FuncDef::ListArgDef::operator==(const ArgDef &rhs) const {
+  auto *lstRhs = dynamic_cast<const ListArgDef*>(&rhs);
+  return lstRhs && *lstRhs == *this;
+}
+
+bool FuncDef::ListArgDef::operator==(const ListArgDef &rhs) const {
+  return Types == rhs.Types;
 }
 
 bool FuncDef::ListArgDef::ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const {
@@ -226,6 +245,11 @@ FuncDef::FuncDef(FuncDef &&rval):
   In { std::move(rval.In) },
   Out { std::move(rval.Out) }
 {
+}
+
+bool FuncDef::operator==(const FuncDef &rhs) const {
+  return In == rhs.In
+      && Out == rhs.Out;
 }
 
 FuncDef& FuncDef::operator=(FuncDef func) {
@@ -297,6 +321,20 @@ const std::string CompiledFunction::ToString() const {
   return "CompiledFunction { }";
 }
 
+bool CompiledFunction::operator==(const Expression &rhs) const {
+  return &rhs.Type() == &CompiledFunction::TypeInstance
+      && dynamic_cast<const CompiledFunction&>(rhs) == *this;
+}
+
+bool CompiledFunction::operator==(const CompiledFunction &rhs) const {
+  return Def == rhs.Def
+      && false; //eventually support comparing functions
+}
+
+bool CompiledFunction::operator!=(const CompiledFunction &rhs) const {
+  return !(rhs == *this);
+}
+
 CompiledFunction& CompiledFunction::operator=(CompiledFunction rhs) {
   Swap(rhs);
   return *this;
@@ -334,4 +372,19 @@ ExpressionPtr InterpretedFunction::Clone() const {
 
 const std::string InterpretedFunction::ToString() const {
   return "InterpretedFunction { }";
+}
+
+bool InterpretedFunction::operator==(const Expression &rhs) const {
+  return &rhs.Type() == &InterpretedFunction::TypeInstance
+      && dynamic_cast<const InterpretedFunction&>(rhs) == *this;
+}
+
+bool InterpretedFunction::operator==(const InterpretedFunction &rhs) const {
+  return Code == rhs.Code
+      && Args == rhs.Args
+      && Closure == rhs.Closure;
+}
+
+bool InterpretedFunction::operator!=(const InterpretedFunction &rhs) const {
+  return !(rhs == *this);
 }
