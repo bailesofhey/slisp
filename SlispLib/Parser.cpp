@@ -9,9 +9,9 @@ using std::endl;
 
 //=============================================================================
 
-Parser::Parser(CommandInterface &commandInterface, const std::string &defaultSexp, bool debug):
+Parser::Parser(CommandInterface &commandInterface, ITokenizer &tokenizer, const std::string &defaultSexp, bool debug):
   CommandInterface_ { commandInterface },
-  Tokenizer_ { },
+  Tokenizer_ { tokenizer },
   DefaultSexp { defaultSexp },
   Debug { debug }
 {

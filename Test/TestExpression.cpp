@@ -1,7 +1,6 @@
 #include "gtest\gtest.h"
 
 #include "Expression.h"
-#include "FunctionDef.h"
 
 template <class E>
 void RunExpressionTest(E &defaultValue, E &emptyValue, E &otherValue) {
@@ -12,8 +11,8 @@ void RunExpressionTest(E &defaultValue, E &emptyValue, E &otherValue) {
   ASSERT_LT(emptyValue, otherValue);
   ASSERT_GE(otherValue, emptyValue);
 
-  ASSERT_NE("", otherValue.ToString());
-  ASSERT_NE("", emptyValue.ToString());
+  ASSERT_FALSE(otherValue.ToString().empty());
+  ASSERT_FALSE(emptyValue.ToString().empty());
   ASSERT_NE(otherValue.ToString(), emptyValue.ToString());
 
   ExpressionPtr defaultCopy = defaultValue.Clone(),
@@ -50,7 +49,7 @@ TEST(Expression, TestSymbol) {
 TEST(Expression, TestQuote) {
   Quote qThree { ExpressionPtr { new Number(3) } };
   Quote qFoo { ExpressionPtr { new String("Foo") } };
-  ASSERT_NE("", qThree.ToString());
+  ASSERT_FALSE(qThree.ToString().empty());
   ASSERT_NE(qThree.ToString(), qFoo.ToString());
 
   ExpressionPtr threeCopyExpr { qThree.Clone() };

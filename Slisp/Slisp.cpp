@@ -19,6 +19,10 @@ std::unique_ptr<CommandInterface> CreateCommandInterface() {
   return std::unique_ptr<CommandInterface>(new ConsoleInterface);
 }
 
+std::unique_ptr<ITokenizer> CreateTokenizer() {
+  return std::unique_ptr<ITokenizer>(new Tokenizer);
+}
+
 int main(int argc, char **argv) {
   Interpreter interpreter;
 
@@ -27,7 +31,8 @@ int main(int argc, char **argv) {
 
   while (!interpreter.StopRequested()) {
     auto cmdInterface = CreateCommandInterface();
-    Parser parser { *cmdInterface, interpreter.GetDefaultSexp() };
+    auto tokenizer = CreateTokenizer();
+    Parser parser { *cmdInterface, *tokenizer, interpreter.GetDefaultSexp() };
     if (parser.Parse()) {
       auto &exprTree = parser.ExpressionTree();
       if (exprTree) {

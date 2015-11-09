@@ -9,7 +9,7 @@
 
 class Parser {
   public:
-    explicit Parser(CommandInterface &commandInterface, const std::string &defaultSexp, bool debug = false);
+    explicit Parser(CommandInterface &commandInterface, ITokenizer &tokenizer, const std::string &defaultSexp, bool debug = false);
     Parser() = delete;
     Parser(const Parser&) = delete;
     Parser(Parser &&) = delete;
@@ -22,7 +22,7 @@ class Parser {
 
   private:
     CommandInterface      &CommandInterface_;
-    Tokenizer             Tokenizer_;
+    ITokenizer            &Tokenizer_;
     std::unique_ptr<Sexp> ExprTree;
     std::string           DefaultSexp;
     std::string           Error_;

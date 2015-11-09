@@ -86,6 +86,7 @@
     <ClCompile Include="TestExpression.cpp" />
     <ClCompile Include="TestFuncDef.cpp" />
     <ClCompile Include="TestInterpreter.cpp" />
+    <ClCompile Include="TestParser.cpp" />
     <ClCompile Include="TestTokenizer.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

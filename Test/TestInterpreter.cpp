@@ -4,5 +4,5 @@
 TEST(Interpreter, TestSimple) {
   Interpreter interpreter;
   auto defaultSexp = interpreter.GetDefaultSexp();
-  ASSERT_NE("", defaultSexp);
+  ASSERT_FALSE(defaultSexp.empty());
 }

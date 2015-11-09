@@ -12,7 +12,7 @@ void Tokenizer::SetLine(const std::string& line) {
   Stream.clear();
 }
 
-Tokenizer& Tokenizer::operator++() {
+ITokenizer& Tokenizer::operator++() {
   if (!Stream.eof()) {
     char currChar = '\0';
     TokenizeNone();

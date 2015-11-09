@@ -6,11 +6,19 @@
 
 #include "Token.h"
 
-class Tokenizer {
+class ITokenizer {
   public:
-    void SetLine(const std::string& line);
-    Tokenizer& operator++();
-    Token& operator*();
+    virtual ~ITokenizer() {}
+    virtual void SetLine(const std::string& line) = 0;
+    virtual ITokenizer& operator++() = 0;
+    virtual Token& operator*() = 0;
+};
+
+class Tokenizer: public ITokenizer {
+  public:
+    virtual void SetLine(const std::string& line);
+    virtual ITokenizer& operator++();
+    virtual Token& operator*();
 
     private:
       void SkipWhitespace(char &currChar);

@@ -8,5 +8,6 @@
     <ClCompile Include="TestExpression.cpp" />
     <ClCompile Include="TestFuncDef.cpp" />
     <ClCompile Include="TestConsoleInterface.cpp" />
+    <ClCompile Include="TestParser.cpp" />
   </ItemGroup>
 </Project>
