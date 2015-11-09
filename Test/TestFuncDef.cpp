@@ -9,11 +9,11 @@ ExpressionPtr PrimitiveExpressions[] {
 };
 
 bool TestEvaluator(ExpressionPtr &) {
-  return true;
+  return false;
 }
 
 bool TestSlispFn(Interpreter &, ExpressionPtr&, ArgList&) {
-  return true;
+  throw std::exception("This should not be called");
 }
 
 void AssertValidate(FuncDef &funcDef, ExpressionPtr &&expr, bool expectSuccess) {

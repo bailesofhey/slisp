@@ -1,6 +1,7 @@
 #include "gtest\gtest.h"
 
 #include "Expression.h"
+#include "FunctionDef.h"
 
 template <class E>
 void RunExpressionTest(E &defaultValue, E &emptyValue, E &otherValue) {

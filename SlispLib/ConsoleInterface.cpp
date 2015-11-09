@@ -10,8 +10,8 @@ ConsoleInterface::ConsoleInterface():
 }
 
 ConsoleInterface::ConsoleInterface(istream &in, ostream &out):
-  In { cin },
-  Out { cout }
+  In { in },
+  Out { out }
 {
 }
 
@@ -36,5 +36,7 @@ bool ConsoleInterface::WriteError(const string &error) {
 bool ConsoleInterface::ReadLine(const string &prefix, string &input) {
   Out << prefix;
   getline(In, input);
+  if (In.eof())
+    In.clear();
   return true;
 }

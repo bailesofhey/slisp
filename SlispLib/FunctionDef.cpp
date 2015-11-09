@@ -294,7 +294,7 @@ ExpressionPtr CompiledFunction::Clone() const {
 }
 
 const std::string CompiledFunction::ToString() const {
-  return "CompiledFunction { }";
+  return "CompiledFunction { " + Def.ToString() + "}";
 }
 
 CompiledFunction& CompiledFunction::operator=(CompiledFunction rhs) {

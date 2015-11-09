@@ -7,5 +7,6 @@
     <ClCompile Include="TestTokenizer.cpp" />
     <ClCompile Include="TestExpression.cpp" />
     <ClCompile Include="TestFuncDef.cpp" />
+    <ClCompile Include="TestConsoleInterface.cpp" />
   </ItemGroup>
 </Project>
