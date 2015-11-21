@@ -381,7 +381,7 @@ bool InterpretedFunction::operator==(const Expression &rhs) const {
 
 bool InterpretedFunction::operator==(const InterpretedFunction &rhs) const {
   return Code == rhs.Code
-      && Args == rhs.Args
+      && ArgListHelper::AreEqual(Args, rhs.Args)
       && Closure == rhs.Closure;
 }
 

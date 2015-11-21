@@ -77,17 +77,31 @@ bool Parser::ParseToken(Sexp &root) {
 }
 
 bool Parser::ParseNumber(Sexp &root) {
-  root.Args.push_back(ExpressionPtr { new Number { std::atoll((*Tokenizer_).Value.c_str()) } });
-  return true;
+  auto &val = (*Tokenizer_).Value;
+  if (!val.empty()) {
+    root.Args.push_back(ExpressionPtr { new Number { std::atoll(val.c_str()) } });
+    return true;
+  }
+  else {
+    Error_ = "Number has no value";
+    return false;
+  }
+}
+
+bool Parser::ParseSymbol(Sexp &root) {
+  auto &val = (*Tokenizer_).Value;
+  if (!val.empty()) {
+    root.Args.push_back(ExpressionPtr { new Symbol { val } });
+    return true;
+  }
+  else {
+    Error_ = "Symbol has no value";
+    return false;
+  }
 }
 
 bool Parser::ParseString(Sexp &root) {
   root.Args.push_back(ExpressionPtr { new String { (*Tokenizer_).Value } });
-  return true;
-}
-
-bool Parser::ParseSymbol(Sexp &root) {
-  root.Args.push_back(ExpressionPtr { new Symbol { (*Tokenizer_).Value } });
   return true;
 }
 
@@ -105,6 +119,7 @@ bool Parser::ParseParenClose(Sexp &root) {
 }
 
 bool Parser::ParseSexpArgs(Sexp &root, Sexp &curr) {
+begin:
   bool parseResult = true;
   while ((parseResult = ParseToken(curr)) &&
          (*Tokenizer_).Type != TokenTypes::NONE &&
@@ -125,7 +140,7 @@ bool Parser::ParseSexpArgs(Sexp &root, Sexp &curr) {
       CommandInterface_.ReadContinuedInputLine(line);
       Tokenizer_.SetLine(line);
       ++Tokenizer_;
-      return ParseSexpArgs(root, curr);
+      goto begin;
     }
     else
       throw std::exception("Logic bug: NONE should only be reached with Depth > 0");

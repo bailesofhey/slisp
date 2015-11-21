@@ -340,8 +340,12 @@ Sexp::Sexp(ArgList &&args):
 Sexp::Sexp(std::initializer_list<ExpressionPtr> &&args):
   Sexp()
 {
-  for (auto &arg : args)
-    Args.push_back(arg->Clone());
+  if (args.size()) {
+    for (auto &arg : args) {
+      if (arg)
+        Args.push_back(arg->Clone());
+    }
+  }
 }
 
 ExpressionPtr Sexp::Clone() const {
