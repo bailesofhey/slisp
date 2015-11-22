@@ -57,7 +57,10 @@ void SymbolTable::PutSymbolFunction(const std::string &symbolName, SlipFunction 
 bool SymbolTable::GetSymbol(const std::string &symbolName, ExpressionPtr &value) {
   auto it = Symbols.find(symbolName);
   if (it != Symbols.end()) {
-    value = ExpressionPtr { it->second->Clone() };
+    if (it->second)
+      value = ExpressionPtr { it->second->Clone() };
+    else
+      value = ExpressionPtr { };
     return true;
   }
   else
