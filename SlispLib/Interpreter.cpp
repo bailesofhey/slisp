@@ -164,6 +164,7 @@ Interpreter::Interpreter(CommandInterface &cmdInterface):
   TypeReducers {},
   Errors {},
   DefaultSexp { "__default_sexp__" },
+  ListFuncName { "list" },
   ErrorWhere { "Interpreter" },
   StopRequested_ { false }
 {
@@ -195,23 +196,35 @@ void Interpreter::PutDefaultFunction(Function &&func) {
   DynamicSymbols.PutSymbolFunction(DefaultSexp, std::move(func));
 }
 
-bool Interpreter::GetDefaultFunction(FunctionPtr &func) {
+bool Interpreter::GetSpecialFunction(const std::string &name, FunctionPtr &func) {
   ExpressionPtr symbol;
-  if (DynamicSymbols.GetSymbol(DefaultSexp, symbol)) {
+  if (DynamicSymbols.GetSymbol(name, symbol)) {
     if (auto sym = dynamic_cast<Function*>(symbol.get())) {
       symbol.release();
       func.reset(sym);
       return true;
     }
     else
-      throw std::exception("Default function not a function");
+      throw std::exception("Special function not a function");
   }
   else
     return false;
 }
 
+bool Interpreter::GetDefaultFunction(FunctionPtr &func) {
+  return GetSpecialFunction(DefaultSexp, func);
+}
+
 const std::string Interpreter::GetDefaultSexp() const {
   return DefaultSexp;
+}
+
+void Interpreter::PutListFunction(Function &&func) {
+  DynamicSymbols.PutSymbolFunction(ListFuncName, std::move(func));
+}
+
+bool Interpreter::GetListFunction(FunctionPtr &func) {
+  return GetSpecialFunction(ListFuncName, func);
 }
 
 SymbolTable& Interpreter::GetDynamicSymbols() {
@@ -390,7 +403,7 @@ bool Interpreter::ReduceSexpInterpretedFunction(ExpressionPtr &expr, Interpreted
 
 bool Interpreter::ReduceSexpList(ExpressionPtr &expr, ArgList &args) {
   ExpressionPtr listSym;
-  if (GetCurrFrameSymbol("list", listSym)) { 
+  if (GetCurrFrameSymbol(ListFuncName, listSym)) { 
     auto listFn = dynamic_cast<Function*>(listSym.get());
     if (listFn) {
       ExpressionPtr wrappedExpr { new Sexp {} };

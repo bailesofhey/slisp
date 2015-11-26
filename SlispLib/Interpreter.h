@@ -90,6 +90,9 @@ class Interpreter {
     bool GetDefaultFunction(FunctionPtr &func);
     const std::string GetDefaultSexp() const;
 
+    void PutListFunction(Function &&func);
+    bool GetListFunction(FunctionPtr &func);
+
     StackFrame& GetCurrentStackFrame();
     void PushStackFrame(StackFrame &stackFrame);
     void PopStackFrame();
@@ -108,6 +111,7 @@ class Interpreter {
     TypeReducersType        TypeReducers;
     std::list<EvalError>    Errors;
     std::string             DefaultSexp;
+    std::string             ListFuncName;
     std::string             ErrorWhere;
     Sexp                    *Current;
     bool                    StopRequested_;
@@ -115,6 +119,7 @@ class Interpreter {
     template<class T>          bool InterpretLiteral(T *expr, char *wrapper = nullptr);
     template<class S, class V> bool GetLiteral(const std::string &symbolName, V &value);
 
+    bool GetSpecialFunction(const std::string &name, FunctionPtr &func);
     bool GetCurrFrameSymbol(const std::string &symbolName, ExpressionPtr &value);
     void RegisterReducers();
     bool ReduceBool(ExpressionPtr &expr);

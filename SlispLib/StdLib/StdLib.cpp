@@ -64,7 +64,10 @@ void StdLib::Load(Interpreter &interpreter) {
   // Lists
 
   symbols.PutSymbolQuote("nil", ExpressionPtr { new Sexp { } });
-  symbols.PutSymbolFunction("list", &StdLib::List, FuncDef { FuncDef::AnyArgs(), FuncDef::OneArg(Quote::TypeInstance) });
+  interpreter.PutListFunction(CompiledFunction {
+    FuncDef { FuncDef::AnyArgs(), FuncDef::OneArg(Quote::TypeInstance) },
+    &StdLib::List
+  });
   symbols.PutSymbolFunction("map", &StdLib::Map, FuncDef { FuncDef::Args({&Function::TypeInstance, &Quote::TypeInstance}), FuncDef::OneArg(Quote::TypeInstance) });
   symbols.PutSymbolFunction("head", &StdLib::Head, FuncDef { FuncDef::OneArg(Quote::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("tail", &StdLib::Tail, FuncDef { FuncDef::OneArg(Quote::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });

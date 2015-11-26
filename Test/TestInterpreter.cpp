@@ -462,18 +462,61 @@ class EvaluationTest: public InterpreterTest {
     static ExpressionPtr LastResult;
     static ArgList       LastArgs;
     static bool          Result;
+    static bool          MyFuncCalled;
+    static bool          MyListFuncCalled;
+    static int           MyListLastArgCount;
 
     EvaluationTest():
       InterpreterTest()
     {
       EvaluationTest::Result = true;
+      EvaluationTest::MyFuncCalled = false;
+      EvaluationTest::MyListFuncCalled = false;
 
       Interpreter_.PutDefaultFunction(CompiledFunction {
         FuncDef { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() },
         &DefaultFunction
       }); 
+
+      Interpreter_.GetDynamicSymbols().PutSymbolFunction("myCompiledFunc", CompiledFunction {
+        FuncDef { FuncDef::OneArg(Bool::TypeInstance), FuncDef::NoArgs() },
+        &MyCompiledFunc
+      });
+
+      ExpressionPtr trueValue { new Bool(true) };
+      ExpressionPtr code {
+        new Sexp({
+          ExpressionPtr { new Symbol("myCompiledFunc") },
+          trueValue->Clone(),
+        })
+      };
+      ArgList args;
+      args.push_back(ExpressionPtr { new Bool() });
+      Interpreter_.GetDynamicSymbols().PutSymbolFunction("myInterpretedFunc", InterpretedFunction {
+        FuncDef { FuncDef::OneArg(Bool::TypeInstance), FuncDef::NoArgs() },
+        std::move(code),
+        std::move(args)
+       });
+
+
+      ExpressionPtr badFnCode {
+        new Symbol("undefinedSymbol")
+      };
+      ArgList badFnArgs;
+      Interpreter_.GetDynamicSymbols().PutSymbolFunction("myInterpretedBadFunc", InterpretedFunction {
+        FuncDef { FuncDef::NoArgs(), FuncDef::NoArgs() },
+        std::move(badFnCode),
+        std::move(badFnArgs)
+       });
     }
 
+    void TestSexpFunction(const std::string &funcName);
+    void TestBasicArg(const std::string &funcName);
+    void TestWrongTypeArg(const std::string &funcName);
+    void TestSymbolArg(const std::string &funcName);
+    void TestNotEnoughArgs(const std::string &funcName);
+    void TestTooManyArgs(const std::string &funcName);
+    
     static bool DefaultFunction(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
       LastResult = std::move(expr);
       LastArgs.clear();
@@ -481,11 +524,27 @@ class EvaluationTest: public InterpreterTest {
       interpreter.GetCommandInterface().WriteOutputLine(LastArgs.front()->ToString());
       return Result;
     }
+
+    static bool MyCompiledFunc(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+      MyFuncCalled = true;
+      return Result;
+    }
+
+    static bool MyListFunc(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+      MyListFuncCalled = true;
+      MyListLastArgCount = 0;
+      for (auto &arg : args)
+        ++MyListLastArgCount;
+      return Result;
+    }
 };
 
 ExpressionPtr EvaluationTest::LastResult;
 ArgList EvaluationTest::LastArgs;
 bool EvaluationTest::Result;
+bool EvaluationTest::MyFuncCalled;
+bool EvaluationTest::MyListFuncCalled;
+int EvaluationTest::MyListLastArgCount;
 
 TEST_F(EvaluationTest, TestLiteral) {
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Bool(true) }));
@@ -494,7 +553,7 @@ TEST_F(EvaluationTest, TestLiteral) {
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Quote(ExpressionPtr { new Bool(true) })}));
 
   FunctionPtr defaultFn;
-  Interpreter_.GetDefaultFunction(defaultFn);
+  ASSERT_TRUE(Interpreter_.GetDefaultFunction(defaultFn));
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { defaultFn.release() }));
 
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new CompiledFunction() }));
@@ -532,50 +591,122 @@ TEST_F(EvaluationTest, TestSymbol) {
 TEST_F(EvaluationTest, TestSexpDefaultFunction) {
   ExpressionPtr trueValue { new Bool(true) },
                 falseValue { new Bool(false) };
-  Interpreter_.Evaluate(ExpressionPtr { new Sexp({
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
     ExpressionPtr { new Symbol(Interpreter_.GetDefaultSexp()) },
     falseValue->Clone()
-  })});
+  })}));
   ASSERT_TRUE(CommandInterface.Output.find("0") != std::string::npos);
   ASSERT_EQ(*falseValue, *EvaluationTest::LastArgs.front());
 
-  Interpreter_.Evaluate(ExpressionPtr { new Sexp({
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
     ExpressionPtr { new Symbol(Interpreter_.GetDefaultSexp()) },
     trueValue->Clone()
-  })});
+  })}));
   ASSERT_TRUE(CommandInterface.Output.find("1") != std::string::npos);
   ASSERT_EQ(*trueValue, *EvaluationTest::LastArgs.front());
 }
 
+void EvaluationTest::TestBasicArg(const std::string &funcName) {
+  ExpressionPtr trueValue { new Bool(true) };
+ 
+  EvaluationTest::MyFuncCalled = false;
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
+    ExpressionPtr { new Symbol(funcName) },
+    trueValue->Clone()
+  })}));
+  ASSERT_TRUE(EvaluationTest::MyFuncCalled);
+}
+
+void EvaluationTest::TestSymbolArg(const std::string &funcName) {
+  ExpressionPtr sym { new Symbol("sym") };
+  EvaluationTest::MyFuncCalled = false;
+  ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
+    ExpressionPtr { new Symbol(funcName) },
+    sym->Clone()
+  })}));
+  ASSERT_FALSE(EvaluationTest::MyFuncCalled);
+
+  Interpreter_.GetCurrentStackFrame().PutLocalSymbol("sym", ExpressionPtr { new Bool(false) });
+  EvaluationTest::MyFuncCalled = false;
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
+    ExpressionPtr { new Symbol(funcName) },
+    sym->Clone()
+  })}));
+  ASSERT_TRUE(EvaluationTest::MyFuncCalled);
+}
+
+void EvaluationTest::TestNotEnoughArgs(const std::string &funcName) {
+  EvaluationTest::MyFuncCalled = false;
+  ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
+    ExpressionPtr { new Symbol(funcName) },
+  })}));
+  ASSERT_FALSE(EvaluationTest::MyFuncCalled);
+}
+
+void EvaluationTest::TestTooManyArgs(const std::string &funcName) {
+  ExpressionPtr trueValue { new Bool(true) };
+ 
+  EvaluationTest::MyFuncCalled = false;
+  ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
+    ExpressionPtr { new Symbol(funcName) },
+    trueValue->Clone(),
+    trueValue->Clone()
+  })}));
+  ASSERT_FALSE(EvaluationTest::MyFuncCalled);
+}
+
+void EvaluationTest::TestWrongTypeArg(const std::string &funcName) {
+  ExpressionPtr str { new String("foo") };
+  EvaluationTest::MyFuncCalled = false;
+  ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
+    ExpressionPtr { new Symbol(funcName) },
+    str->Clone()
+  })}));
+  ASSERT_FALSE(EvaluationTest::MyFuncCalled);
+}
+
+void EvaluationTest::TestSexpFunction(const std::string &funcName) {
+  ASSERT_NO_FATAL_FAILURE(TestBasicArg(funcName));
+  ASSERT_NO_FATAL_FAILURE(TestWrongTypeArg(funcName));
+  ASSERT_NO_FATAL_FAILURE(TestSymbolArg(funcName));
+  ASSERT_NO_FATAL_FAILURE(TestNotEnoughArgs(funcName));
+  ASSERT_NO_FATAL_FAILURE(TestTooManyArgs(funcName));
+}
+
 TEST_F(EvaluationTest, TestSexpCompiledFunction) {
-// Make sure function is called
-// Quote -> empty
-// Quote -> Bool
-// Quote -> Number
-// Quote -> String
-// Quote -> Function
-// Quote -> Symbol -> undefined
-// Quote -> Symbol -> Bool
-// Quote -> Symbol -> Number
-// Quote -> Symbol -> String
-// Quote -> Symbol -> Function
-// Quote -> Quote -> empty
-// Quote -> Quote -> Bool
-// Quote -> Quote -> Number
-// Quote -> Quote -> String
-// Quote -> Quote -> Function
-// Quote -> Quote -> Symbol -> undefined
-// Quote -> Quote -> Symbol -> Bool
-// Quote -> Quote -> Symbol -> Number
-// Quote -> Quote -> Symbol -> String
-// Quote -> Quote -> Symbol -> Function
+  ASSERT_NO_FATAL_FAILURE(TestSexpFunction("myCompiledFunc"));
 }
 
-TEST_F(EvaluationTest, DISABLED_TestSexpInterpretedFunction) {
-// Make sure function is called
+TEST_F(EvaluationTest, TestSexpInterpretedFunction) {
+  ASSERT_NO_FATAL_FAILURE(TestSexpFunction("myInterpretedFunc"));
+
+  ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
+    ExpressionPtr { new Symbol("myInterpretedBadFunc") },
+  })}));
 }
 
-TEST_F(EvaluationTest, DISABLED_TestSexpList) {
-// ()
-// (true 1 "string" +) - make sure everything shows up
+TEST_F(EvaluationTest, TestSexpList) {
+  ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { new Sexp() }));
+  ASSERT_FALSE(EvaluationTest::MyListFuncCalled);
+
+  Interpreter_.PutListFunction(CompiledFunction {
+    FuncDef { FuncDef::AnyArgs(), FuncDef::OneArg(Quote::TypeInstance) },
+    &MyListFunc
+  });
+
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp() }));
+  ASSERT_TRUE(EvaluationTest::MyListFuncCalled);
+  ASSERT_EQ(0, MyListLastArgCount);
+
+  ExpressionPtr boolValue { new Bool(true) },
+                numValue { new Number(42) },
+                strValue { new String("foo") },
+                symValue { new Symbol("myCompiledFunc") };
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
+    boolValue->Clone(),
+    numValue->Clone(),
+    strValue->Clone(),
+    symValue->Clone()
+  }) }));
+  ASSERT_EQ(4, MyListLastArgCount);
 }
