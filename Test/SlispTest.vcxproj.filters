@@ -10,4 +10,7 @@
     <ClCompile Include="TestConsoleInterface.cpp" />
     <ClCompile Include="TestParser.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Common.h" />
+  </ItemGroup>
 </Project>

@@ -5,9 +5,6 @@
 #include "StdLib.h"
 #include "../Interpreter.h"
 
-using std::cout;
-using std::endl;
-
 //=============================================================================
 
 void StdLib::Load(Interpreter &interpreter) {
@@ -112,41 +109,45 @@ void StdLib::UnLoad(Interpreter &interpreter) {
 
 // Interpreter Functions
 
-bool StdLib::PrintExpression(Interpreter &interpreter, ExpressionPtr &curr) {
+bool StdLib::PrintExpression(Interpreter &interpreter, ExpressionPtr &curr, std::ostream &out) {
   if (auto *currE = dynamic_cast<Bool*>(curr.get()))
-    return PrintBool(currE->Value);
+    return PrintBool(currE->Value, out);
   else if (auto *currE = dynamic_cast<Number*>(curr.get()))
-    return PrintLiteral(currE);
+    return PrintLiteral(currE, out);
   else if (auto *currE = dynamic_cast<String*>(curr.get())) {
     char wrapper = '"';
-    return PrintLiteral(currE, &wrapper);
+    return PrintLiteral(currE, out, &wrapper);
   }
   else if (auto *currE = dynamic_cast<Symbol*>(curr.get())) {
     String temp { currE->Value };
-    return PrintLiteral(&temp);
+    return PrintLiteral(&temp, out);
   }
   else if (auto *currE = dynamic_cast<Function*>(curr.get())) {
     String temp { "<Function>" };
-    return PrintLiteral(&temp);
+    return PrintLiteral(&temp, out);
   }
   else if (auto *currE = dynamic_cast<Quote*>(curr.get())) {
-    return PrintExpression(interpreter, currE->Value);
+    return PrintExpression(interpreter, currE->Value, out);
   }
   else if (auto *currE = dynamic_cast<Sexp*>(curr.get()))
-    return PrintSexp(interpreter, *currE);
+    return PrintSexp(interpreter, *currE, out);
   else
     return interpreter.PushError(EvalError { "print", "Invalid expression type: " + curr->ToString() });
 }
 
 bool StdLib::Print(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
   ExpressionPtr curr;
+  std::stringstream out;
+  auto &cmdInterface = interpreter.GetCommandInterface();
   while (!args.empty()) {
     curr = std::move(args.front());
     args.pop_front();
-    bool result = PrintExpression(interpreter, curr);
-    cout << endl;
+    bool result = PrintExpression(interpreter, curr, out);
+    out << std::endl;
     if (!result)
       return false;
+    cmdInterface.WriteOutputLine(out.str());
+    out.clear();
   }
 
   expr = GetNil();
@@ -730,7 +731,7 @@ bool StdLib::Help(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) 
   Interpreter::SymbolFunctor functor = [&ss, &defaultSexp](const std::string &symbolName, ExpressionPtr &expr) {
     if (&expr->Type() == &Function::TypeInstance && symbolName != defaultSexp) {
       auto fn = static_cast<Function*>(expr.get());
-      ss << "(" << symbolName << fn->Def.ToString() << endl;
+      ss << "(" << symbolName << fn->Def.ToString() << std::endl;
     }
   };
 
@@ -755,41 +756,41 @@ bool StdLib::Help(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) 
   }
 
   expr = GetNil();
-  cout << ss.str();
+  interpreter.GetCommandInterface().WriteOutputLine(ss.str());
   return true;
 }
 
 // Helpers
 
-template<class T> bool StdLib::PrintLiteral(T *expr, char *wrapper) {
+template<class T> bool StdLib::PrintLiteral(T *expr, std::ostream &out, char *wrapper) {
   if (wrapper)
-    cout << *wrapper;
-  cout << expr->Value;
+    out << *wrapper;
+  out << expr->Value;
   if (wrapper)
-    cout << *wrapper;
+    out << *wrapper;
   return true;
 }
 
-bool StdLib::PrintSexp(Interpreter &interpreter, Sexp &sexp) {
-  cout << "(";
+bool StdLib::PrintSexp(Interpreter &interpreter, Sexp &sexp, std::ostream &out) {
+  out << "(";
   bool first = true;
   for (auto &arg : sexp.Args) {
     if (!first)
-      cout << " ";
-    bool result = PrintExpression(interpreter, arg);
+      out << " ";
+    bool result = PrintExpression(interpreter, arg, out);
     if (!result)
       return false;
     first = false;
   }
-  cout << ")";
+  out << ")";
   return true;
 }
 
-bool StdLib::PrintBool(bool expr) {
+bool StdLib::PrintBool(bool expr, std::ostream &out) {
   if (expr)
-    cout << "true";
+    out << "true";
   else
-    cout << "false";
+    out << "false";
   return true;
 }
 

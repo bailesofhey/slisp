@@ -45,6 +45,7 @@ class FuncDef {
     explicit FuncDef(ArgDefPtr &in, ArgDefPtr &out);
     FuncDef(const FuncDef &val);
     FuncDef(FuncDef &&rval);
+    FuncDef Clone() const;
     bool operator==(const FuncDef &rhs) const;
     FuncDef& operator=(FuncDef);
     void Swap(FuncDef &func);
@@ -99,6 +100,7 @@ struct Function: public Literal {
   explicit Function();
   explicit Function(FuncDef &&func);
 };
+using FunctionPtr = std::unique_ptr<Function>;
 
 struct CompiledFunction: public Function {
   static const TypeInfo TypeInstance;

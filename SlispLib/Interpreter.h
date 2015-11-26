@@ -9,6 +9,7 @@
 
 #include "Expression.h"
 #include "FunctionDef.h"
+#include "CommandInterface.h"
 
 struct EvalError {
   std::string Where; //TODO: Function
@@ -29,6 +30,7 @@ class SymbolTable {
     bool GetSymbol(const std::string &symbolName, ExpressionPtr &value);
     void DeleteSymbol(const std::string &symbolName);
     void ForEach(std::function<void(const std::string &, ExpressionPtr &)>);
+    size_t GetCount() const;
 
   private:
     SymbolTableType Symbols;
@@ -70,7 +72,7 @@ class Interpreter {
   public:    
     using SymbolFunctor = std::function<void(const std::string&, ExpressionPtr&)>;
 
-    explicit Interpreter();
+    explicit Interpreter(CommandInterface &commandInterface);
     
     bool Evaluate(ExpressionPtr &expr);
 
@@ -84,17 +86,20 @@ class Interpreter {
     SymbolTable& GetDynamicSymbols();
 
     void PutDefaultFunction(Function &&func);
-    bool GetDefaultFunction(Function *func);
+    bool GetDefaultFunction(FunctionPtr &func);
     const std::string GetDefaultSexp() const;
 
     StackFrame& GetCurrentStackFrame();
     void PushStackFrame(StackFrame &stackFrame);
     void PopStackFrame();
 
+    CommandInterface& GetCommandInterface();
+
   private:
     using TypeReducer      = std::function<bool(ExpressionPtr &expr)>;
     using TypeReducersType = std::map<const TypeInfo*, TypeReducer>;
     
+    CommandInterface        &CmdInterface;
     SymbolTable             DynamicSymbols;
     std::stack<StackFrame*> StackFrames;
     CompiledFunction        MainFunc;

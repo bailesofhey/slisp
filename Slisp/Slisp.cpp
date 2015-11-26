@@ -24,23 +24,21 @@ std::unique_ptr<ITokenizer> CreateTokenizer() {
 }
 
 int main(int argc, char **argv) {
-  Interpreter interpreter;
+  auto cmdInterface = CreateCommandInterface();
+  auto tokenizer = CreateTokenizer();
+  Interpreter interpreter(*cmdInterface);
+  Parser parser { *cmdInterface, *tokenizer, interpreter.GetDefaultSexp() };
 
   StdLib lib;
   lib.Load(interpreter);
 
   while (!interpreter.StopRequested()) {
-    auto cmdInterface = CreateCommandInterface();
-    auto tokenizer = CreateTokenizer();
-    Parser parser { *cmdInterface, *tokenizer, interpreter.GetDefaultSexp() };
     if (parser.Parse()) {
       auto &exprTree = parser.ExpressionTree();
       if (exprTree) {
         ExpressionPtr root { exprTree.release() };
         if (!interpreter.Evaluate(root)) {
           auto errors = interpreter.GetErrors();
-          //errors.pop_back();
-          //errors.pop_back();
           for (auto &error : errors)
             cout << error.Where << ": " << error.What << endl;
         }

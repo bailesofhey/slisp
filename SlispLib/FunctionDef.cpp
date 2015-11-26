@@ -236,8 +236,8 @@ FuncDef::FuncDef(ArgDefPtr &in, ArgDefPtr &out):
 }
 
 FuncDef::FuncDef(const FuncDef &val):
-  In { val.In->Clone().release() },
-  Out { val.Out->Clone().release() }
+  In { val.In ? val.In->Clone().release() : nullptr },
+  Out { val.Out ? val.Out->Clone().release() : nullptr }
 {
 }
 
@@ -245,6 +245,16 @@ FuncDef::FuncDef(FuncDef &&rval):
   In { std::move(rval.In) },
   Out { std::move(rval.Out) }
 {
+}
+
+FuncDef FuncDef::Clone() const {
+  ArgDefPtr in;
+  ArgDefPtr out;
+  if (In)
+    in = In->Clone();
+  if (Out)
+    out = Out->Clone();
+  return FuncDef { in, out };
 }
 
 bool FuncDef::operator==(const FuncDef &rhs) const {

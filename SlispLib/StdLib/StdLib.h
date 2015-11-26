@@ -75,13 +75,13 @@ class StdLib: public Library {
     static bool Help(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
 
     // Helpers
-    static bool PrintExpression(Interpreter &interpreter, ExpressionPtr &expr);
+    static bool PrintExpression(Interpreter &interpreter, ExpressionPtr &expr, std::ostream &out);
 
     template<class T>
-    static bool PrintLiteral(T *expr, char *wrapper = nullptr);
+    static bool PrintLiteral(T *expr, std::ostream &out, char *wrapper = nullptr);
 
-    static bool PrintSexp(Interpreter &interpreter, Sexp &sexp);
-    static bool PrintBool(bool expr);
+    static bool PrintSexp(Interpreter &interpreter, Sexp &sexp, std::ostream &out);
+    static bool PrintBool(bool expr, std::ostream &out);
 
     template<class F>
     static bool BinaryFunction(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args, F fn, const std::string &name);

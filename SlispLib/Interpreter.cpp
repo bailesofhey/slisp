@@ -76,6 +76,12 @@ void SymbolTable::ForEach(std::function<void(const std::string &, ExpressionPtr 
     fn(sym.first, sym.second);
 }
 
+size_t SymbolTable::GetCount() const {
+  int count = 0;
+  const_cast<SymbolTable*>(this)->ForEach([&count](const std::string &, ExpressionPtr &) { ++count; });
+  return count;
+}
+
 //=============================================================================
 
 Scope::Scope(SymbolTable &symbols):
@@ -149,7 +155,8 @@ SymbolTable& StackFrame::GetLocalSymbols() {
 
 //=============================================================================
 
-Interpreter::Interpreter():
+Interpreter::Interpreter(CommandInterface &cmdInterface):
+  CmdInterface { cmdInterface },
   DynamicSymbols {},
   StackFrames {},
   MainFunc {},
@@ -188,18 +195,19 @@ void Interpreter::PutDefaultFunction(Function &&func) {
   DynamicSymbols.PutSymbolFunction(DefaultSexp, std::move(func));
 }
 
-bool Interpreter::GetDefaultFunction(Function *func) {
+bool Interpreter::GetDefaultFunction(FunctionPtr &func) {
   ExpressionPtr symbol;
   if (DynamicSymbols.GetSymbol(DefaultSexp, symbol)) {
     if (auto sym = dynamic_cast<Function*>(symbol.get())) {
-      func = sym;
+      symbol.release();
+      func.reset(sym);
       return true;
     }
     else
       throw std::exception("Default function not a function");
   }
   else
-    throw std::exception("No default function");
+    return false;
 }
 
 const std::string Interpreter::GetDefaultSexp() const {
@@ -229,6 +237,10 @@ bool Interpreter::Evaluate(ExpressionPtr &expr) {
     return search->second(expr);
   else
     throw std::exception("unknown type: ");
+}
+
+CommandInterface& Interpreter::GetCommandInterface() {
+  return CmdInterface;
 }
 
 bool Interpreter::GetCurrFrameSymbol(const std::string &symbolName, ExpressionPtr &value) {
