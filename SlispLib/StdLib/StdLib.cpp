@@ -165,7 +165,7 @@ bool StdLib::Quit(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) 
 bool StdLib::Add(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
   auto currArg = args.begin();
   if (currArg != args.end()) {
-    if (interpreter.Evaluate(*currArg)) {
+    if (interpreter.EvaluatePartial(*currArg)) {
       auto &type = (*currArg)->Type();
       if (&type == &Number::TypeInstance)
         return AddNum(interpreter, expr, args);
@@ -319,7 +319,7 @@ bool StdLib::Map(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
       auto evalSexp = static_cast<Sexp*>(evalExpr.get());
       evalSexp->Args.push_back(fn->Clone());
       evalSexp->Args.push_back(item->Clone());
-      if (!interpreter.Evaluate(evalExpr))
+      if (!interpreter.EvaluatePartial(evalExpr))
         return interpreter.PushError(EvalError { 
           "map",
           "Failed to call " +  fn->ToString() + " on item " + std::to_string(i)
@@ -488,7 +488,7 @@ bool StdLib::Unquote(Interpreter &interpreter, ExpressionPtr &expr, ArgList &arg
   else
     toEvaluate = std::move(quoteExpr);
 
-  if (interpreter.Evaluate(toEvaluate)) {
+  if (interpreter.EvaluatePartial(toEvaluate)) {
     expr = std::move(toEvaluate);
     return true;
   }
@@ -508,7 +508,7 @@ bool StdLib::If(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
 
   auto cond = static_cast<Bool*>(condExpr.get());
   ExpressionPtr *branchExpr = cond->Value ? &trueExpr : &falseExpr;
-  if (interpreter.Evaluate(*branchExpr)) {
+  if (interpreter.EvaluatePartial(*branchExpr)) {
     expr = std::move(*branchExpr);
     return true;
   }
@@ -535,7 +535,7 @@ bool StdLib::Let(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
 
         auto varName = dynamic_cast<Symbol*>(varNameExpr.get());
         if (varName) {
-          if (interpreter.Evaluate(varValueExpr))
+          if (interpreter.EvaluatePartial(varValueExpr))
             scope.PutSymbol(varName->Value, varValueExpr);
           else
             return interpreter.PushError(EvalError { "let", "Failed to evaluate value for " + varName->Value } );
@@ -562,7 +562,7 @@ bool StdLib::Begin(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args)
     currCodeExpr = std::move(args.front());
     args.pop_front();
 
-    if (!interpreter.Evaluate(currCodeExpr))
+    if (!interpreter.EvaluatePartial(currCodeExpr))
       return interpreter.PushError(EvalError { "let", "Failed to evaluate let body" });
   }
 
@@ -633,13 +633,13 @@ bool StdLib::Def(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
   lambda->Args.push_back(std::move(args.front()));
   args.pop_front();
 
-  if (interpreter.Evaluate(lambdaExpr)) {
+  if (interpreter.EvaluatePartial(lambdaExpr)) {
     ExpressionPtr setExpr { new Sexp {} };
     auto set = static_cast<Sexp*>(setExpr.get());
     set->Args.push_back(ExpressionPtr { new Symbol { "set" } });
     set->Args.push_back(std::move(symbolExpr));
     set->Args.push_back(std::move(lambdaExpr)); 
-    if (interpreter.Evaluate(setExpr)) {
+    if (interpreter.EvaluatePartial(setExpr)) {
       expr = std::move(setExpr);
       return true;
     }
@@ -659,7 +659,7 @@ bool StdLib::Apply(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args)
   ExpressionPtr appArgsExpr { std::move(args.front()) };
   args.pop_front();
 
-  if (interpreter.Evaluate(appArgsExpr)) {
+  if (interpreter.EvaluatePartial(appArgsExpr)) {
     ExpressionPtr args;
     if (auto quote = dynamic_cast<Quote*>(appArgsExpr.get())) {
       args = std::move(quote->Value);
@@ -674,7 +674,7 @@ bool StdLib::Apply(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args)
         appArgsSexp->Args.pop_front();
       }
 
-      if (interpreter.Evaluate(applicationExpr)) {
+      if (interpreter.EvaluatePartial(applicationExpr)) {
         expr = std::move(applicationExpr);
         return true;
       }

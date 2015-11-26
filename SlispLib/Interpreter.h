@@ -75,6 +75,7 @@ class Interpreter {
     explicit Interpreter(CommandInterface &commandInterface);
     
     bool Evaluate(ExpressionPtr &expr);
+    bool EvaluatePartial(ExpressionPtr &expr);
 
     bool PushError(const EvalError &error);
     std::list<EvalError> GetErrors() const;

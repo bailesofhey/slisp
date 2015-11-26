@@ -42,7 +42,6 @@ int main(int argc, char **argv) {
           for (auto &error : errors)
             cout << error.Where << ": " << error.What << endl;
         }
-        interpreter.ClearErrors();
       }
       else
         cout << "Parse Error: No Expression Tree" << endl;

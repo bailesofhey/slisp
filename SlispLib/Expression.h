@@ -141,6 +141,7 @@ using ArgList = std::list<ExpressionPtr>;
 class ArgListHelper {
   public:
     static bool AreEqual(const ArgList &lhs, const ArgList &rhs);
+    static void CopyTo(const ArgList &src, ArgList &dst);
 };
 
 struct Sexp: public Expression {

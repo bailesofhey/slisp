@@ -6,15 +6,17 @@
 
 class TestCommandInterface: public CommandInterface {
   public:
-    std::string Input;  
+    std::string Input;
+    std::string Output;
+    std::string Error;
     bool Result;
 
     TestCommandInterface(): Result(true)                    {}
     virtual ~TestCommandInterface()                         {}
     virtual bool ReadInputLine(std::string &input)          { input = Input; return Result; }
     virtual bool ReadContinuedInputLine(std::string &input) { return ReadInputLine(input); }
-    virtual bool WriteOutputLine(const std::string &output) { return Result; }
-    virtual bool WriteError(const std::string &error)       { return Result; }
+    virtual bool WriteOutputLine(const std::string &output) { Output = output; return Result; }
+    virtual bool WriteError(const std::string &error)       { Error = error; return Result; }
 };
 
 class TestTokenizer: public ITokenizer {

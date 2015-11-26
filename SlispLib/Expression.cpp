@@ -322,6 +322,12 @@ bool ArgListHelper::AreEqual(const ArgList &lhs, const ArgList &rhs) {
   return false;
 }
 
+void ArgListHelper::CopyTo(const ArgList &src, ArgList &dst) {
+  for (auto &arg : src) {
+    dst.push_back(arg->Clone());
+  }
+}
+
 //=============================================================================
 
 const TypeInfo Sexp::TypeInstance("sexp");

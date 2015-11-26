@@ -230,13 +230,18 @@ void Interpreter::PopStackFrame() {
   StackFrames.pop();
 }
 
-bool Interpreter::Evaluate(ExpressionPtr &expr) {
+bool Interpreter::EvaluatePartial(ExpressionPtr &expr) {
   const TypeInfo *type = &(expr->Type());
   auto search = TypeReducers.find(type);
   if (search != TypeReducers.end())
     return search->second(expr);
   else
     throw std::exception("unknown type: ");
+}
+
+bool Interpreter::Evaluate(ExpressionPtr &expr) {
+  ClearErrors();
+  return EvaluatePartial(expr);
 }
 
 CommandInterface& Interpreter::GetCommandInterface() {
@@ -281,7 +286,7 @@ bool Interpreter::ReduceSymbol(ExpressionPtr &expr) {
   auto symbol = static_cast<Symbol*>(expr.get());
   ExpressionPtr value;
   if (GetCurrFrameSymbol(symbol->Value, value) && value) {
-    if (Evaluate(value) && value) {
+    if (EvaluatePartial(value) && value) {
       if (auto copy = value->Clone()) {
         if (copy) {
           expr = std::move(copy);
@@ -306,7 +311,7 @@ bool Interpreter::ReduceSexp(ExpressionPtr &expr) {
   if (!args.empty()) {
     ExpressionPtr firstArg = std::move(args.front());
     args.pop_front();
-    if (Evaluate(firstArg)) {
+    if (EvaluatePartial(firstArg)) {
       args.push_front(std::move(firstArg));
       auto &funcExpr = args.front();
       if (auto *func = dynamic_cast<Function*>(funcExpr.get()))
@@ -326,7 +331,7 @@ bool Interpreter::ReduceSexp(ExpressionPtr &expr) {
 bool Interpreter::ReduceSexpFunction(ExpressionPtr &expr, Function &function) {
   auto &funcDef = function.Def;
   std::string error;
-  auto evaluator = std::bind(&Interpreter::Evaluate, this, _1);
+  auto evaluator = std::bind(&Interpreter::EvaluatePartial, this, _1);
   ExpressionPtr funcCopy = function.Clone();
   auto funcToCall = static_cast<Function*>(funcCopy.get());
   if (funcDef.ValidateArgs(evaluator, expr, error)) {
@@ -357,7 +362,7 @@ bool Interpreter::ReduceSexpInterpretedFunction(ExpressionPtr &expr, Interpreted
   auto endFormal = end(function.Args);
   while (currArg != endArg && currFormal != endFormal) {
     auto sym = static_cast<Symbol*>((*currFormal).get());
-    if (Evaluate(*currArg)) {
+    if (EvaluatePartial(*currArg)) {
       newFrame.PutLocalSymbol(sym->Value, std::move(*currArg));
       ++currArg;
       ++currFormal;
@@ -374,7 +379,7 @@ bool Interpreter::ReduceSexpInterpretedFunction(ExpressionPtr &expr, Interpreted
     return PushError(EvalError { ErrorWhere, "not enough args passed to function" });
   else {
     ExpressionPtr codeCopy = function.Code.Value->Clone();
-    if (Evaluate(codeCopy)) {
+    if (EvaluatePartial(codeCopy)) {
       expr = std::move(codeCopy);
       return true;
     }

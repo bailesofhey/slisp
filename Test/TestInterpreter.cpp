@@ -457,42 +457,104 @@ TEST_F(InterpreterTest, TestStackFrames) {
   ASSERT_EQ(initialLocalCount, getCurrLocalCount());
 }
 
-TEST_F(InterpreterTest, DISABLED_TestEvaluate_Bool) {
-// make sure "true" shows up in output
+class EvaluationTest: public InterpreterTest {
+  protected:
+    static ExpressionPtr LastResult;
+    static ArgList       LastArgs;
+    static bool          Result;
+
+    EvaluationTest():
+      InterpreterTest()
+    {
+      EvaluationTest::Result = true;
+
+      Interpreter_.PutDefaultFunction(CompiledFunction {
+        FuncDef { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() },
+        &DefaultFunction
+      }); 
+    }
+
+    static bool DefaultFunction(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+      LastResult = std::move(expr);
+      LastArgs.clear();
+      ArgListHelper::CopyTo(args, LastArgs);
+      interpreter.GetCommandInterface().WriteOutputLine(LastArgs.front()->ToString());
+      return Result;
+    }
+};
+
+ExpressionPtr EvaluationTest::LastResult;
+ArgList EvaluationTest::LastArgs;
+bool EvaluationTest::Result;
+
+TEST_F(EvaluationTest, TestLiteral) {
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Bool(true) }));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Number(42) }));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new String("hello, world!") }));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Quote(ExpressionPtr { new Bool(true) })}));
+
+  FunctionPtr defaultFn;
+  Interpreter_.GetDefaultFunction(defaultFn);
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { defaultFn.release() }));
+
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new CompiledFunction() }));
+  
+  ExpressionPtr code {};
+  ArgList args {};
+  ExpressionPtr e { new InterpretedFunction(
+    FuncDef { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() },
+    std::move(code),
+    std::move(args)
+  ) };
+  ASSERT_TRUE(Interpreter_.Evaluate(e));
+  ASSERT_EQ(0, Interpreter_.GetErrors().size());
 }
 
-TEST_F(InterpreterTest, DISABLED_TestEvaluate_Number) {
-// make sure "42" shows up in output
+TEST_F(EvaluationTest, TestSymbol) {
+  ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { new Symbol("b") }));
+  ASSERT_GT(Interpreter_.GetErrors().size(), 0U);
+
+  auto &currStackFrame = Interpreter_.GetCurrentStackFrame();
+  currStackFrame.PutLocalSymbol("b", ExpressionPtr { new Bool(true) });
+  currStackFrame.PutLocalSymbol("n", ExpressionPtr { new Number(42) });
+  currStackFrame.PutLocalSymbol("s", ExpressionPtr { new String("foo") });
+  currStackFrame.PutLocalSymbol("f", ExpressionPtr { new CompiledFunction() });
+  currStackFrame.PutLocalSymbol("q", ExpressionPtr { new Quote(ExpressionPtr { new Bool(true) })});
+
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Symbol("b") }));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Symbol("n") }));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Symbol("s") }));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Symbol("f") }));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Symbol("q") }));
+  ASSERT_EQ(Interpreter_.GetErrors().size(), 0);
 }
 
-TEST_F(InterpreterTest, DISABLED_TestEvaluate_String) {
- // empty string
- // line strings
- // many lines
- // blank lines
- // lots of whitespace
+TEST_F(EvaluationTest, TestSexpDefaultFunction) {
+  ExpressionPtr trueValue { new Bool(true) },
+                falseValue { new Bool(false) };
+  Interpreter_.Evaluate(ExpressionPtr { new Sexp({
+    ExpressionPtr { new Symbol(Interpreter_.GetDefaultSexp()) },
+    falseValue->Clone()
+  })});
+  ASSERT_TRUE(CommandInterface.Output.find("0") != std::string::npos);
+  ASSERT_EQ(*falseValue, *EvaluationTest::LastArgs.front());
+
+  Interpreter_.Evaluate(ExpressionPtr { new Sexp({
+    ExpressionPtr { new Symbol(Interpreter_.GetDefaultSexp()) },
+    trueValue->Clone()
+  })});
+  ASSERT_TRUE(CommandInterface.Output.find("1") != std::string::npos);
+  ASSERT_EQ(*trueValue, *EvaluationTest::LastArgs.front());
 }
 
-TEST_F(InterpreterTest, DISABLED_TestEvaluate_Function) {
-// Function -> CompiledFunction
-// Function -> InterpretedFunction
-}
-
-TEST_F(InterpreterTest, DISABLED_TestEvaluate_Symbol) {
-// symbols that exist
-// symbols that do not exist
-// Symbol -> Bool
-// Symbol -> Number
-// Symbol -> String
-// Symbol -> Function
-}
-
-TEST_F(InterpreterTest, DISABLED_TestEvaluate_Quote) {
+TEST_F(EvaluationTest, TestSexpCompiledFunction) {
+// Make sure function is called
 // Quote -> empty
 // Quote -> Bool
 // Quote -> Number
 // Quote -> String
 // Quote -> Function
+// Quote -> Symbol -> undefined
 // Quote -> Symbol -> Bool
 // Quote -> Symbol -> Number
 // Quote -> Symbol -> String
@@ -502,21 +564,18 @@ TEST_F(InterpreterTest, DISABLED_TestEvaluate_Quote) {
 // Quote -> Quote -> Number
 // Quote -> Quote -> String
 // Quote -> Quote -> Function
+// Quote -> Quote -> Symbol -> undefined
 // Quote -> Quote -> Symbol -> Bool
 // Quote -> Quote -> Symbol -> Number
 // Quote -> Quote -> Symbol -> String
 // Quote -> Quote -> Symbol -> Function
 }
 
-TEST_F(InterpreterTest, DISABLED_TestEvaluate_SexpCompiledFunction) {
+TEST_F(EvaluationTest, DISABLED_TestSexpInterpretedFunction) {
 // Make sure function is called
 }
 
-TEST_F(InterpreterTest, DISABLED_TestEvaluate_SexpInterpretedFunction) {
-// Make sure function is called
-}
-
-TEST_F(InterpreterTest, DISABLED_TestEvaluate_SexpList) {
+TEST_F(EvaluationTest, DISABLED_TestSexpList) {
 // ()
 // (true 1 "string" +) - make sure everything shows up
 }
