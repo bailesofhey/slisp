@@ -47,6 +47,7 @@
   <ItemGroup>
     <ClCompile Include="CommandInterface.cpp" />
     <ClCompile Include="ConsoleInterface.cpp" />
+    <ClCompile Include="Controller.cpp" />
     <ClCompile Include="Expression.cpp" />
     <ClCompile Include="FunctionDef.cpp" />
     <ClCompile Include="Interpreter.cpp" />
@@ -58,6 +59,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConsoleInterface.h" />
+    <ClInclude Include="Controller.h" />
     <ClInclude Include="Expression.h" />
     <ClInclude Include="FunctionDef.h" />
     <ClInclude Include="Interpreter.h" />

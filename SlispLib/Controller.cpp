@@ -1,0 +1,69 @@
+#include "Controller.h"
+
+Controller::Controller():
+  CmdInterface(),
+  Interpreter_(CmdInterface),
+  Tokenizer_(),
+  Parser_(CmdInterface, Tokenizer_, Interpreter_.GetDefaultSexp()),
+  Lib()
+{
+  Lib.Load(Interpreter_);
+}
+
+void Controller::Run() {
+  CmdInterface.SetInput();
+  REPL();
+}
+
+void Controller::Run(std::istream &in) {
+  CmdInterface.SetInput(in);
+  REPL();
+}
+
+void Controller::Run(const std::string &code) {
+}
+
+bool Controller::RunFile(const std::string &inPath) {
+  return false;
+}
+
+void Controller::SetOutput() {
+  CmdInterface.SetOutput();
+}
+
+void Controller::SetOutput(std::ostream &out) {
+  CmdInterface.SetOutput(out);
+}
+
+bool Controller::SetOutputFile(const std::string &outPath) {
+  return false;
+}
+
+void Controller::REPL() {
+  while (!Interpreter_.StopRequested())
+    RunSingle();
+}
+
+void Controller::RunSingle() {
+  std::stringstream ss;
+  if (Parser_.Parse()) {
+    auto &exprTree = Parser_.ExpressionTree();
+    if (exprTree) {
+      ExpressionPtr root { exprTree.release() };
+      if (!Interpreter_.Evaluate(root)) {
+        auto errors = Interpreter_.GetErrors();
+        for (auto &error : errors) {
+          ss << error.Where << ": " << error.What << std::endl;
+        }
+      }
+    }
+    else
+      ss << "Parse Error: No Expression Tree" << std::endl;
+  }
+  else
+    ss << "Parse Error: " << Parser_.Error() << std::endl;
+
+  if (!ss.str().empty()) {
+    CmdInterface.WriteError(ss.str());
+  }
+}

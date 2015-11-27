@@ -54,9 +54,9 @@ struct Bool: public Literal {
 
   explicit Bool();
   explicit Bool(bool value);
-  virtual ExpressionPtr Clone() const;
-  virtual const std::string ToString() const;
-  virtual bool operator==(const Expression &rhs) const;
+  virtual ExpressionPtr Clone() const override;
+  virtual const std::string ToString() const override;
+  virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Bool &rhs) const;
   bool operator!=(const Bool &rhs) const;
   bool operator<(const Bool &rhs) const;
@@ -73,9 +73,9 @@ struct Number: public Literal {
 
   explicit Number();
   explicit Number(int64_t value);
-  virtual ExpressionPtr Clone() const;
-  virtual const std::string ToString() const;
-  virtual bool operator==(const Expression &rhs) const;
+  virtual ExpressionPtr Clone() const override;
+  virtual const std::string ToString() const override;
+  virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Number &rhs) const;
   bool operator!=(const Number &rhs) const;
   bool operator<(const Number &rhs) const;
@@ -92,9 +92,9 @@ struct String: public Literal {
 
   explicit String();
   explicit String(const std::string& value);
-  virtual ExpressionPtr Clone() const;
-  virtual const std::string ToString() const;
-  virtual bool operator==(const Expression &rhs) const;
+  virtual ExpressionPtr Clone() const override;
+  virtual const std::string ToString() const override;
+  virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const String &rhs) const;
   bool operator!=(const String &rhs) const;
   bool operator<(const String &rhs) const;
@@ -110,9 +110,9 @@ struct Quote: public Literal {
   ExpressionPtr Value;
 
   explicit Quote(ExpressionPtr &&expr);
-  virtual ExpressionPtr Clone() const;
-  virtual const std::string ToString() const;
-  virtual bool operator==(const Expression &rhs) const;
+  virtual ExpressionPtr Clone() const override;
+  virtual const std::string ToString() const override;
+  virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Quote &rhs) const;
   bool operator!=(const Quote &rhs) const;
 };
@@ -124,9 +124,9 @@ struct Symbol: public Expression {
   std::string Value;
 
   explicit Symbol(const std::string& value);
-  virtual ExpressionPtr Clone() const;
-  virtual const std::string ToString() const;
-  virtual bool operator==(const Expression &rhs) const;
+  virtual ExpressionPtr Clone() const override;
+  virtual const std::string ToString() const override;
+  virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Symbol& rhs) const;
   bool operator!=(const Symbol& rhs) const;
   bool operator<(const Symbol &rhs) const;
@@ -152,9 +152,9 @@ struct Sexp: public Expression {
   explicit Sexp();
   explicit Sexp(ArgList &&args);
   explicit Sexp(std::initializer_list<ExpressionPtr> &&args);
-  virtual ExpressionPtr Clone() const;
-  virtual const std::string ToString() const;
-  virtual bool operator==(const Expression &rhs) const;
+  virtual ExpressionPtr Clone() const override;
+  virtual const std::string ToString() const override;
+  virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Sexp &rhs) const;
   bool operator!=(const Sexp &rhs) const;
 };

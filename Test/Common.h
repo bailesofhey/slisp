@@ -1,3 +1,5 @@
+#pragma once
+
 #include "gtest\gtest.h"
 
 #include "Parser.h"
@@ -10,13 +12,16 @@ class TestCommandInterface: public CommandInterface {
     std::string Output;
     std::string Error;
     bool Result;
+    bool HasMore_;
 
-    TestCommandInterface(): Result(true)                    {}
-    virtual ~TestCommandInterface()                         {}
-    virtual bool ReadInputLine(std::string &input)          { input = Input; return Result; }
-    virtual bool ReadContinuedInputLine(std::string &input) { return ReadInputLine(input); }
-    virtual bool WriteOutputLine(const std::string &output) { Output = output; return Result; }
-    virtual bool WriteError(const std::string &error)       { Error = error; return Result; }
+    TestCommandInterface(): Result(true)                             { Reset(); }
+    virtual ~TestCommandInterface() override                         {}
+    virtual void Reset()                                             { HasMore_ = true;}
+    virtual bool HasMore() const override                            { return HasMore_; }
+    virtual bool ReadInputLine(std::string &input) override          {input = Input; return Result; }
+    virtual bool ReadContinuedInputLine(std::string &input) override { return ReadInputLine(input); }
+    virtual bool WriteOutputLine(const std::string &output) override { Output = output; return Result; }
+    virtual bool WriteError(const std::string &error)       override { Error = error; return Result; }
 };
 
 class TestTokenizer: public ITokenizer {
@@ -24,9 +29,9 @@ class TestTokenizer: public ITokenizer {
     std::list<Token> Tokens;
     Token CurrToken;
 
-    virtual void SetLine(const std::string& line) {}
+    virtual void SetLine(const std::string& line) override {}
 
-    virtual ITokenizer& operator++() {
+    virtual ITokenizer& operator++() override {
       if (Tokens.empty())
         CurrToken = Token(TokenTypes::NONE, "");
       else {
@@ -36,5 +41,5 @@ class TestTokenizer: public ITokenizer {
       return *this;
     }
 
-    virtual Token& operator*() { return CurrToken; }
+    virtual Token& operator*() override { return CurrToken; }
 };

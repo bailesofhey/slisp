@@ -13,14 +13,23 @@ class ConsoleInterface: public CommandInterface {
     ConsoleInterface& operator=(const ConsoleInterface &) = delete;
     ConsoleInterface& operator=(ConsoleInterface &&)      = delete;
 
-    virtual bool ReadInputLine(std::string &input);
-    virtual bool ReadContinuedInputLine(std::string &input);
-    virtual bool WriteOutputLine(const std::string &output);
-    virtual bool WriteError(const std::string &error);
+    virtual bool HasMore() const override;
+    virtual void Reset() override;
+
+    virtual bool ReadInputLine(std::string &input) override;
+    virtual bool ReadContinuedInputLine(std::string &input) override;
+    virtual bool WriteOutputLine(const std::string &output) override;
+    virtual bool WriteError(const std::string &error) override;
+
+    void SetInput();
+    void SetInput(std::istream &in);
+    void SetOutput();
+    void SetOutput(std::ostream &out);
 
   private:
-    std::istream &In;
-    std::ostream &Out;
+    std::istream *In;
+    std::ostream *Out;
+    bool HasMore_;
 
     bool ReadLine(const std::string &prefix, std::string &input);
 };

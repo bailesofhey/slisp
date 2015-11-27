@@ -7,8 +7,8 @@
 
 class StdLib: public Library {
   public:
-    virtual void Load(Interpreter &interpreter);
-    virtual void UnLoad(Interpreter &interpreter);
+    virtual void Load(Interpreter &interpreter) override;
+    virtual void UnLoad(Interpreter &interpreter) override;
 
   private:
     // Interpreter

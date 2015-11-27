@@ -9,8 +9,17 @@
     <ClCompile Include="TestFuncDef.cpp" />
     <ClCompile Include="TestConsoleInterface.cpp" />
     <ClCompile Include="TestParser.cpp" />
+    <ClCompile Include="TestStdLib.cpp">
+      <Filter>StdLib</Filter>
+    </ClCompile>
+    <ClCompile Include="TestController.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="StdLib">
+      <UniqueIdentifier>{ab805780-e507-495d-baf4-3949518791d9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>

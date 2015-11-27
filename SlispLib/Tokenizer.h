@@ -16,9 +16,9 @@ class ITokenizer {
 
 class Tokenizer: public ITokenizer {
   public:
-    virtual void SetLine(const std::string& line);
-    virtual ITokenizer& operator++();
-    virtual Token& operator*();
+    virtual void SetLine(const std::string& line) override;
+    virtual ITokenizer& operator++() override;
+    virtual Token& operator*() override;
 
     private:
       void SkipWhitespace(char &currChar);

@@ -23,19 +23,31 @@ void TestReadFn(ReadFn readFn) {
   in << "this is line number 1" << std::endl
      << "Line #2" << std::endl
      << std::endl;
+  ASSERT_FALSE(console.HasMore());
+  console.Reset();
+  ASSERT_TRUE(console.HasMore());
   ASSERT_NO_FATAL_FAILURE(TestSingleRead(console, out, readFn, "this is line number 1"));
   ASSERT_NO_FATAL_FAILURE(TestSingleRead(console, out, readFn, "Line #2"));
   ASSERT_NO_FATAL_FAILURE(TestSingleRead(console, out, readFn, ""));
   ASSERT_NO_FATAL_FAILURE(TestSingleRead(console, out, readFn, ""));
   ASSERT_NO_FATAL_FAILURE(TestSingleRead(console, out, readFn, ""));
+  ASSERT_FALSE(console.HasMore());
 
   in << "Another first line" << std::endl;
+  ASSERT_FALSE(console.HasMore());
+  console.Reset();
+  ASSERT_TRUE(console.HasMore());
   ASSERT_NO_FATAL_FAILURE(TestSingleRead(console, out, readFn, "Another first line"));
   ASSERT_NO_FATAL_FAILURE(TestSingleRead(console, out, readFn, ""));
+  ASSERT_FALSE(console.HasMore());
 
   in << "Incomplete line";
+  ASSERT_FALSE(console.HasMore());
+  console.Reset();
+  ASSERT_TRUE(console.HasMore());
   ASSERT_NO_FATAL_FAILURE(TestSingleRead(console, out, readFn, "Incomplete line"));
   ASSERT_NO_FATAL_FAILURE(TestSingleRead(console, out, readFn, ""));
+  ASSERT_FALSE(console.HasMore());
 }
 
 TEST(ConsoleInterface, TestReadInputLine) {
@@ -80,4 +92,34 @@ TEST(ConsoleInterface, TestWriteOutputLine) {
 
 TEST(ConsoleInterface, TestWriteError) {
   TestWriteFn(&ConsoleInterface::WriteError);
+}
+
+TEST(ConsoleInterface, TestSetInputOutput) {
+  std::stringstream in1,
+                    out1,
+                    in2,
+                    out2;
+  std::string       line;
+  ConsoleInterface  console(in1, out1);
+  in1 << "in1" << std::endl;
+
+  ASSERT_TRUE(console.ReadInputLine(line));
+  ASSERT_NE(line.find("in1"), std::string::npos);
+  ASSERT_TRUE(console.WriteOutputLine("out1"));
+  ASSERT_NE(out1.str().find("out1"), std::string::npos);
+  ASSERT_TRUE(console.ReadInputLine(line));
+  ASSERT_TRUE(line.empty());
+  ASSERT_FALSE(console.HasMore());
+
+  console.SetInput(in2);
+  ASSERT_TRUE(console.HasMore());
+  console.SetOutput(out2);
+  in2 << "in2" << std::endl;
+  ASSERT_TRUE(console.ReadInputLine(line));
+  ASSERT_NE(line.find("in2"), std::string::npos);
+  ASSERT_TRUE(console.WriteOutputLine("out2"));
+  ASSERT_NE(out2.str().find("out2"), std::string::npos);
+  ASSERT_TRUE(console.ReadInputLine(line));
+  ASSERT_TRUE(line.empty());
+  ASSERT_FALSE(console.HasMore());
 }

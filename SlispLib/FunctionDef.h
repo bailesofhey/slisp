@@ -59,16 +59,16 @@ class FuncDef {
         static const int ANY_ARGS = -1;
 
         explicit VarArgDef(const TypeInfo& type, int nargs);
-        virtual ArgDefPtr Clone() const;
-        virtual const std::string ToString() const;
-        virtual bool operator==(const ArgDef &rhs) const;
+        virtual ArgDefPtr Clone() const override;
+        virtual const std::string ToString() const override;
+        virtual bool operator==(const ArgDef &rhs) const override;
         bool operator==(const VarArgDef &rhs) const;
 
       private:
         const TypeInfo& Type;
         int NArgs;
 
-        virtual bool ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const;
+        virtual bool ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const override;
 
         bool ValidateArgCount(ArgList &args, std::string &error) const;
         bool ValidateArgTypes(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const;
@@ -77,15 +77,15 @@ class FuncDef {
     class ListArgDef: public ArgDef {
       public:
         explicit ListArgDef(std::initializer_list<const TypeInfo*> &&types);
-        virtual ArgDefPtr Clone() const;
-        virtual const std::string ToString() const;
-        virtual bool operator==(const ArgDef &rhs) const;
+        virtual ArgDefPtr Clone() const override;
+        virtual const std::string ToString() const override;
+        virtual bool operator==(const ArgDef &rhs) const override;
         bool operator==(const ListArgDef &rhs) const;
 
       private:
         std::vector<const TypeInfo*> Types;
 
-        virtual bool ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const;
+        virtual bool ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const override;
     };
 
     ArgDefPtr In;
@@ -109,9 +109,9 @@ struct CompiledFunction: public Function {
 
   explicit CompiledFunction();
   explicit CompiledFunction(FuncDef &&def, SlipFunction fn);
-  ExpressionPtr Clone() const;
-  const std::string ToString() const;
-  virtual bool operator==(const Expression &rhs) const;
+  virtual ExpressionPtr Clone() const override;
+  virtual const std::string ToString() const override;
+  virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const CompiledFunction &rhs) const;
   bool operator!=(const CompiledFunction &rhs) const;
   CompiledFunction& operator=(CompiledFunction rhs);
@@ -126,9 +126,9 @@ struct InterpretedFunction: public Function {
   SymbolTableType Closure;
 
   explicit InterpretedFunction(FuncDef &&def, ExpressionPtr &&code, ArgList &&args);
-  ExpressionPtr Clone() const;
-  const std::string ToString() const;
-  virtual bool operator==(const Expression &rhs) const;
+  virtual ExpressionPtr Clone() const override;
+  virtual const std::string ToString() const override;
+  virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const InterpretedFunction &rhs) const;
   bool operator!=(const InterpretedFunction &rhs) const;
 };

@@ -189,7 +189,7 @@ void Interpreter::Stop() {
 }
 
 bool Interpreter::StopRequested() const {
-  return StopRequested_;
+  return StopRequested_ || !CmdInterface.HasMore();
 }
 
 void Interpreter::PutDefaultFunction(Function &&func) {
