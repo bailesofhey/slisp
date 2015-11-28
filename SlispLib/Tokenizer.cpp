@@ -36,6 +36,7 @@ ITokenizer& Tokenizer::operator++() {
   }
   else
     TokenizeNone();
+
   return *this;
 }
 
@@ -51,11 +52,21 @@ void Tokenizer::SkipWhitespace(char &currChar) {
 }
 
 void Tokenizer::TokenizeNumber(char &currChar) {
+  bool isFirst = true;
   TokenizeSequence(TokenTypes::NUMBER, currChar, std::isdigit);
 }
 
 void Tokenizer::TokenizeSymbol(char &currChar) {
   TokenizeSequence(TokenTypes::SYMBOL, currChar, SymbolPredicate);
+
+  size_t len = CurrToken.Value.length();
+  if (len > 1 && CurrToken.Value[0] == '-') {
+    for (size_t i = 1; i < len; ++i) {
+      if (!std::isdigit(CurrToken.Value[i]))
+        return;
+    }
+    CurrToken.Type = TokenTypes::NUMBER;
+  }
 }
 
 void Tokenizer::TokenizeString(char &currChar) {
@@ -94,7 +105,7 @@ template <class F, class G>
 void Tokenizer::TokenizeSequence(TokenTypes tokenType, char &currChar, F pred, G postSeqFn) {
   while (!Stream.eof() && pred(currChar)) {
     CurrToken.Value += currChar;
-    Stream.get(currChar);
+    currChar = Stream.get();
   }
 
   postSeqFn(currChar);

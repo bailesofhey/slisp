@@ -69,6 +69,8 @@ TEST_F(ParserTest, TestSingleNumber) {
   ASSERT_PARSE({ Token(TokenTypes::NUMBER, "000000000042") }, { new Number(42) });
   ASSERT_PARSE({ Token(TokenTypes::NUMBER, "00000000000000000000000000000000000000000042") }, { new Number(42) });
 
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "-3") }, { new Number(-3) });
+
   ASSERT_NOPARSE({ Token(TokenTypes::NUMBER, "") });
   ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0") }, { new Number(0) });
   ASSERT_PARSE({ Token(TokenTypes::NUMBER, "000") }, { new Number(0) });

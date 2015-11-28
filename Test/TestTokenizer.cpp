@@ -66,6 +66,7 @@ TEST(Tokenizer, TestNumber) {
     { "3", { Token(TokenTypes::NUMBER, "3") } },
     { "03", { Token(TokenTypes::NUMBER, "03") } },
     { "1234567890", { Token(TokenTypes::NUMBER, "1234567890") } },
+    { "-42", { Token(TokenTypes::NUMBER, "-42") } },
 
     { "   123   ", { Token(TokenTypes::NUMBER, "123") } },
     { " 1 23  345 ", { Token(TokenTypes::NUMBER, "1"), Token(TokenTypes::NUMBER, "23"), Token(TokenTypes::NUMBER, "345") } },

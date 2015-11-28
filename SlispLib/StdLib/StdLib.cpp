@@ -32,7 +32,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   // Generic
 
-  symbols.PutSymbolFunction("+", &StdLib::Add, FuncDef { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction("+", &StdLib::Add, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
 
   // Numerical
 
@@ -180,7 +180,7 @@ bool StdLib::Add(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
         return TypeError(interpreter, "+", "string or number", *currArg);
     }
     else
-      return interpreter.PushError(EvalError { "+", "Failed to evaulate first arg" });
+      return interpreter.PushError(EvalError { "+", "Failed to evaluate first arg" });
   }
   else
     return interpreter.PushError(EvalError { "+", "Expected at least one argument" });
@@ -219,14 +219,33 @@ bool StdLib::Mult(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) 
   return BinaryFunction(interpreter, expr, args, fn, "*");
 }
 
+bool CheckDivideByZero(const std::string &name, Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+  int argNum = 0;
+  for (auto &arg : args) {
+    if (argNum) {
+      auto *num = dynamic_cast<Number*>(arg.get());
+      if (num && num->Value == 0)
+        return interpreter.PushError(EvalError { name, "Divide by zero" });
+    }
+    ++argNum;
+  }
+  return true;
+}
+
 bool StdLib::Div(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  auto fn = [](int64_t a, int64_t b) { return a / b; };
-  return BinaryFunction(interpreter, expr, args, fn, "*");
+  if (CheckDivideByZero("/", interpreter, expr, args)) {
+    auto fn = [](int64_t a, int64_t b) { return a / b; };
+    return BinaryFunction(interpreter, expr, args, fn, "/");
+  }
+  return false;
 }
 
 bool StdLib::Mod(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  auto fn = [](int64_t a, int64_t b) { return a % b; };
-  return BinaryFunction(interpreter, expr, args, fn, "%");
+  if (CheckDivideByZero("%", interpreter, expr, args)) {
+    auto fn = [](int64_t a, int64_t b) { return a % b; };
+    return BinaryFunction(interpreter, expr, args, fn, "%");
+  }
+  return false;
 }
 
 // Bitwise Functions
@@ -868,7 +887,7 @@ bool StdLib::PredicateHelper(const std::string &name, Interpreter &interpreter, 
 }
 
 void StdLib::RegisterBinaryFunction(SymbolTable &symbolTable, const std::string& name, SlipFunction fn) {
-  symbolTable.PutSymbolFunction(name, fn, FuncDef { FuncDef::AnyArgs(Number::TypeInstance), FuncDef::OneArg(Number::TypeInstance) });
+  symbolTable.PutSymbolFunction(name, fn, FuncDef { FuncDef::AtleastOneArg(Number::TypeInstance), FuncDef::OneArg(Number::TypeInstance) });
 }
 
 void StdLib::RegisterComparator(SymbolTable &symbolTable, const std::string& name, SlipFunction fn) {

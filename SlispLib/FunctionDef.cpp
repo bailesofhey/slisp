@@ -67,12 +67,25 @@ bool ArgDef::IsLiteral(const TypeInfo &type) {
 }
 
 bool ArgDef::CheckArgCount(int expected, ArgList &args, std::string &error) const {
+  return CheckArgCount(expected, expected, args, error);
+}
+
+bool ArgDef::CheckArgCount(int expectedMin, int expectedMax, ArgList &args, std::string &error) const {
   int actualArgCount = args.size();
-  int expectedArgCount = expected;
-  if (actualArgCount == expectedArgCount)
+  if ((expectedMin == ANY_ARGS || actualArgCount >= expectedMin) &&
+      (expectedMax == ANY_ARGS || actualArgCount <= expectedMax))
     return true;
   else {
-    error = "Expected " + std::to_string(expectedArgCount) + " args, got " + std::to_string(actualArgCount);
+    std::stringstream ss;
+    ss << "Expected ";
+    if (expectedMin == expectedMax)
+      ss << std::to_string(expectedMin);
+    else if (expectedMax == ANY_ARGS)
+      ss << "at least " << std::to_string(expectedMin);
+    else
+      ss << "between " << std::to_string(expectedMin) << " and " << std::to_string(expectedMax);
+    ss << " args, got " + std::to_string(actualArgCount);
+    error = ss.str();
     return false;
   }
 }
@@ -94,10 +107,16 @@ bool ArgDef::CheckArg(ExpressionEvaluator evaluator, ExpressionPtr &arg, const T
 
 //=============================================================================
 
-FuncDef::VarArgDef::VarArgDef(const TypeInfo& type, int nargs):
+FuncDef::VarArgDef::VarArgDef(const TypeInfo &type, int nArgs):
+  VarArgDef(type, nArgs, nArgs)
+{
+}
+
+FuncDef::VarArgDef::VarArgDef(const TypeInfo &type, int minArgs, int maxArgs):
   ArgDef { },
   Type { type },
-  NArgs { nargs }
+  MinArgs { minArgs },
+  MaxArgs { maxArgs }
 {
 }
 
@@ -106,14 +125,23 @@ ArgDefPtr FuncDef::VarArgDef::Clone() const {
 }
 
 const std::string FuncDef::VarArgDef::ToString() const {
-  if (NArgs == NO_ARGS)
+  if (IsAnyArgs())
     return "";
-  else if (NArgs == ANY_ARGS) 
-    return " " + Type.TypeName + " ..";
   else {
     std::stringstream ss;
-    for (int i = 0; i < NArgs; ++i)
+    for (int i = 0; i < MinArgs; ++i)
       ss << " " << Type.TypeName;
+    
+    if (MaxArgs == ANY_ARGS) {
+      if (ss.str().empty())
+        ss << " " << Type.TypeName;
+      ss << " ..";
+    }
+    else if (MaxArgs > MinArgs) {
+      ss << " |";
+      for (int i = 0; i < MaxArgs; ++i)
+        ss << " " << Type.TypeName;
+    }
     return ss.str();
   }
 }
@@ -125,23 +153,24 @@ bool FuncDef::VarArgDef::operator==(const ArgDef &rhs) const {
 
 bool FuncDef::VarArgDef::operator==(const VarArgDef &rhs) const {
   return &Type == &rhs.Type
-      && NArgs == rhs.NArgs;
+      && MinArgs == rhs.MinArgs
+      && MaxArgs == rhs.MaxArgs;
 }
 
 bool FuncDef::VarArgDef::ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const {
   if (ValidateArgCount(args, error)) {
-   // if (!TypeMatches(Type, Quote::TypeInstance))
-      ValidateArgTypes(evaluator, args, error);
+    ValidateArgTypes(evaluator, args, error);
   }
 
   return error.empty();
 }
 
+bool FuncDef::VarArgDef::IsAnyArgs() const {
+  return MinArgs == ANY_ARGS && MaxArgs == ANY_ARGS;
+}
+
 bool FuncDef::VarArgDef::ValidateArgCount(ArgList &args, std::string &error) const {
-  if (NArgs == ANY_ARGS)
-    return true;
-  else 
-    return CheckArgCount(NArgs, args, error);
+  return CheckArgCount(MinArgs, MaxArgs, args, error);
 }
 
 bool FuncDef::VarArgDef::ValidateArgTypes(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const {
@@ -206,23 +235,31 @@ bool FuncDef::ListArgDef::ValidateArgs(ExpressionEvaluator evaluator, ArgList &a
 //=============================================================================
 
 ArgDefPtr FuncDef::NoArgs() {
-  return ManyArgs(Void::TypeInstance, VarArgDef::NO_ARGS);
+  return ManyArgs(Void::TypeInstance, ArgDef::NO_ARGS);
 }
 
-ArgDefPtr FuncDef::OneArg(const TypeInfo& type) {
+ArgDefPtr FuncDef::OneArg(const TypeInfo &type) {
   return ManyArgs(type, 1);
 }
 
-ArgDefPtr FuncDef::AnyArgs(const TypeInfo& type) {
+ArgDefPtr FuncDef::AtleastOneArg(const TypeInfo &type) {
+  return ManyArgs(type, 1, ArgDef::ANY_ARGS);
+}
+
+ArgDefPtr FuncDef::AnyArgs(const TypeInfo &type) {
   return ManyArgs(type, VarArgDef::ANY_ARGS);
 }
 
 ArgDefPtr FuncDef::AnyArgs() {
-  return ManyArgs(Sexp::TypeInstance, VarArgDef::ANY_ARGS);
+  return ManyArgs(Sexp::TypeInstance, ArgDef::ANY_ARGS);
 }
 
-ArgDefPtr FuncDef::ManyArgs(const TypeInfo& type, int nargs) {
-  return ArgDefPtr { new VarArgDef { type, nargs } };
+ArgDefPtr FuncDef::ManyArgs(const TypeInfo &type, int nArgs) {
+  return ManyArgs(type, nArgs, nArgs);
+}
+
+ArgDefPtr FuncDef::ManyArgs(const TypeInfo &type, int minArgs, int maxArgs) {
+  return ArgDefPtr { new VarArgDef { type, minArgs, maxArgs } };
 }
 
 ArgDefPtr FuncDef::Args(std::initializer_list<const TypeInfo*> &&args) {

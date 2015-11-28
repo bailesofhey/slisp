@@ -67,8 +67,11 @@ void TestArgs(FuncDef &funcDef, int maxArgs, std::function<bool(const Sexp &)> a
 }
 
 static const int ANY_NARGS = -1;
-bool HomogeneousArgSuccessFn(int expectedNArgs, const ExpressionPtr &expr, const Sexp &sexp) {
-  if (expectedNArgs == ANY_NARGS || sexp.Args.size() == (expectedNArgs + 1)) { // (func arg[1] ... arg[expectedNArgs])
+
+bool HomogeneousArgSuccessFn(int expectedMinArgs, int expectedMaxArgs, const ExpressionPtr &expr, const Sexp &sexp) {
+  int actualArgs = sexp.Args.size();
+  if ((expectedMinArgs == ANY_NARGS || actualArgs >= (expectedMinArgs + 1)) &&
+      (expectedMaxArgs == ANY_NARGS || actualArgs <= (expectedMaxArgs + 1))) { // (func arg[1] ... arg[expectedNArgs])
     int argNum = 0;
     for (auto &arg : sexp.Args) {
       if (argNum && &arg->Type() != &expr->Type())
@@ -78,6 +81,10 @@ bool HomogeneousArgSuccessFn(int expectedNArgs, const ExpressionPtr &expr, const
     return true;
   }
   return false;
+}
+
+bool HomogeneousArgSuccessFn(int expectedNArgs, const ExpressionPtr &expr, const Sexp &sexp) {
+  return HomogeneousArgSuccessFn(expectedNArgs, expectedNArgs, expr, sexp);
 }
 
 TEST(FuncDef, TestFuncDef_NoArgs) {
@@ -101,6 +108,15 @@ TEST(FuncDef, TestFuncDef_AnyArgs_Homogeneous) {
     FuncDef funcDef(FuncDef::AnyArgs(expr->Type()), FuncDef::NoArgs());
     ASSERT_NO_FATAL_FAILURE(TestArgs(funcDef, 3, [&expr](const Sexp &sexp) {
       return HomogeneousArgSuccessFn(ANY_NARGS, expr, sexp);
+    })) << expr->ToString();
+  }
+}
+
+TEST(FuncDef, TestFuncDef_AtleastOneArg_Homogeneous) {
+  for (const auto &expr : PrimitiveExpressions) {
+    FuncDef funcDef(FuncDef::AtleastOneArg(expr->Type()), FuncDef::NoArgs());
+    ASSERT_NO_FATAL_FAILURE(TestArgs(funcDef, 3, [&expr](const Sexp &sexp) {
+      return HomogeneousArgSuccessFn(1, ANY_NARGS, expr, sexp);
     })) << expr->ToString();
   }
 }
