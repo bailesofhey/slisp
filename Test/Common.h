@@ -18,7 +18,7 @@ class TestCommandInterface: public CommandInterface {
     virtual ~TestCommandInterface() override                         {}
     virtual void Reset()                                             { HasMore_ = true;}
     virtual bool HasMore() const override                            { return HasMore_; }
-    virtual bool ReadInputLine(std::string &input) override          {input = Input; return Result; }
+    virtual bool ReadInputLine(std::string &input) override          {input = Input; HasMore_ = false; return Result; }
     virtual bool ReadContinuedInputLine(std::string &input) override { return ReadInputLine(input); }
     virtual bool WriteOutputLine(const std::string &output) override { Output = output; return Result; }
     virtual bool WriteError(const std::string &error)       override { Error = error; return Result; }

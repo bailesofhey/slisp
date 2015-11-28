@@ -1,6 +1,8 @@
 #pragma once
 
 #include <iostream>
+#include <fstream>
+#include <memory>
 
 #include "Interpreter.h"
 #include "ConsoleInterface.h"
@@ -26,6 +28,7 @@ class Controller {
     Tokenizer Tokenizer_;
     Parser Parser_;
     StdLib Lib;
+    std::unique_ptr<std::fstream> OutFile;
 
     void REPL();
     void RunSingle();

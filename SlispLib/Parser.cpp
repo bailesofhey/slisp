@@ -137,10 +137,16 @@ begin:
   else  {
     if (Depth) {
       std::string line;
-      CommandInterface_.ReadContinuedInputLine(line);
-      Tokenizer_.SetLine(line);
-      ++Tokenizer_;
-      goto begin;
+      if (CommandInterface_.HasMore()) {
+        CommandInterface_.ReadContinuedInputLine(line);
+        Tokenizer_.SetLine(line);
+        ++Tokenizer_;
+        goto begin;
+      }
+      else {
+        Error_ = "Unterminated Sexp";
+        return false;
+      }
     }
     else
       throw std::exception("Logic bug: NONE should only be reached with Depth > 0");

@@ -5,3 +5,4 @@
 *.opensdf
 Debug
 Debug(staticlib)
+/Test/TestOutputFile*.txt

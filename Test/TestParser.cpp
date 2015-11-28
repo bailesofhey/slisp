@@ -130,6 +130,12 @@ TEST_F(ParserTest, TestMultiples) {
   );
 }
 
+TEST_F(ParserTest, TestUnterminatedSexp) {
+  ASSERT_NOPARSE(
+    { Token(TokenTypes::PARENOPEN, ""), Token(TokenTypes::SYMBOL, "foo") }
+  );
+}
+
 TEST_F(ParserTest, TestSimpleSexps) {
   ASSERT_PARSE(
     { Token(TokenTypes::PARENOPEN, ""), Token(TokenTypes::PARENCLOSE, "") },
