@@ -197,7 +197,7 @@ bool StdLib::Dec(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
 
 template <class F>
 bool StdLib::UnaryNumberFn(const std::string &name, Interpreter &interpreter, ExpressionPtr &expr, ArgList &args, F fn) {
-  ExpressionPtr numExpr { TypeHelper::GetNumber(std::move(args.front())) };
+  ExpressionPtr numExpr { TypeHelper::GetNumber(args.front()) };
   auto num = dynamic_cast<Number*>(numExpr.get());
   if (num) {
     expr = ExpressionPtr { new Number { fn(num->Value) } };

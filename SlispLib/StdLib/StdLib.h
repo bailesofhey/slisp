@@ -40,9 +40,9 @@ class StdLib: public Library {
     static bool Reverse(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
 
     // Lists
+    static bool AddList(Interpreter &intepreter, ExpressionPtr &expr, ArgList &args);
     static bool List(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
     static bool Map(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool AddList(Interpreter &intepreter, ExpressionPtr &expr, ArgList &args);
     static bool Head(Interpreter &intepreter, ExpressionPtr &expr, ArgList &args);
     static bool Tail(Interpreter &intepreter, ExpressionPtr &expr, ArgList &args);
 

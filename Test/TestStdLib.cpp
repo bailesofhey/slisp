@@ -47,6 +47,9 @@ TEST_F(StdLibDefaultFunctionTest, TestLiterals) {
   ASSERT_TRUE(RunSuccess("42", "42"));
   ASSERT_TRUE(RunSuccess("\"foo\"", "\"foo\""));
   ASSERT_TRUE(RunSuccess("+", "Function"));
+  ASSERT_TRUE(RunSuccess("true", "true"));
+  ASSERT_TRUE(RunSuccess("false", "false"));
+  ASSERT_TRUE(RunSuccess("nil", "()"));
 
   const char *args = "42 \"foo\" + (1 2 3)";
   ASSERT_TRUE(RunSuccess(args, "42"));
@@ -314,4 +317,105 @@ TEST_F(StdLibBitwiseTest, BitNot) {
   ASSERT_TRUE(RunSuccess("(~ 3)", "-4"));
   ASSERT_TRUE(RunSuccess("(~ 1073741824)", "-1073741825"));
   ASSERT_TRUE(RunSuccess("(~ 2147483648)", "-2147483649"));
+}
+
+class StdLibStringTest: public StdLibTest {
+};
+
+TEST_F(StdLibStringTest, TestAdd) {
+  ASSERT_TRUE(RunFail("(+)"));
+  ASSERT_TRUE(RunSuccess("(+ \"\")", "\"\""));
+  ASSERT_TRUE(RunSuccess("(+ \"foo\")", "\"foo\""));
+  ASSERT_TRUE(RunSuccess("(+ \"\" \"foo\")", "\"foo\""));
+  ASSERT_TRUE(RunSuccess("(+ \" \" \"foo\")", "\" foo\""));
+  ASSERT_TRUE(RunSuccess("(+ \"foo\" \"\")", "\"foo\""));
+  ASSERT_TRUE(RunSuccess("(+ \"foo\" \" \")", "\"foo \""));
+  ASSERT_TRUE(RunSuccess("(+ \"\" \"foo\" \"\")", "\"foo\""));
+  ASSERT_TRUE(RunSuccess("(+ \" \" \"foo\" \" \")", "\" foo \""));
+  ASSERT_TRUE(RunSuccess("(+ \"foo\" \"bar\" )", "\"foobar\""));
+  ASSERT_TRUE(RunSuccess("(+ \"Hello, \" \"world\" \"!\" )", "\"Hello, world!\""));
+  ASSERT_TRUE(RunSuccess("(+ \"\" \"\" \"Hello,\" \" \" \"\" \"world\" \"\" \"!\" \"\" \"\")", "\"Hello, world!\""));
+}
+
+TEST_F(StdLibStringTest, TestReverse) {
+  ASSERT_TRUE(RunFail("(reverse)"));
+  ASSERT_TRUE(RunSuccess("(reverse \"\")", "\"\""));
+  ASSERT_TRUE(RunSuccess("(reverse \"a\")", "\"a\""));
+  ASSERT_TRUE(RunSuccess("(reverse \"ab\")", "\"ba\""));
+  ASSERT_TRUE(RunSuccess("(reverse \"abc\")", "\"cba\""));
+  ASSERT_TRUE(RunSuccess("(reverse \"satan oscillate my metallic sonatas\")", "\"satanos cillatem ym etallicso natas\""));
+}
+
+class StdLibListTest: public StdLibTest {
+};
+
+TEST_F(StdLibListTest, TestAdd) {
+  ASSERT_TRUE(RunFail("(+)"));
+  ASSERT_TRUE(RunSuccess("(+ () )", "()"));
+  ASSERT_TRUE(RunSuccess("(+ (1) )", "(1)"));
+  ASSERT_TRUE(RunSuccess("(+ (1 2 3) )", "(1 2 3)"));
+  ASSERT_TRUE(RunSuccess("(+ () () )", "()"));
+  ASSERT_TRUE(RunSuccess("(+ () () ())", "()"));
+  ASSERT_TRUE(RunSuccess("(+ (1) (2 3) (4 5 6))", "(1 2 3 4 5 6)"));
+  ASSERT_TRUE(RunSuccess("(+ () (1) () (2 3 4 5) (6) () ())", "(1 2 3 4 5 6)"));
+  ASSERT_TRUE(RunSuccess("(+ () (\"foo\") () (2 \"bar \" 4 false) (true) (42 (\"bar\" () (-23) () \"rab\") 24) )",
+                         "(\"foo\" 2 \"bar \" 4 false true 42 (\"bar\" () (-23) () \"rab\") 24)"));
+}
+
+TEST_F(StdLibListTest, TestList) {
+  ASSERT_TRUE(RunSuccess("(list)", "()"));
+  ASSERT_TRUE(RunSuccess("()", "()"));
+  ASSERT_TRUE(RunSuccess("(list 1)", "(1)"));
+  ASSERT_TRUE(RunSuccess("(1)", "(1)"));
+  ASSERT_TRUE(RunSuccess("(list 1 \"foo\" false)", "(1 \"foo\" false)"));
+  ASSERT_TRUE(RunSuccess("(1 \"foo\" false)", "(1 \"foo\" false)"));
+  ASSERT_TRUE(RunSuccess("(((((((((())))))))))", "(((((((((())))))))))"));
+  ASSERT_TRUE(RunSuccess("((((((((((42))))))))))", "((((((((((42))))))))))"));
+}
+
+TEST_F(StdLibListTest, TestMap) {
+  ASSERT_TRUE(RunFail("(map)"));
+  ASSERT_TRUE(RunFail("(map 2)"));
+  ASSERT_TRUE(RunFail("(map 2 3)"));
+  ASSERT_TRUE(RunFail("(map + 3)"));
+  ASSERT_TRUE(RunFail("(map a 3)"));
+  ASSERT_TRUE(RunFail("(map inc 3)"));
+  ASSERT_TRUE(RunSuccess("(map inc ())", "()"));
+  ASSERT_TRUE(RunSuccess("(map inc (1))", "(2)"));
+  ASSERT_TRUE(RunSuccess("(map inc (1 2 3))", "(2 3 4)"));
+  ASSERT_TRUE(RunFail("(map (fn (x) a) (1 2 3))"));
+  ASSERT_TRUE(RunFail("(map (fn 3) (1 2 3))"));
+  ASSERT_TRUE(RunFail("(map (fn () 42) (1 2 3))"));
+  ASSERT_TRUE(RunSuccess("(map (fn (x) 42) (1 2 3))", "(42 42 42)"));
+  ASSERT_TRUE(RunSuccess("(map (fn (x) (* x 10)) (1 2 3))", "(10 20 30)"));
+}
+
+TEST_F(StdLibListTest, TestHead) {
+  ASSERT_TRUE(RunFail("(head)"));
+  ASSERT_TRUE(RunFail("(head 3)"));
+  ASSERT_TRUE(RunFail("(head a)"));
+  ASSERT_TRUE(RunFail("(head \"foo\")"));
+  ASSERT_TRUE(RunFail("(head true)"));
+  ASSERT_TRUE(RunSuccess("(head ())", "()"));
+  ASSERT_TRUE(RunSuccess("(head (1))", "1"));
+  ASSERT_TRUE(RunSuccess("(head (1 2))", "1"));
+  ASSERT_TRUE(RunFail("(head (head (1 2)))"));
+  ASSERT_TRUE(RunSuccess("(head ((1 2)) )", "(1 2)"));
+  ASSERT_TRUE(RunSuccess("(head (head ((1 2)) ))", "1"));
+  ASSERT_TRUE(RunFail("(head (head (head ((1 2)) )))"));
+}
+
+TEST_F(StdLibListTest, TestTail) {
+  ASSERT_TRUE(RunFail("(tail)"));
+  ASSERT_TRUE(RunFail("(tail 3)"));
+  ASSERT_TRUE(RunFail("(tail a)"));
+  ASSERT_TRUE(RunFail("(tail \"foo\")"));
+  ASSERT_TRUE(RunFail("(tail true)"));
+  ASSERT_TRUE(RunSuccess("(tail ())", "()"));
+  ASSERT_TRUE(RunSuccess("(tail (1))", "()"));
+  ASSERT_TRUE(RunSuccess("(tail (1 2))", "2"));
+  ASSERT_TRUE(RunSuccess("(tail (tail (1 2)))", "()"));
+  ASSERT_TRUE(RunSuccess("(tail ((1 2)) )", "()"));
+  ASSERT_TRUE(RunSuccess("(tail (tail ((1 2)) ))", "()"));
+  ASSERT_TRUE(RunSuccess("(tail (tail (tail ((1 2)) )))", "()"));
 }
