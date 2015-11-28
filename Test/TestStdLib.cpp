@@ -21,7 +21,7 @@ class StdLibTest: public ::testing::Test {
       NOutputLines = 0;
     }
 
-    bool RunSuccess(const char *code, const char *expectedResult) {
+    bool RunSuccess(const std::string &code, const std::string &expectedResult) {
       Reset();
       Controller_.Run(code);
 
@@ -33,7 +33,7 @@ class StdLibTest: public ::testing::Test {
       return Out.str().find(expectedResult) != std::string::npos;
     }
 
-    bool RunFail(const char *code) {
+    bool RunFail(const std::string &code) {
       return RunSuccess(code, "Error");
     }
 };
@@ -122,7 +122,7 @@ class StdLibNumericalTest: public StdLibTest {
     for (auto &value : values) {
       if (name != "+" || value[0] != '"') {
         std::string code = prefix + value + ")";
-        ASSERT_TRUE(RunFail(code.c_str()));
+        ASSERT_TRUE(RunFail(code));
       }
     }
   }
@@ -137,7 +137,7 @@ class StdLibNumericalTest: public StdLibTest {
         expectedValue = "1";
       else if (std::strcmp(value, "false") == 0)
         expectedValue = "0";
-      ASSERT_TRUE(RunSuccess(code.c_str(), expectedValue));
+      ASSERT_TRUE(RunSuccess(code, expectedValue));
     }
   }
 };
@@ -152,7 +152,7 @@ TEST_F(StdLibNumericalTest, TestInc) {
 
   std::stringstream temp;
   temp << "(inc " << MaxValue << ")";
-  ASSERT_TRUE(RunSuccess(temp.str().c_str(), std::to_string(MinValue).c_str()));
+  ASSERT_TRUE(RunSuccess(temp.str(), std::to_string(MinValue)));
 }
 
 TEST_F(StdLibNumericalTest, TestDec) {
@@ -164,7 +164,7 @@ TEST_F(StdLibNumericalTest, TestDec) {
 
   std::stringstream temp;
   temp << "(dec " << MinValue << ")";
-  ASSERT_TRUE(RunSuccess(temp.str().c_str(), std::to_string(MaxValue).c_str()));
+  ASSERT_TRUE(RunSuccess(temp.str(), std::to_string(MaxValue)));
 }
 
 TEST_F(StdLibNumericalTest, TestAdd) {
@@ -175,7 +175,7 @@ TEST_F(StdLibNumericalTest, TestAdd) {
 
   std::stringstream temp;
   temp << "(+ 1 " << MaxValue << ")";
-  ASSERT_TRUE(RunSuccess(temp.str().c_str(), std::to_string(MinValue).c_str()));
+  ASSERT_TRUE(RunSuccess(temp.str(), std::to_string(MinValue)));
 }
 
 TEST_F(StdLibNumericalTest, TestSub) {
@@ -186,7 +186,7 @@ TEST_F(StdLibNumericalTest, TestSub) {
 
   std::stringstream temp;
   temp << "(- 1 " << MinValue << ")";
-  ASSERT_TRUE(RunSuccess(temp.str().c_str(), std::to_string(MaxValue).c_str()));
+  ASSERT_TRUE(RunSuccess(temp.str(), std::to_string(MaxValue)));
 }
 
 TEST_F(StdLibNumericalTest, TestMult) {
@@ -418,4 +418,109 @@ TEST_F(StdLibListTest, TestTail) {
   ASSERT_TRUE(RunSuccess("(tail ((1 2)) )", "()"));
   ASSERT_TRUE(RunSuccess("(tail (tail ((1 2)) ))", "()"));
   ASSERT_TRUE(RunSuccess("(tail (tail (tail ((1 2)) )))", "()"));
+}
+
+class StdLibComparisonTest: public StdLibTest {
+  protected:
+    std::string Prefix;
+
+    StdLibComparisonTest()
+    {
+    }
+
+    void TestEquality(const char *value1, const char *value2) {
+      ASSERT_TRUE(RunFail(Prefix + ")"));
+      ASSERT_TRUE(RunSuccess(Prefix + "true)", "true"));
+      ASSERT_TRUE(RunSuccess(Prefix + "42)", "true"));
+      ASSERT_TRUE(RunSuccess(Prefix + "\"foo\")", "true"));
+  
+      ASSERT_TRUE(RunSuccess(Prefix + "true false)", value2));
+      ASSERT_TRUE(RunSuccess(Prefix + "42 5)", value2));
+      ASSERT_TRUE(RunSuccess(Prefix + "\"foo\" \"bar\")", value2));
+
+      ASSERT_TRUE(RunSuccess(Prefix + "true true)", value1));
+      ASSERT_TRUE(RunSuccess(Prefix + "42 42)", value1));
+      ASSERT_TRUE(RunSuccess(Prefix + "\"foo\" \"foo\")", value1));
+
+      //Implicit Number -> Bool not implemented
+      //ASSERT_TRUE(RunSuccess(Prefix + "true 1)", value1));
+      //ASSERT_TRUE(RunSuccess(Prefix + "1 true)", value1));
+      //ASSERT_TRUE(RunSuccess(Prefix + "true 4)", "false"));
+      //ASSERT_TRUE(RunSuccess(Prefix + "4 true)", "false"));
+      ASSERT_TRUE(RunFail(Prefix + "true 1)"));
+      ASSERT_TRUE(RunFail(Prefix + "1 true)"));
+      ASSERT_TRUE(RunFail(Prefix + "true 4)"));
+      ASSERT_TRUE(RunFail(Prefix + "4 true)"));
+
+      ASSERT_TRUE(RunSuccess(Prefix + "42 (+ 40 2))", value1));
+      ASSERT_TRUE(RunSuccess(Prefix + "\"foo\" (reverse \"oof\"))", value1));
+
+      //Comparisons are currently required to be homogeneous
+      //ASSERT_TRUE(RunSuccess(Prefix + "42 \"foo\")", "false"));
+      //ASSERT_TRUE(RunSuccess(Prefix + "\"foo\" nil)", "true"));
+      ASSERT_TRUE(RunFail(Prefix + "42 \"foo\")"));
+      ASSERT_TRUE(RunFail(Prefix + "\"foo\" nil)"));
+    }
+
+    void TestInEquality(const char *value1, const char *value2, const char *value3) {
+      ASSERT_TRUE(RunFail(Prefix + ")"));
+      ASSERT_TRUE(RunSuccess(Prefix + "\"foo\")", "true"));
+      ASSERT_TRUE(RunSuccess(Prefix + "2)", "true"));
+      ASSERT_TRUE(RunSuccess(Prefix + "true)", "true"));
+
+      ASSERT_TRUE(RunSuccess(Prefix + "1 1)", value3));
+      ASSERT_TRUE(RunSuccess(Prefix + "2 1)", value2));
+      ASSERT_TRUE(RunSuccess(Prefix + "1 2)", value1));
+      ASSERT_TRUE(RunSuccess(Prefix + "5 4 3 2 1)", value2));
+
+      ASSERT_TRUE(RunSuccess(Prefix + "\"apple\" \"apple\")", value3));
+      ASSERT_TRUE(RunSuccess(Prefix + "\"apple\" \"banana\")", value1));
+      ASSERT_TRUE(RunSuccess(Prefix + "\"banana\" \"apple\")", value2));
+      ASSERT_TRUE(RunSuccess(Prefix + "\"apple\" \"banana\" \"cantelope\" \"durian\")", value1));
+    }
+};
+
+TEST_F(StdLibComparisonTest, TestEq) {
+  Prefix = "(= ";
+  ASSERT_NO_FATAL_FAILURE(TestEquality("true", "false"));
+  ASSERT_TRUE(RunSuccess(Prefix + "6 (+ 2 4) (- 7 1) (* 2 3) (/ 24 6))", "false"));
+  ASSERT_TRUE(RunSuccess(Prefix + "6 (+ 2 4) (- 7 1) (* 2 3) (/ 24 4))", "true"));
+}
+
+TEST_F(StdLibComparisonTest, TestNe) {
+  Prefix = "(!= ";
+  ASSERT_NO_FATAL_FAILURE(TestEquality("false", "true"));
+  ASSERT_TRUE(RunSuccess(Prefix + "6 (+ 2 4) (- 7 1) (* 2 3) (/ 24 6))", "false"));
+  ASSERT_TRUE(RunSuccess(Prefix + "6 (+ 2 4) (- 7 1) (* 2 3) (/ 24 4))", "false"));
+  ASSERT_TRUE(RunSuccess(Prefix + "6 (+ 2 5) (- 7 2) (* 2 4) (/ 24 4))", "true"));
+}
+
+TEST_F(StdLibComparisonTest, TestLt) {
+  Prefix = "(< ";
+  ASSERT_NO_FATAL_FAILURE(TestInEquality("true", "false", "false"));
+  ASSERT_TRUE(RunSuccess(Prefix + "\"apple\" \"banana\" \"cantelope\" \"cactus\")", "false"));
+  ASSERT_TRUE(RunSuccess(Prefix + "5 4 3 2 7)", "false"));
+}
+
+TEST_F(StdLibComparisonTest, TestGt) {
+  Prefix = "(> ";
+  ASSERT_NO_FATAL_FAILURE(TestInEquality("false", "true", "false"));
+}
+
+TEST_F(StdLibComparisonTest, TestLte) {
+  Prefix = "(<= ";
+  ASSERT_NO_FATAL_FAILURE(TestInEquality("true", "false", "true"));
+  ASSERT_TRUE(RunSuccess(Prefix + "2 3 4 5 4)", "false"));
+  ASSERT_TRUE(RunSuccess(Prefix + "2 3 4 5 5)", "true"));
+  ASSERT_TRUE(RunSuccess(Prefix + "2 3 4 5 6)", "true"));
+}
+
+TEST_F(StdLibComparisonTest, TestGte) {
+  Prefix = "(>= ";
+  ASSERT_NO_FATAL_FAILURE(TestInEquality("false", "true", "true"));
+  ASSERT_TRUE(RunSuccess(Prefix + "\"apple\" \"banana\" \"cantelope\" \"cactus\")", "false"));
+  ASSERT_TRUE(RunSuccess(Prefix + "\"durian\" \"cantelope\" \"banana\" \"apple\")", "true"));
+  ASSERT_TRUE(RunSuccess(Prefix + "5 4 3 2 3)", "false"));
+  ASSERT_TRUE(RunSuccess(Prefix + "5 4 3 2 2)", "true"));
+  ASSERT_TRUE(RunSuccess(Prefix + "5 4 3 2 1)", "true"));
 }

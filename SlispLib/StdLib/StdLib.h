@@ -47,9 +47,9 @@ class StdLib: public Library {
     static bool Tail(Interpreter &intepreter, ExpressionPtr &expr, ArgList &args);
 
     // Logical
-    static bool And(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Or(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Not(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
+    //static bool And(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
+    //static bool Or(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
+    //static bool Not(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
 
     // Comparison
     static bool Eq(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);

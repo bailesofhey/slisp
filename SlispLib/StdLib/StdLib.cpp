@@ -440,10 +440,10 @@ bool StdLib::Tail(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) 
 
 // Logical
 
-bool StdLib::And(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  return false;
-}
-
+//bool StdLib::And(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+//  return false;
+//}
+//
 //bool StdLib::Or(Interpreter &interpreter, ExpressionPtr &expr) {
 //  return false;
 //}
