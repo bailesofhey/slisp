@@ -74,7 +74,7 @@ bool HomogeneousArgSuccessFn(int expectedMinArgs, int expectedMaxArgs, const Exp
       (expectedMaxArgs == ANY_NARGS || actualArgs <= (expectedMaxArgs + 1))) { // (func arg[1] ... arg[expectedNArgs])
     int argNum = 0;
     for (auto &arg : sexp.Args) {
-      if (argNum && &arg->Type() != &expr->Type())
+      if (argNum && !TypeHelper::TypeMatches(expr->Type(), arg->Type()))
         return false;
       ++argNum;
     }
@@ -151,11 +151,11 @@ bool ThreeArgSuccessFn(const Sexp &sexp, const ExpressionPtr &arg1, const Expres
     int argNum = 0;
     for (auto &sexpArg : sexp.Args) {
       auto sexpArgType = &sexpArg->Type();
-      if (argNum == 1 && sexpArgType != &arg1->Type())
+      if (argNum == 1 && !TypeHelper::TypeMatches(arg1->Type(), *sexpArgType))
         return false;
-      else if (argNum == 2 && sexpArgType != &arg2->Type())
+      else if (argNum == 2 && !TypeHelper::TypeMatches(arg2->Type(), *sexpArgType))
         return false;
-      else if (argNum == 3 && sexpArgType != &arg3->Type())
+      else if (argNum == 3 && !TypeHelper::TypeMatches(arg3->Type(), *sexpArgType))
         return false;
       ++argNum;
     }

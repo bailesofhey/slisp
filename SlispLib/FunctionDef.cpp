@@ -39,33 +39,6 @@ bool ArgDef::Validate(ExpressionEvaluator evaluator, ExpressionPtr &expr, std::s
   return error.empty();
 }
 
-//TODO: Need to account for inheritance in TypeInfo itself
-bool ArgDef::TypeMatches(const TypeInfo &expected, const TypeInfo &actual) {
-  if (&expected == &Literal::TypeInstance)
-    return IsLiteral(actual);
-  else if (&expected == &Sexp::TypeInstance)
-    return true;
-  else
-    return &expected == &actual;
-}
-
-bool ArgDef::IsFunction(const TypeInfo &type) {
-  return &type == &Function::TypeInstance 
-      || &type == &CompiledFunction::TypeInstance 
-      || &type == &InterpretedFunction::TypeInstance
-      ;
-}
-
-bool ArgDef::IsLiteral(const TypeInfo &type) {
-  return &type == &Literal::TypeInstance
-      || &type == &Bool::TypeInstance
-      || &type == &Number::TypeInstance 
-      || &type == &String::TypeInstance
-      || IsFunction(type)
-      || &type == &Quote::TypeInstance
-      ;
-}
-
 bool ArgDef::CheckArgCount(int expected, ArgList &args, std::string &error) const {
   return CheckArgCount(expected, expected, args, error);
 }
@@ -91,8 +64,8 @@ bool ArgDef::CheckArgCount(int expectedMin, int expectedMax, ArgList &args, std:
 }
 
 bool ArgDef::CheckArg(ExpressionEvaluator evaluator, ExpressionPtr &arg, const TypeInfo &expectedType, int argNum, std::string &error) const {
-  if (TypeMatches(expectedType, arg->Type()) || evaluator(arg)) {
-    if (!TypeMatches(expectedType, arg->Type())) {
+  if (TypeHelper::TypeMatches(expectedType, arg->Type()) || evaluator(arg)) {
+    if (!TypeHelper::TypeMatches(expectedType, arg->Type())) {
       error = "Argument " + std::to_string(argNum) + ": Expected " + expectedType.TypeName + ", got " + arg->Type().TypeName;
       return false;
     }
@@ -434,4 +407,55 @@ bool InterpretedFunction::operator==(const InterpretedFunction &rhs) const {
 
 bool InterpretedFunction::operator!=(const InterpretedFunction &rhs) const {
   return !(rhs == *this);
+}
+
+//=============================================================================
+
+//TODO: Need to account for inheritance in TypeInfo itself
+bool TypeHelper::TypeMatches(const TypeInfo &expected, const TypeInfo &actual) {
+  if (&expected == &Literal::TypeInstance)
+    return IsLiteral(actual);
+  else if (&expected == &Sexp::TypeInstance)
+    return true;
+  else if (&expected == &Number::TypeInstance)
+    return IsConvertableToNumber(actual);
+  else
+    return &expected == &actual;
+}
+
+bool TypeHelper::IsFunction(const TypeInfo &type) {
+  return &type == &Function::TypeInstance 
+      || &type == &CompiledFunction::TypeInstance 
+      || &type == &InterpretedFunction::TypeInstance
+      ;
+}
+
+bool TypeHelper::IsLiteral(const TypeInfo &type) {
+  return &type == &Literal::TypeInstance
+      || &type == &Bool::TypeInstance
+      || &type == &Number::TypeInstance 
+      || &type == &String::TypeInstance
+      || IsFunction(type)
+      || &type == &Quote::TypeInstance
+      ;
+}
+
+bool TypeHelper::IsConvertableToNumber(const TypeInfo &type) {
+  return &type == &Number::TypeInstance
+      || &type == &Bool::TypeInstance
+      ;
+}
+
+ExpressionPtr TypeHelper::GetNumber(ExpressionPtr &expr) {
+  if (expr) {
+    if (&expr->Type() == &Number::TypeInstance)
+      return expr->Clone();
+    else if (&expr->Type() == &Bool::TypeInstance)
+      return ExpressionPtr { new Number(static_cast<Bool&>(*expr).Value) };
+  }
+  return ExpressionPtr {};
+}
+
+ExpressionPtr TypeHelper::GetBool(ExpressionPtr &expr) {
+  return expr->Clone();
 }

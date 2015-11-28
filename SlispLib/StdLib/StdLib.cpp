@@ -50,7 +50,7 @@ void StdLib::Load(Interpreter &interpreter) {
   RegisterBinaryFunction(symbols, "&", &StdLib::BitAnd);
   RegisterBinaryFunction(symbols, "|", &StdLib::BitOr);
   RegisterBinaryFunction(symbols, "^", &StdLib::BitXor);
-  //interpreter.PutSymbolFunction("~", &StdLib::BitNot);
+  symbols.PutSymbolFunction("~", &StdLib::BitNot, FuncDef { FuncDef::OneArg(Number::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
 
   // String 
 
@@ -140,9 +140,9 @@ bool StdLib::PrintExpression(Interpreter &interpreter, ExpressionPtr &curr, std:
 
 bool StdLib::Print(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
   ExpressionPtr curr;
-  std::stringstream out;
   auto &cmdInterface = interpreter.GetCommandInterface();
   while (!args.empty()) {
+    std::stringstream out;
     curr = std::move(args.front());
     args.pop_front();
     bool result = PrintExpression(interpreter, curr, out);
@@ -150,7 +150,6 @@ bool StdLib::Print(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args)
     if (!result)
       return false;
     cmdInterface.WriteOutputLine(out.str());
-    out.clear();
   }
 
   expr = GetNil();
@@ -170,14 +169,14 @@ bool StdLib::Add(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
   if (currArg != args.end()) {
     if (interpreter.EvaluatePartial(*currArg)) {
       auto &type = (*currArg)->Type();
-      if (&type == &Number::TypeInstance)
+      if (TypeHelper::IsConvertableToNumber(type))
         return AddNum(interpreter, expr, args);
       else if (&type == &String::TypeInstance)
         return AddString(interpreter, expr, args);
       else if (&type == &Quote::TypeInstance)
         return AddList(interpreter, expr, args);
       else
-        return TypeError(interpreter, "+", "string or number", *currArg);
+        return TypeError(interpreter, "+", "string, number or list", *currArg);
     }
     else
       return interpreter.PushError(EvalError { "+", "Failed to evaluate first arg" });
@@ -189,19 +188,22 @@ bool StdLib::Add(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
 // Number Functions
 
 bool StdLib::Inc(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  return UnaryNumberFn(interpreter, expr, args, [](int64_t num) { return num + 1; });
+  return UnaryNumberFn("inc", interpreter, expr, args, [](int64_t num) { return num + 1; });
 }
 
 bool StdLib::Dec(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  return UnaryNumberFn(interpreter, expr, args, [](int64_t num) { return num - 1; });
+  return UnaryNumberFn("dec", interpreter, expr, args, [](int64_t num) { return num - 1; });
 }
 
 template <class F>
-bool StdLib::UnaryNumberFn(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args, F fn) {
-  ExpressionPtr numExpr { std::move(args.front()) };
-  auto num = static_cast<Number*>(numExpr.get());
-  expr = ExpressionPtr { new Number { fn(num->Value) } };
-  return true;
+bool StdLib::UnaryNumberFn(const std::string &name, Interpreter &interpreter, ExpressionPtr &expr, ArgList &args, F fn) {
+  ExpressionPtr numExpr { TypeHelper::GetNumber(std::move(args.front())) };
+  auto num = dynamic_cast<Number*>(numExpr.get());
+  if (num) {
+    expr = ExpressionPtr { new Number { fn(num->Value) } };
+    return true;
+  }
+  return TypeError(interpreter, name, "number", args.front() );
 }
 
 bool StdLib::AddNum(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
@@ -219,13 +221,18 @@ bool StdLib::Mult(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) 
   return BinaryFunction(interpreter, expr, args, fn, "*");
 }
 
-bool CheckDivideByZero(const std::string &name, Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+bool StdLib::CheckDivideByZero(const std::string &name, Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
   int argNum = 0;
   for (auto &arg : args) {
     if (argNum) {
-      auto *num = dynamic_cast<Number*>(arg.get());
-      if (num && num->Value == 0)
-        return interpreter.PushError(EvalError { name, "Divide by zero" });
+      ExpressionPtr numExpr = TypeHelper::GetNumber(arg);
+      if (numExpr) {
+        auto *num = dynamic_cast<Number*>(numExpr.get());
+        if (num && num->Value == 0)
+          return interpreter.PushError(EvalError { name, "Divide by zero" });
+      }
+      else
+        return TypeError(interpreter, name, "number", arg);
     }
     ++argNum;
   }
@@ -276,7 +283,15 @@ bool StdLib::BitXor(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args
 }
 
 bool StdLib::BitNot(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  return false;
+  ExpressionPtr numExpr = TypeHelper::GetNumber(args.front());
+  if (numExpr) {
+    auto *num = dynamic_cast<Number*>(numExpr.get());
+    if (num) {
+      expr = ExpressionPtr { new Number(~num->Value) };
+      return true;
+    }
+  }
+  return TypeError(interpreter, "~", "number", args.front());
 }
 
 // String functions
@@ -821,14 +836,19 @@ static bool StdLib::BinaryFunction(Interpreter &interpreter, ExpressionPtr &expr
   bool first = true;
   Number result { 0 };
   while (!args.empty()) {
-    auto num = dynamic_cast<Number*>(args.front().get());
-    if (num) {
-      if (first)
-        result.Value = num->Value;
-      else
-        result.Value = fn(result.Value, num->Value);
+    bool ok = false;
+    ExpressionPtr numExpr = TypeHelper::GetNumber(args.front());
+    if (numExpr) {
+      auto num = dynamic_cast<Number*>(numExpr.get());
+      if (num) {
+        if (first)
+          result.Value = num->Value;
+        else
+          result.Value = fn(result.Value, num->Value);
+        ok = true;
+      }
     }
-    else
+    if (!ok)
       return TypeError(interpreter, name, "number", args.front());
 
     first = false;

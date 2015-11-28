@@ -329,7 +329,7 @@ bool Interpreter::ReduceSexp(ExpressionPtr &expr) {
       auto &funcExpr = args.front();
       if (auto *func = dynamic_cast<Function*>(funcExpr.get()))
         return ReduceSexpFunction(expr, *func);
-      else if (ArgDef::TypeMatches(Literal::TypeInstance, funcExpr.get()->Type())) 
+      else if (TypeHelper::TypeMatches(Literal::TypeInstance, funcExpr.get()->Type())) 
         return ReduceSexpList(expr, args);
       else
         return PushError(EvalError { ErrorWhere, "Expecting function: " + funcExpr->ToString() });

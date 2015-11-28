@@ -52,7 +52,6 @@ void Tokenizer::SkipWhitespace(char &currChar) {
 }
 
 void Tokenizer::TokenizeNumber(char &currChar) {
-  bool isFirst = true;
   TokenizeSequence(TokenTypes::NUMBER, currChar, std::isdigit);
 }
 
@@ -105,7 +104,7 @@ template <class F, class G>
 void Tokenizer::TokenizeSequence(TokenTypes tokenType, char &currChar, F pred, G postSeqFn) {
   while (!Stream.eof() && pred(currChar)) {
     CurrToken.Value += currChar;
-    currChar = Stream.get();
+    Stream.get(currChar);
   }
 
   postSeqFn(currChar);

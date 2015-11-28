@@ -100,9 +100,11 @@ class StdLib: public Library {
 
 
     template <class F>
-    static bool UnaryNumberFn(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args, F fn);
+    static bool UnaryNumberFn(const std::string &name, Interpreter &interpreter, ExpressionPtr &expr, ArgList &args, F fn);
 
     static ExpressionPtr GetNil();
 
     static bool LambdaPrepareFormals(Interpreter &interpreter, ExpressionPtr &formalsExpr, ArgList &anonFuncArgs, int &nArgs);
+
+    static bool CheckDivideByZero(const std::string &name, Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
 };

@@ -26,9 +26,6 @@ class ArgDef {
     virtual bool operator==(const ArgDef &rhs) const = 0;
     virtual const std::string ToString() const = 0;
     bool Validate(ExpressionEvaluator evaluator, ExpressionPtr &expr, std::string &error) const;
-    static bool TypeMatches(const TypeInfo &expected, const TypeInfo &actual);
-    static bool IsLiteral(const TypeInfo &type);
-    static bool IsFunction(const TypeInfo &type);
 
   protected:
     virtual bool ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const = 0;
@@ -138,4 +135,14 @@ struct InterpretedFunction: public Function {
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const InterpretedFunction &rhs) const;
   bool operator!=(const InterpretedFunction &rhs) const;
+};
+
+class TypeHelper {
+  public:
+    static bool TypeMatches(const TypeInfo &expected, const TypeInfo &actual);
+    static bool IsLiteral(const TypeInfo &type);
+    static bool IsFunction(const TypeInfo &type);
+    static bool IsConvertableToNumber(const TypeInfo &type);
+    static ExpressionPtr GetNumber(ExpressionPtr &expr);
+    static ExpressionPtr GetBool(ExpressionPtr &expr);
 };
