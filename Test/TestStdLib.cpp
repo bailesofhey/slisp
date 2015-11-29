@@ -524,3 +524,59 @@ TEST_F(StdLibComparisonTest, TestGte) {
   ASSERT_TRUE(RunSuccess(Prefix + "5 4 3 2 2)", "true"));
   ASSERT_TRUE(RunSuccess(Prefix + "5 4 3 2 1)", "true"));
 }
+
+class StdLibBranchTest: public StdLibTest {
+};
+
+TEST_F(StdLibBranchTest, TestIf) {
+  ASSERT_TRUE(RunFail("(if)"));
+  ASSERT_TRUE(RunFail("(if true)"));
+  ASSERT_TRUE(RunFail("(if true 1)"));
+  ASSERT_TRUE(RunSuccess("(if true 1 0)", "1"));
+  ASSERT_TRUE(RunSuccess("(if false 1 0)", "0"));
+  ASSERT_TRUE(RunSuccess("(if true 1 a)", "1"));
+  ASSERT_TRUE(RunSuccess("(if false a 0)", "0"));
+  ASSERT_TRUE(RunFail("(if true a 0)"));
+  ASSERT_TRUE(RunFail("(if false 0 a)"));
+  ASSERT_TRUE(RunSuccess("(if (< 3 4) \"less than\" \"greater than or equal to\")", "\"less than\""));
+  ASSERT_TRUE(RunSuccess("(if (< 3 3) \"less than\" (if (> 3 3) \"greater than\" \"equal to\"))", "\"equal to\"")); 
+}
+
+TEST_F(StdLibBranchTest, DISABLED_TestLet) {
+  ASSERT_TRUE(RunFail("(let)"));
+  ASSERT_TRUE(RunFail("(let true)"));
+  ASSERT_TRUE(RunSuccess("(let () true)", "true"));
+  
+  // bug!
+  ASSERT_TRUE(RunFail("(let ("));
+}
+
+TEST_F(StdLibBranchTest, TestQuoteFn) {
+}
+
+TEST_F(StdLibBranchTest, TestUnquote) {
+}
+
+TEST_F(StdLibBranchTest, TestBegin) {
+}
+
+TEST_F(StdLibBranchTest, TestLambda) {
+}
+
+TEST_F(StdLibBranchTest, TestDef) {
+}
+
+TEST_F(StdLibBranchTest, TestApply) {
+}
+
+class StdLibSymbolTableTest: public StdLibTest {
+};
+
+TEST_F(StdLibSymbolTableTest, TestSet) {
+}
+
+TEST_F(StdLibSymbolTableTest, TestUnSet) {
+}
+
+TEST_F(StdLibSymbolTableTest, TestHelp) {
+}
