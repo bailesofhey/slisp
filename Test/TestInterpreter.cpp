@@ -389,7 +389,7 @@ TEST_F(InterpreterTest, TestDefaultFunction) {
   ASSERT_FALSE(defaultFn);
   Interpreter_.PutDefaultFunction(std::move(dynamic_cast<CompiledFunction&>(*func->Clone())));
   ASSERT_TRUE(Interpreter_.GetDefaultFunction(defaultFn));
-  ASSERT_TRUE(defaultFn);
+  ASSERT_TRUE((bool)defaultFn);
 }
 
 TEST_F(InterpreterTest, TestErrors_Single) {
@@ -487,11 +487,11 @@ class EvaluationTest: public InterpreterTest {
       ExpressionPtr code {
         new Sexp({
           ExpressionPtr { new Symbol("myCompiledFunc") },
-          trueValue->Clone(),
+          ExpressionPtr { new Symbol("x") }
         })
       };
       ArgList args;
-      args.push_back(ExpressionPtr { new Bool() });
+      args.push_back(ExpressionPtr { new Symbol("x") });
       Interpreter_.GetDynamicSymbols().PutSymbolFunction("myInterpretedFunc", InterpretedFunction {
         FuncDef { FuncDef::OneArg(Bool::TypeInstance), FuncDef::NoArgs() },
         std::move(code),
@@ -609,11 +609,11 @@ TEST_F(EvaluationTest, TestSexpDefaultFunction) {
 void EvaluationTest::TestBasicArg(const std::string &funcName) {
   ExpressionPtr trueValue { new Bool(true) };
  
+  ExpressionPtr sym { new Symbol(funcName) };
+  ExpressionPtr sexp { new Sexp({std::move(sym), std::move(trueValue)}) };
+
   EvaluationTest::MyFuncCalled = false;
-  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
-    ExpressionPtr { new Symbol(funcName) },
-    trueValue->Clone()
-  })}));
+  ASSERT_TRUE(Interpreter_.Evaluate(sexp));
   ASSERT_TRUE(EvaluationTest::MyFuncCalled);
 }
 

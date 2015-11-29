@@ -374,14 +374,18 @@ bool Interpreter::ReduceSexpInterpretedFunction(ExpressionPtr &expr, Interpreted
   auto endArg = end(args);
   auto endFormal = end(function.Args);
   while (currArg != endArg && currFormal != endFormal) {
-    auto sym = static_cast<Symbol*>((*currFormal).get());
-    if (EvaluatePartial(*currArg)) {
-      newFrame.PutLocalSymbol(sym->Value, std::move(*currArg));
-      ++currArg;
-      ++currFormal;
+    auto sym = dynamic_cast<Symbol*>((*currFormal).get());
+    if (sym) {
+      if (EvaluatePartial(*currArg)) {
+        newFrame.PutLocalSymbol(sym->Value, std::move(*currArg));
+        ++currArg;
+        ++currFormal;
+      }
+      else
+        return PushError(EvalError { ErrorWhere, "Evaluating argument " + sym->Value + " failed" }); 
     }
     else
-      return PushError(EvalError { ErrorWhere, "Evaluating argument " + sym->Value + " failed" }); 
+      return PushError(EvalError { ErrorWhere, "Current formal is not a symbol " + (*currFormal)->ToString() });
   }
   for (auto &kv : function.Closure)
     newFrame.PutLocalSymbol(kv.first, std::move(kv.second->Clone()));
