@@ -61,6 +61,8 @@ TEST_F(StdLibDefaultFunctionTest, TestLiterals) {
 }
 
 class StdLibInterpreterTest: public StdLibTest {
+  protected:
+    void TestSetFunctions();
 };
 
 TEST_F(StdLibInterpreterTest, TestPrint) {
@@ -104,6 +106,104 @@ TEST_F(StdLibInterpreterTest, TestQuit) {
   ASSERT_NE(Out.str().find("5"), std::string::npos);
   ASSERT_NE(Out.str().find("10"), std::string::npos);
   ASSERT_EQ(Out.str().find("20"), std::string::npos);
+}
+
+TEST_F(StdLibInterpreterTest, TestHelp) {
+  ASSERT_TRUE(RunSuccess("(help)", "help"));
+  ASSERT_TRUE(RunSuccess("(help)", "+"));
+  int helpAllLines = NOutputLines;
+  ASSERT_GT(helpAllLines, 20);
+  ASSERT_TRUE(RunFail("(help 3)"));
+  ASSERT_TRUE(RunFail("(help \"foo\")"));
+  ASSERT_TRUE(RunSuccess("(help true)", "()"));
+  ASSERT_TRUE(RunSuccess("(help +)", "+"));
+  ASSERT_LT(NOutputLines, helpAllLines);
+  ASSERT_TRUE(RunSuccess("(help help)", "help"));
+}
+
+void StdLibInterpreterTest::TestSetFunctions() {
+  ASSERT_TRUE(RunFail("(set)"));
+  ASSERT_TRUE(RunFail("(unset)"));
+  ASSERT_TRUE(RunFail("(set 42)"));
+  ASSERT_TRUE(RunFail("(unset 42)"));
+  ASSERT_TRUE(RunFail("(set \"foo\")"));
+  ASSERT_TRUE(RunFail("(unset \"foo\")"));
+  ASSERT_TRUE(RunFail("(set a)"));
+  ASSERT_TRUE(RunFail("(unset a)"));
+  ASSERT_TRUE(RunFail("(set a b)"));
+
+  ASSERT_TRUE(RunFail("(set a a)"));
+
+  ASSERT_TRUE(RunSuccess("(set a 42)", "42"));
+  ASSERT_TRUE(RunSuccess("(set b \"foo\")", "\"foo\""));
+  ASSERT_TRUE(RunSuccess("(set c +)", "Function"));
+  ASSERT_TRUE(RunSuccess("(set d true)", "true"));
+  ASSERT_TRUE(RunSuccess("(set e (1 2 3))", "(1 2 3)"));
+  ASSERT_TRUE(RunSuccess("(set f (quote (+ 2 3)))", "(+ 2 3)"));
+
+  ASSERT_TRUE(RunSuccess("a", "42"));
+  ASSERT_TRUE(RunSuccess("b", "\"foo\""));
+  ASSERT_TRUE(RunSuccess("c", "Function"));
+  ASSERT_TRUE(RunSuccess("d", "true"));
+  ASSERT_TRUE(RunSuccess("e", "(1 2 3)"));
+  ASSERT_TRUE(RunSuccess("f", "(+ 2 3)"));
+
+  ASSERT_TRUE(RunSuccess("(unset a)", "42"));
+  ASSERT_TRUE(RunSuccess("(unset b)", "\"foo\""));
+  ASSERT_TRUE(RunSuccess("(unset c)", "Function"));
+  ASSERT_TRUE(RunSuccess("(unset d)", "true"));
+  ASSERT_TRUE(RunSuccess("(unset e)", "(1 2 3)"));
+  ASSERT_TRUE(RunSuccess("(unset f)", "(+ 2 3)"));
+
+  ASSERT_TRUE(RunFail("a"));
+  ASSERT_TRUE(RunFail("b"));
+  ASSERT_TRUE(RunFail("c"));
+  ASSERT_TRUE(RunFail("d"));
+  ASSERT_TRUE(RunFail("e"));
+  ASSERT_TRUE(RunFail("f"));
+
+  ASSERT_TRUE(RunFail("(unset a)"));
+  ASSERT_TRUE(RunFail("(unset b)"));
+  ASSERT_TRUE(RunFail("(unset c)"));
+  ASSERT_TRUE(RunFail("(unset d)"));
+  ASSERT_TRUE(RunFail("(unset e)"));
+  ASSERT_TRUE(RunFail("(unset f)"));
+
+  ASSERT_TRUE(RunFail("a"));
+  ASSERT_TRUE(RunFail("b"));
+  ASSERT_TRUE(RunFail("c"));
+  ASSERT_TRUE(RunFail("d"));
+  ASSERT_TRUE(RunFail("e"));
+  ASSERT_TRUE(RunFail("f"));
+
+  ASSERT_TRUE(RunSuccess("(set a 42)", "42"));
+  ASSERT_TRUE(RunSuccess("(set b \"foo\")", "\"foo\""));
+  ASSERT_TRUE(RunSuccess("(set c +)", "Function"));
+  ASSERT_TRUE(RunSuccess("(set d true)", "true"));
+  ASSERT_TRUE(RunSuccess("(set e (1 2 3))", "(1 2 3)"));
+  ASSERT_TRUE(RunSuccess("(set f (quote (+ 2 3)))", "(+ 2 3)"));
+
+  ASSERT_TRUE(RunSuccess("(set f 42)", "42"));
+  ASSERT_TRUE(RunSuccess("(set e \"foo\")", "\"foo\""));
+  ASSERT_TRUE(RunSuccess("(set d +)", "Function"));
+  ASSERT_TRUE(RunSuccess("(set c true)", "true"));
+  ASSERT_TRUE(RunSuccess("(set b (1 2 3))", "(1 2 3)"));
+  ASSERT_TRUE(RunSuccess("(set a (quote (+ 2 3)))", "(+ 2 3)"));
+
+  ASSERT_TRUE(RunSuccess("f", "42"));
+  ASSERT_TRUE(RunSuccess("e", "\"foo\""));
+  ASSERT_TRUE(RunSuccess("d", "Function"));
+  ASSERT_TRUE(RunSuccess("c", "true"));
+  ASSERT_TRUE(RunSuccess("b", "(1 2 3)"));
+  ASSERT_TRUE(RunSuccess("a", "(+ 2 3)"));
+}
+
+TEST_F(StdLibInterpreterTest, TestSet) {
+  ASSERT_NO_FATAL_FAILURE(TestSetFunctions());
+}
+
+TEST_F(StdLibInterpreterTest, TestUnSet) {
+  ASSERT_NO_FATAL_FAILURE(TestSetFunctions());
 }
 
 class StdLibNumericalTest: public StdLibTest {
@@ -544,6 +644,7 @@ TEST_F(StdLibBranchTest, TestIf) {
   ASSERT_TRUE(RunSuccess("(if (< 3 3) \"less than\" (if (> 3 3) \"greater than\" \"equal to\"))", "\"equal to\"")); 
 }
 
+// TODO: Need (set) tests to ensure all expressions get executed
 TEST_F(StdLibBranchTest, TestLet) {
   ASSERT_TRUE(RunFail("(let)"));
   ASSERT_TRUE(RunFail("(let ("));
@@ -600,6 +701,22 @@ TEST_F(StdLibBranchTest, TestLet) {
   ASSERT_TRUE(RunSuccess("(let ((a 3) (b 2))"
                          "  (let ((c (+ a b)))"
                          "    (+ c 4)))", "9"));
+
+  // execution
+  ASSERT_TRUE(RunSuccess("(let () (set v1 4) (set v2 63))", "63"));
+  ASSERT_TRUE(RunSuccess("v1", "4"));
+  ASSERT_TRUE(RunSuccess("v2", "63"));
+
+  // scoping
+  ASSERT_TRUE(RunSuccess("(let ((a 2)) (set a 3))", "3"));
+
+  // TODO: This fails. Need to keep track out current scope when doing a (set)
+  //ASSERT_TRUE(RunFail("a"));
+
+  ASSERT_TRUE(RunSuccess("(let ((v1 32)) v1)", "32"));
+  ASSERT_TRUE(RunSuccess("v1", "4"));
+  ASSERT_TRUE(RunSuccess("(let ((v1 32)) (set v1 33) v1)", "33"));
+  //ASSERT_TRUE(RunSuccess("v1", "4"));
 }
 
 void StdLibBranchTest::TestQuotes() {
@@ -639,6 +756,16 @@ TEST_F(StdLibBranchTest, TestUnquote) {
 }
 
 TEST_F(StdLibBranchTest, TestBegin) {
+  ASSERT_TRUE(RunFail("(begin)"));
+  ASSERT_TRUE(RunSuccess("(begin 42)", "42"));
+  ASSERT_TRUE(RunSuccess("(begin \"foo\")", "\"foo\""));
+  ASSERT_TRUE(RunSuccess("(begin true)", "true"));
+  ASSERT_TRUE(RunSuccess("(begin (set a 2) (set b 3) (+ a b))", "5"));
+  ASSERT_TRUE(RunSuccess("(+ a b)", "5"));
+  ASSERT_TRUE(RunFail("(begin undefined (set c 5))"));
+  ASSERT_TRUE(RunFail("c"));
+  ASSERT_TRUE(RunFail("(begin (set c 5) undefined)"));
+  ASSERT_TRUE(RunSuccess("c", "5"));
 }
 
 TEST_F(StdLibBranchTest, TestLambda) {
@@ -648,16 +775,4 @@ TEST_F(StdLibBranchTest, TestDef) {
 }
 
 TEST_F(StdLibBranchTest, TestApply) {
-}
-
-class StdLibSymbolTableTest: public StdLibTest {
-};
-
-TEST_F(StdLibSymbolTableTest, TestSet) {
-}
-
-TEST_F(StdLibSymbolTableTest, TestUnSet) {
-}
-
-TEST_F(StdLibSymbolTableTest, TestHelp) {
 }

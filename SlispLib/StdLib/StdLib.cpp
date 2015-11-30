@@ -29,6 +29,9 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction("print", &StdLib::Print, FuncDef { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() });
   symbols.PutSymbolFunction("quit", &StdLib::Quit, FuncDef { FuncDef::NoArgs(), FuncDef::NoArgs() });
+  symbols.PutSymbolFunction("help", &StdLib::Help, FuncDef { FuncDef::AnyArgs(Symbol::TypeInstance), FuncDef::NoArgs() });
+  symbols.PutSymbolFunction("set", &StdLib::Set, FuncDef { FuncDef::Args({&Symbol::TypeInstance, &Literal::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction("unset", &StdLib::UnSet, FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
 
   // Generic
 
@@ -90,7 +93,7 @@ void StdLib::Load(Interpreter &interpreter) {
     FuncDef::OneArg(Literal::TypeInstance)
   });
   symbols.PutSymbolFunction("let", &StdLib::Let, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) });
-  symbols.PutSymbolFunction("begin", &StdLib::Begin, FuncDef { FuncDef::AnyArgs(), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction("begin", &StdLib::Begin, FuncDef { FuncDef::AtleastOneArg(Sexp::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("lambda", &StdLib::Lambda, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2), FuncDef::OneArg(Function::TypeInstance) });
   symbols.PutSymbolFunction("fn", &StdLib::Lambda, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2), FuncDef::OneArg(Function::TypeInstance) });
   symbols.PutSymbolFunction("def", &StdLib::Def, 
@@ -99,11 +102,6 @@ void StdLib::Load(Interpreter &interpreter) {
   });
   symbols.PutSymbolFunction("apply", &StdLib::Apply, FuncDef { FuncDef::Args({ &Function::TypeInstance, &Sexp::TypeInstance }), FuncDef::OneArg(Literal::TypeInstance) });
 
-  // Symbol Table
-  
-  symbols.PutSymbolFunction("set", &StdLib::Set, FuncDef { FuncDef::Args({&Symbol::TypeInstance, &Literal::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) });
-  symbols.PutSymbolFunction("unset", &StdLib::UnSet, FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
-  symbols.PutSymbolFunction("help", &StdLib::Help, FuncDef { FuncDef::AnyArgs(Symbol::TypeInstance), FuncDef::NoArgs() });
 }
 
 void StdLib::UnLoad(Interpreter &interpreter) {
@@ -160,6 +158,82 @@ bool StdLib::Quit(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) 
   interpreter.Stop();
   expr = ExpressionPtr { new Number { 0 } };
   return true;
+}
+
+bool StdLib::Help(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+  std::string defaultSexp = interpreter.GetDefaultSexp();
+  std::stringstream ss;
+  Interpreter::SymbolFunctor functor = [&ss, &defaultSexp](const std::string &symbolName, ExpressionPtr &expr) {
+    if (&expr->Type() == &Function::TypeInstance && symbolName != defaultSexp) {
+      auto fn = static_cast<Function*>(expr.get());
+      ss << "(" << symbolName << fn->Def.ToString() << std::endl;
+    }
+  };
+
+  auto &symbols = interpreter.GetDynamicSymbols();
+  if (args.empty())
+    symbols.ForEach(functor);
+  else {
+    while (!args.empty()) {
+      ExpressionPtr currArg = std::move(args.front());
+      args.pop_front();
+
+      if (&currArg->Type() == &Symbol::TypeInstance) {
+        auto sym = static_cast<Symbol*>(currArg.get());
+        ExpressionPtr currValue;
+        if (symbols.GetSymbol(sym->Value, currValue)) {
+          functor(sym->Value, currValue);
+        }
+        else
+          return UnknownSymbol(interpreter, "help", sym->Value);
+      }
+    }
+  }
+
+  expr = GetNil();
+  interpreter.GetCommandInterface().WriteOutputLine(ss.str());
+  return true;
+}
+
+bool StdLib::Set(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+  ExpressionPtr sym = std::move(args.front());
+  args.pop_front();
+    
+  ExpressionPtr value = std::move(args.front());
+  args.pop_front();
+
+  std::string symName = "";
+  auto symE = static_cast<Symbol*>(sym.get());
+  symName = symE->Value;
+
+  ExpressionPtr temp;
+  auto &currStackFrame = interpreter.GetCurrentStackFrame();
+  if (currStackFrame.GetLocalSymbols().GetSymbol(symName, temp))
+    currStackFrame.PutLocalSymbol(symName, value->Clone());
+  else
+    currStackFrame.PutDynamicSymbol(symName, value->Clone());
+
+  expr = std::move(value);
+  return true;
+}
+
+bool StdLib::UnSet(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+  ExpressionPtr sym = std::move(args.front());
+  args.pop_front();
+
+  std::string symName = "";
+  auto symE = static_cast<Symbol*>(sym.get());
+  symName = symE->Value;
+
+  ExpressionPtr value;
+  auto &currFrame = interpreter.GetCurrentStackFrame();
+  if (currFrame.GetSymbol(symName, value)) {
+    currFrame.DeleteSymbol(symName);
+    expr = std::move(value);
+    return true;
+  }
+  else
+    return UnknownSymbol(interpreter, "unset", symName);
 }
 
 // Generic Functions
@@ -728,78 +802,6 @@ bool StdLib::Apply(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args)
   }
   else
     return interpreter.PushError(EvalError { "apply", "failed to evaluate argument list" });
-}
-
-// Symbol Table Functions
-
-bool StdLib::Set(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  ExpressionPtr sym = std::move(args.front());
-  args.pop_front();
-    
-  ExpressionPtr value = std::move(args.front());
-  args.pop_front();
-
-  std::string symName = "";
-  auto symE = static_cast<Symbol*>(sym.get());
-  symName = symE->Value;
-
-  interpreter.GetCurrentStackFrame().PutDynamicSymbol(symName, value->Clone());
-  expr = std::move(value);
-  return true;
-}
-
-bool StdLib::UnSet(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  ExpressionPtr sym = std::move(args.front());
-  args.pop_front();
-
-  std::string symName = "";
-  auto symE = static_cast<Symbol*>(sym.get());
-  symName = symE->Value;
-
-  ExpressionPtr value;
-  auto &currFrame = interpreter.GetCurrentStackFrame();
-  if (currFrame.GetSymbol(symName, value)) {
-    currFrame.DeleteSymbol(symName);
-    expr = std::move(value);
-    return true;
-  }
-  else
-    return UnknownSymbol(interpreter, "unset", symName);
-}
-
-bool StdLib::Help(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  std::string defaultSexp = interpreter.GetDefaultSexp();
-  std::stringstream ss;
-  Interpreter::SymbolFunctor functor = [&ss, &defaultSexp](const std::string &symbolName, ExpressionPtr &expr) {
-    if (&expr->Type() == &Function::TypeInstance && symbolName != defaultSexp) {
-      auto fn = static_cast<Function*>(expr.get());
-      ss << "(" << symbolName << fn->Def.ToString() << std::endl;
-    }
-  };
-
-  auto &symbols = interpreter.GetDynamicSymbols();
-  if (args.empty())
-    symbols.ForEach(functor);
-  else {
-    while (!args.empty()) {
-      ExpressionPtr currArg = std::move(args.front());
-      args.pop_front();
-
-      if (&currArg->Type() == &Symbol::TypeInstance) {
-        auto sym = static_cast<Symbol*>(currArg.get());
-        ExpressionPtr currValue;
-        if (symbols.GetSymbol(sym->Value, currValue)) {
-          functor(sym->Value, currValue);
-        }
-        else
-          return UnknownSymbol(interpreter, "help", sym->Value);
-      }
-    }
-  }
-
-  expr = GetNil();
-  interpreter.GetCommandInterface().WriteOutputLine(ss.str());
-  return true;
 }
 
 // Helpers

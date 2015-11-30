@@ -64,7 +64,7 @@ bool ArgDef::CheckArgCount(int expectedMin, int expectedMax, ArgList &args, std:
 }
 
 bool ArgDef::CheckArg(ExpressionEvaluator evaluator, ExpressionPtr &arg, const TypeInfo &expectedType, int argNum, std::string &error) const {
-  if (TypeHelper::TypeMatches(expectedType, arg->Type()) || evaluator(arg)) {
+  if (arg && TypeHelper::TypeMatches(expectedType, arg->Type()) || evaluator(arg)) {
     if (!TypeHelper::TypeMatches(expectedType, arg->Type())) {
       error = "Argument " + std::to_string(argNum) + ": Expected " + expectedType.TypeName + ", got " + arg->Type().TypeName;
       return false;

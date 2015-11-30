@@ -14,6 +14,9 @@ class StdLib: public Library {
     // Interpreter
     static bool Print(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
     static bool Quit(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
+    static bool Help(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
+    static bool Set(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
+    static bool UnSet(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
 
     // Generic
     static bool Add(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
@@ -68,11 +71,6 @@ class StdLib: public Library {
     static bool Lambda(Interpreter &interpreted, ExpressionPtr &expr, ArgList &args);
     static bool Def(Interpreter &interpreted, ExpressionPtr &expr, ArgList &args);
     static bool Apply(Interpreter &interpreted, ExpressionPtr &expr, ArgList &args);
-
-    // Symbol Table
-    static bool Set(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool UnSet(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Help(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
 
     // Helpers
     static bool PrintExpression(Interpreter &interpreter, ExpressionPtr &expr, std::ostream &out);
