@@ -526,6 +526,8 @@ TEST_F(StdLibComparisonTest, TestGte) {
 }
 
 class StdLibBranchTest: public StdLibTest {
+  protected:
+    void TestQuotes();
 };
 
 TEST_F(StdLibBranchTest, TestIf) {
@@ -542,19 +544,98 @@ TEST_F(StdLibBranchTest, TestIf) {
   ASSERT_TRUE(RunSuccess("(if (< 3 3) \"less than\" (if (> 3 3) \"greater than\" \"equal to\"))", "\"equal to\"")); 
 }
 
-TEST_F(StdLibBranchTest, DISABLED_TestLet) {
+TEST_F(StdLibBranchTest, TestLet) {
   ASSERT_TRUE(RunFail("(let)"));
+  ASSERT_TRUE(RunFail("(let ("));
   ASSERT_TRUE(RunFail("(let true)"));
   ASSERT_TRUE(RunSuccess("(let () true)", "true"));
+  ASSERT_TRUE(RunSuccess("(let () true false)", "false"));
+  ASSERT_TRUE(RunFail("(let (()) true)"));
+  ASSERT_TRUE(RunFail("(let ((a)) true)"));
+  ASSERT_TRUE(RunFail("(let ((3)) true)"));
+  ASSERT_TRUE(RunSuccess("(let ((a 3)) true)", "true"));
+  ASSERT_TRUE(RunSuccess("(let ((a 3)) a)", "3"));
+  ASSERT_TRUE(RunSuccess("(let ((a true)) a)", "true"));
+  ASSERT_TRUE(RunSuccess("(let ((a (+ 2 1))) a)", "3"));
+  ASSERT_TRUE(RunFail("(let ((a 3 4)) a)"));
+  ASSERT_TRUE(RunSuccess("(let ((a 3) (a 2)) a)", "2"));
+  ASSERT_TRUE(RunSuccess("(let ((a 3) (b 2)) a)", "3"));
+  ASSERT_TRUE(RunSuccess("(let ((a 3) (b 2)) b)", "2"));
+  ASSERT_TRUE(RunSuccess("(let ((a 3) (b 2)) (+ a b))", "5"));
+
+  // strings
+  ASSERT_TRUE(RunSuccess("(let ((a \"foo\")) a)", "\"foo\""));
+  ASSERT_TRUE(RunSuccess("(let ((a \"foo\") (b 3)) b a)", "\"foo\""));
+  ASSERT_TRUE(RunSuccess("(let ((a \"foo\") (b 3)) a b)", "3"));
+
+  // functions
+  ASSERT_TRUE(RunSuccess("(let ((add +)) (add 3 2))", "5"));
+
+  // lists
+  ASSERT_TRUE(RunSuccess("(let ((a (1 2 3))) a)", "(1 2 3)"));
   
-  // bug!
-  ASSERT_TRUE(RunFail("(let ("));
+  // nesting
+  ASSERT_TRUE(RunSuccess("(let ((a 3))"
+                         "  (let ((a 2))"
+                         "    a))", "2"));
+  ASSERT_TRUE(RunSuccess("(let ((a 3))"
+                         "  (let ((b 2))"
+                         "    a))", "3"));
+  ASSERT_TRUE(RunSuccess("(let ((a 3))"
+                         "  (let ((b 2))"
+                         "    b))", "2"));
+  ASSERT_TRUE(RunSuccess("(let ((a 3))"
+                         "  (let ((b 2))"
+                         "    (+ a b)))", "5"));
+  ASSERT_TRUE(RunFail("(let ((a 3))"
+                      "  (let ((b 2))"
+                      "    b)"
+                      "  (+ a b))"));
+
+  ASSERT_TRUE(RunSuccess("(let ((a 3))"
+                         "  (let ((b 2))"
+                         "    b)"
+                         "  a)", "3"));
+
+  ASSERT_TRUE(RunSuccess("(let ((a 3) (b 2))"
+                         "  (let ((c (+ a b)))"
+                         "    (+ c 4)))", "9"));
+}
+
+void StdLibBranchTest::TestQuotes() {
+  // quotes
+  ASSERT_TRUE(RunFail("(quote)"));
+  ASSERT_TRUE(RunFail("(quote 2 3)"));
+  ASSERT_TRUE(RunSuccess("(quote 4)", "4"));
+  ASSERT_TRUE(RunSuccess("(quote \"foo\")", "\"foo\""));
+  ASSERT_TRUE(RunSuccess("(quote +)", "+"));
+  ASSERT_TRUE(RunSuccess("(quote quote)", "quote"));
+  ASSERT_TRUE(RunSuccess("(quote (+ 2 3))", "(+ 2 3)"));
+  ASSERT_TRUE(RunSuccess("(quote (1 2 3))", "(1 2 3)"));
+  ASSERT_TRUE(RunSuccess("(quote thisdoesnotexist)", "thisdoesnotexist"));
+  ASSERT_TRUE(RunSuccess("(quote (quote (+ 2 3)))", "(+ 2 3)"));
+  ASSERT_TRUE(RunSuccess("(quote (quote (+ 2 3)))", "(+ 2 3)"));
+
+  // unquotes
+  ASSERT_TRUE(RunFail("(unquote)"));
+  ASSERT_TRUE(RunFail("(unquote 2 3)"));
+  ASSERT_TRUE(RunSuccess("(unquote (quote 4))", "4"));
+  ASSERT_TRUE(RunSuccess("(unquote (quote \"foo\"))", "\"foo\""));
+  ASSERT_TRUE(RunSuccess("(unquote (quote +))", "Function"));
+  ASSERT_TRUE(RunSuccess("(unquote (quote quote))", "Function"));
+  ASSERT_TRUE(RunSuccess("(unquote (quote (+ 2 3)))", "5"));
+  ASSERT_TRUE(RunSuccess("(unquote (quote (1 2 3)))", "(1 2 3)"));
+  ASSERT_TRUE(RunFail("(unquote (quote thisdoesnotexist))"));
+  ASSERT_TRUE(RunSuccess("(unquote (quote (quote (+ 2 3))))", "(+ 2 3)"));
+  ASSERT_TRUE(RunSuccess("(unquote (unquote (quote (quote (+ 2 3)))))", "5"));
 }
 
 TEST_F(StdLibBranchTest, TestQuoteFn) {
+  ASSERT_NO_FATAL_FAILURE(TestQuotes());
 }
 
 TEST_F(StdLibBranchTest, TestUnquote) {
+  ASSERT_NO_FATAL_FAILURE(TestQuotes());
 }
 
 TEST_F(StdLibBranchTest, TestBegin) {

@@ -89,7 +89,7 @@ void StdLib::Load(Interpreter &interpreter) {
     FuncDef::Args({&Bool::TypeInstance, &Sexp::TypeInstance, &Sexp::TypeInstance}),
     FuncDef::OneArg(Literal::TypeInstance)
   });
-  symbols.PutSymbolFunction("let", &StdLib::Let, FuncDef { FuncDef::AnyArgs(Sexp::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction("let", &StdLib::Let, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("begin", &StdLib::Begin, FuncDef { FuncDef::AnyArgs(), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("lambda", &StdLib::Lambda, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2), FuncDef::OneArg(Function::TypeInstance) });
   symbols.PutSymbolFunction("fn", &StdLib::Lambda, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2), FuncDef::OneArg(Function::TypeInstance) });
@@ -553,12 +553,17 @@ bool StdLib::If(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
     return interpreter.PushError(EvalError { "if", "Failed to evaluate branch" } );
 }
 
+// Go through all the code and harden, perform additional argument checking
+
 bool StdLib::Let(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
   Scope scope(interpreter.GetCurrentStackFrame().GetLocalSymbols());
   ExpressionPtr varsExpr = std::move(args.front());
   args.pop_front();
 
-  auto vars = static_cast<Sexp*>(varsExpr.get());
+  auto vars = dynamic_cast<Sexp*>(varsExpr.get());
+  if (!vars)
+    return TypeError(interpreter, "let", "sexp", varsExpr);
+
   for (auto &varExpr : vars->Args) {
     auto var = dynamic_cast<Sexp*>(varExpr.get());
     if (var) {
