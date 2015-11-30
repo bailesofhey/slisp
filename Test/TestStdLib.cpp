@@ -644,7 +644,6 @@ TEST_F(StdLibBranchTest, TestIf) {
   ASSERT_TRUE(RunSuccess("(if (< 3 3) \"less than\" (if (> 3 3) \"greater than\" \"equal to\"))", "\"equal to\"")); 
 }
 
-// TODO: Need (set) tests to ensure all expressions get executed
 TEST_F(StdLibBranchTest, TestLet) {
   ASSERT_TRUE(RunFail("(let)"));
   ASSERT_TRUE(RunFail("(let ("));
