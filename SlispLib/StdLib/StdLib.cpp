@@ -798,7 +798,7 @@ bool StdLib::Apply(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args)
         return interpreter.PushError(EvalError { "apply", "failed to evaluate function application" });
     }
     else
-      return TypeError(interpreter, "apply", "list", appArgsExpr);
+      return TypeError(interpreter, "apply", "list", args);
   }
   else
     return interpreter.PushError(EvalError { "apply", "failed to evaluate argument list" });

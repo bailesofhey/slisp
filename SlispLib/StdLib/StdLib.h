@@ -22,9 +22,9 @@ class StdLib: public Library {
     static bool Add(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
 
     // Numerical
+    static bool AddNum(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
     static bool Inc(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
     static bool Dec(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool AddNum(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
     static bool Sub(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
     static bool Mult(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
     static bool Div(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);

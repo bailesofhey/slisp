@@ -709,12 +709,14 @@ TEST_F(StdLibBranchTest, TestLet) {
   // scoping
   ASSERT_TRUE(RunSuccess("(let ((a 2)) (set a 3))", "3"));
 
-  // TODO: This fails. Need to keep track out current scope when doing a (set)
+  // #17 (set) doesn't respect lexical scoping
   //ASSERT_TRUE(RunFail("a"));
 
   ASSERT_TRUE(RunSuccess("(let ((v1 32)) v1)", "32"));
   ASSERT_TRUE(RunSuccess("v1", "4"));
   ASSERT_TRUE(RunSuccess("(let ((v1 32)) (set v1 33) v1)", "33"));
+
+  // #17 (set) doesn't respect lexical scoping
   //ASSERT_TRUE(RunSuccess("v1", "4"));
 }
 
@@ -768,10 +770,96 @@ TEST_F(StdLibBranchTest, TestBegin) {
 }
 
 TEST_F(StdLibBranchTest, TestLambda) {
+  ASSERT_TRUE(RunFail("(lambda)"));
+  ASSERT_TRUE(RunFail("(lambda true)"));
+  ASSERT_TRUE(RunFail("(lambda 42)"));
+  ASSERT_TRUE(RunFail("(lambda \"foo\")"));
+  ASSERT_TRUE(RunFail("(lambda x)"));
+  ASSERT_TRUE(RunFail("(lambda (1 2 3))"));
+  ASSERT_TRUE(RunFail("(lambda (+ 2 3))"));
+
+  ASSERT_TRUE(RunFail("(lambda ())"));
+  ASSERT_TRUE(RunFail("(lambda (true))"));
+  ASSERT_TRUE(RunFail("(lambda (42))"));
+  ASSERT_TRUE(RunFail("(lambda (\"foo\"))"));
+  ASSERT_TRUE(RunFail("(lambda (x))"));
+  ASSERT_TRUE(RunFail("(lambda ((1 2 3)))"));
+  ASSERT_TRUE(RunFail("(lambda ((+ 2 3)))"));
+
+  ASSERT_TRUE(RunSuccess("(lambda () true)", "Function"));
+  ASSERT_TRUE(RunSuccess("(lambda () 42)", "Function"));
+  ASSERT_TRUE(RunSuccess("(lambda () \"foo\")", "Function"));
+  ASSERT_TRUE(RunSuccess("(lambda () x)", "Function"));
+  ASSERT_TRUE(RunSuccess("(lambda () (1 2 3))", "Function"));
+  ASSERT_TRUE(RunSuccess("(lambda () (+ 2 3))", "Function"));
+
+  ASSERT_TRUE(RunSuccess("(lambda (x) true)", "Function"));
+  ASSERT_TRUE(RunSuccess("(lambda (x) 42)", "Function"));
+  ASSERT_TRUE(RunSuccess("(lambda (x) \"foo\")", "Function"));
+  ASSERT_TRUE(RunSuccess("(lambda (x) x)", "Function"));
+  ASSERT_TRUE(RunSuccess("(lambda (x) (1 2 3))", "Function"));
+  ASSERT_TRUE(RunSuccess("(lambda (x) (+ 2 3))", "Function"));
+
+  ASSERT_TRUE(RunSuccess("(lambda (x y z) true)", "Function"));
+  ASSERT_TRUE(RunSuccess("(lambda (x y z) 42)", "Function"));
+  ASSERT_TRUE(RunSuccess("(lambda (x y z) \"foo\")", "Function"));
+  ASSERT_TRUE(RunSuccess("(lambda (x y z) x)", "Function"));
+  ASSERT_TRUE(RunSuccess("(lambda (x y z) (1 2 3))", "Function"));
+  ASSERT_TRUE(RunSuccess("(lambda (x y z) (+ 2 3))", "Function"));
+
+  // execution
+  ASSERT_TRUE(RunSuccess("((lambda () (* 2 10)) )", "20"));
+  ASSERT_TRUE(RunSuccess("((lambda (x) (* x 10)) 5)", "50"));
+  ASSERT_TRUE(RunFail("((lambda (x) (* x 10)) )"));
+  ASSERT_TRUE(RunFail("((lambda (x) (* x 10)) 5 6)"));
+  ASSERT_TRUE(RunSuccess("((lambda (x y) (* x y)) 5 6)", "30"));
+  ASSERT_TRUE(RunSuccess("((lambda (xy) (+ xy xy)) (5 6))", "(5 6 5 6)"));
+
+  // #21 (list) doesn't evaluate its arguments
+  //ASSERT_TRUE(RunSuccess("((lambda (xy) (list xy xy)) (5 6))", "((5 6) (5 6))"));
+
+  // fn
+  ASSERT_TRUE(RunSuccess("((fn (x y) (* x y)) 5 6)", "30"));
 }
 
 TEST_F(StdLibBranchTest, TestDef) {
+  ASSERT_TRUE(RunFail("(def)"));
+  ASSERT_TRUE(RunFail("(def f)"));
+  ASSERT_TRUE(RunFail("(def foo () )"));
+  ASSERT_TRUE(RunSuccess("(def foo () true)", "Function"));
+  ASSERT_TRUE(RunSuccess("(def foo () 42)", "Function"));
+  ASSERT_TRUE(RunSuccess("(def add (a b) (+ a b))", "Function"));
+  ASSERT_TRUE(RunSuccess("add", "Function"));
+  ASSERT_TRUE(RunFail("(add)"));
+  ASSERT_TRUE(RunFail("(add 2)"));
+  ASSERT_TRUE(RunSuccess("(add 2 3)", "5"));
+  ASSERT_TRUE(RunFail("(add 2 3 4)"));
+  ASSERT_TRUE(RunSuccess("(add \"foo\" \"bar\")", "foobar"));
+  ASSERT_TRUE(RunSuccess("(add (1 2) (3 4 5))", "(1 2 3 4 5)"));
+  ASSERT_TRUE(RunFail("(add 3 \"foo\")"));
+  ASSERT_TRUE(RunFail("(add + -)"));
 }
 
 TEST_F(StdLibBranchTest, TestApply) {
+  ASSERT_TRUE(RunFail("(apply)"));
+  ASSERT_TRUE(RunFail("(apply +)"));
+  ASSERT_TRUE(RunFail("(apply + 1)"));
+  ASSERT_TRUE(RunFail("(apply + \"foo\")"));
+  ASSERT_TRUE(RunFail("(apply + false)"));
+  ASSERT_TRUE(RunFail("(apply + (+ 1 2))"));
+  ASSERT_TRUE(RunFail("(apply + 1 2)"));
+  ASSERT_TRUE(RunFail("(apply + ())"));
+  ASSERT_TRUE(RunSuccess("(apply + (1))", "1"));
+  ASSERT_TRUE(RunSuccess("(apply + (1 2))", "3"));
+  ASSERT_TRUE(RunSuccess("(apply + (1 2 3))", "6"));
+
+  ASSERT_TRUE(RunFail("(apply + (1 2 a))"));
+  ASSERT_TRUE(RunFail("(apply + (1 2 \"foo\"))"));
+  ASSERT_TRUE(RunFail("(apply + (1 2 (3 4)))"));
+
+  ASSERT_TRUE(RunSuccess("(apply + (\"Hello\" \", wo\" \"rld!\"))", "\"Hello, world!\""));
+  ASSERT_TRUE(RunFail("(apply (fn (a b) (+ a b)) ())"));
+  ASSERT_TRUE(RunFail("(apply (fn (a b) (+ a b)) (1))"));
+  ASSERT_TRUE(RunSuccess("(apply (fn (a b) (+ a b)) (1 2))", "3"));
+  ASSERT_TRUE(RunFail("(apply (fn (a b) (+ a b)) (1 2 3))"));
 }
