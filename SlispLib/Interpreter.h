@@ -41,6 +41,7 @@ class Scope {
     explicit Scope(SymbolTable &symbols);
     ~Scope();
     void PutSymbol(const std::string &symbolName, ExpressionPtr &value);
+    bool IsScopedSymbol(const std::string &symbolName) const;
 
   private:
     SymbolTable                  &Symbols;

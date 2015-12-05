@@ -3,6 +3,7 @@
 #include <string>
 #include <functional>
 #include <memory>
+#include <algorithm>
 
 #include "Interpreter.h"
 #include "Expression.h"
@@ -103,11 +104,19 @@ Scope::~Scope() {
 
 void Scope::PutSymbol(const std::string &symbolName, ExpressionPtr &value) {
   ExpressionPtr oldValue;
-  if (Symbols.GetSymbol(symbolName, oldValue)) {
-    ShadowedSymbols.PutSymbol(symbolName, std::move(oldValue));
+  if (!IsScopedSymbol(symbolName)) {
+    if (Symbols.GetSymbol(symbolName, oldValue)) {
+      ShadowedSymbols.PutSymbol(symbolName, std::move(oldValue));
+    }
   }
   Symbols.PutSymbol(symbolName, std::move(value));
   ScopedSymbols.push_back(symbolName);
+}
+
+bool Scope::IsScopedSymbol(const std::string &symbolName) const {
+  auto scopeBegin = begin(ScopedSymbols),
+       scopeEnd   = end(ScopedSymbols);
+  return find(scopeBegin, scopeEnd, symbolName) != scopeEnd;
 }
 
 //=============================================================================

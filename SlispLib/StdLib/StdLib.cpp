@@ -657,8 +657,12 @@ bool StdLib::Let(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
 
         auto varName = dynamic_cast<Symbol*>(varNameExpr.get());
         if (varName) {
-          if (interpreter.EvaluatePartial(varValueExpr))
-            scope.PutSymbol(varName->Value, varValueExpr);
+          if (interpreter.EvaluatePartial(varValueExpr)) {
+            if (!scope.IsScopedSymbol(varName->Value))
+              scope.PutSymbol(varName->Value, varValueExpr);
+            else
+              return interpreter.PushError(EvalError { "let", "Duplicate binding for " + varName->Value });
+          }
           else
             return interpreter.PushError(EvalError { "let", "Failed to evaluate value for " + varName->Value } );
         }

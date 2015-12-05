@@ -658,7 +658,7 @@ TEST_F(StdLibBranchTest, TestLet) {
   ASSERT_TRUE(RunSuccess("(let ((a true)) a)", "true"));
   ASSERT_TRUE(RunSuccess("(let ((a (+ 2 1))) a)", "3"));
   ASSERT_TRUE(RunFail("(let ((a 3 4)) a)"));
-  ASSERT_TRUE(RunSuccess("(let ((a 3) (a 2)) a)", "2"));
+  ASSERT_TRUE(RunFail("(let ((a 3) (a 2)) a)")); // #20
   ASSERT_TRUE(RunSuccess("(let ((a 3) (b 2)) a)", "3"));
   ASSERT_TRUE(RunSuccess("(let ((a 3) (b 2)) b)", "2"));
   ASSERT_TRUE(RunSuccess("(let ((a 3) (b 2)) (+ a b))", "5"));
@@ -709,15 +709,13 @@ TEST_F(StdLibBranchTest, TestLet) {
   // scoping
   ASSERT_TRUE(RunSuccess("(let ((a 2)) (set a 3))", "3"));
 
-  // #17 (set) doesn't respect lexical scoping
-  //ASSERT_TRUE(RunFail("a"));
+  ASSERT_TRUE(RunFail("a")); // #20 
 
   ASSERT_TRUE(RunSuccess("(let ((v1 32)) v1)", "32"));
   ASSERT_TRUE(RunSuccess("v1", "4"));
   ASSERT_TRUE(RunSuccess("(let ((v1 32)) (set v1 33) v1)", "33"));
 
-  // #17 (set) doesn't respect lexical scoping
-  //ASSERT_TRUE(RunSuccess("v1", "4"));
+  ASSERT_TRUE(RunSuccess("v1", "4")); // #20
 }
 
 void StdLibBranchTest::TestQuotes() {

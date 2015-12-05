@@ -218,6 +218,12 @@ TEST(Scope, TestPutSymbol_Simple) {
     Scope outer(table);
     table.PutSymbolNumber("b", 2);
     outer.PutSymbol("c", ExpressionPtr { new Number(3) });
+    outer.PutSymbol("c", ExpressionPtr { new Number(2) }); // #20
+    
+    ASSERT_FALSE(outer.IsScopedSymbol("a"));
+    ASSERT_FALSE(outer.IsScopedSymbol("b"));
+    ASSERT_TRUE(outer.IsScopedSymbol("c"));
+
     ASSERT_TRUE(table.GetSymbol("a", temp));
     ASSERT_TRUE(table.GetSymbol("b", temp));
     ASSERT_TRUE(table.GetSymbol("c", temp));
@@ -225,6 +231,13 @@ TEST(Scope, TestPutSymbol_Simple) {
       Scope inner(table);
       table.PutSymbolNumber("d", 4);
       inner.PutSymbol("e", ExpressionPtr { new Number(5) });
+
+      ASSERT_FALSE(inner.IsScopedSymbol("a"));
+      ASSERT_FALSE(inner.IsScopedSymbol("b"));
+      ASSERT_FALSE(inner.IsScopedSymbol("c"));
+      ASSERT_FALSE(inner.IsScopedSymbol("d"));
+      ASSERT_TRUE(inner.IsScopedSymbol("e"));
+
       ASSERT_TRUE(table.GetSymbol("a", temp));
       ASSERT_TRUE(table.GetSymbol("b", temp));
       ASSERT_TRUE(table.GetSymbol("c", temp));
