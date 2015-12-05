@@ -814,9 +814,7 @@ TEST_F(StdLibBranchTest, TestLambda) {
   ASSERT_TRUE(RunFail("((lambda (x) (* x 10)) 5 6)"));
   ASSERT_TRUE(RunSuccess("((lambda (x y) (* x y)) 5 6)", "30"));
   ASSERT_TRUE(RunSuccess("((lambda (xy) (+ xy xy)) (5 6))", "(5 6 5 6)"));
-
-  // #21 (list) doesn't evaluate its arguments
-  //ASSERT_TRUE(RunSuccess("((lambda (xy) (list xy xy)) (5 6))", "((5 6) (5 6))"));
+  ASSERT_TRUE(RunSuccess("((lambda (xy) (list xy xy)) (5 6))", "((5 6) (5 6))")); // #21 (list) doesn't evaluate its arguments
 
   // fn
   ASSERT_TRUE(RunSuccess("((fn (x y) (* x y)) 5 6)", "30"));

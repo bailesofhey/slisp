@@ -401,9 +401,15 @@ bool StdLib::Reverse(Interpreter &interpreter, ExpressionPtr &expr, ArgList &arg
 bool StdLib::List(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
   ExpressionPtr listExpr { new Sexp {} };
   auto list = static_cast<Sexp*>(listExpr.get());
+  int argNum = 1;
   while (!args.empty()) {
-    list->Args.push_back(std::move(args.front()));
+    ExpressionPtr arg = std::move(args.front());
     args.pop_front();
+    if (interpreter.EvaluatePartial(arg))
+      list->Args.push_back(std::move(arg));
+    else
+      return interpreter.PushError(EvalError { "list", "failed to evaluate argument " + std::to_string(argNum) });
+    ++argNum;
   }
 
   expr = ExpressionPtr { new Quote { std::move(listExpr) } };
