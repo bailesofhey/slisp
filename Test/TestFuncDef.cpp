@@ -69,7 +69,7 @@ void TestArgs(FuncDef &funcDef, int maxArgs, std::function<bool(const Sexp &)> a
 static const int ANY_NARGS = -1;
 
 bool HomogeneousArgSuccessFn(int expectedMinArgs, int expectedMaxArgs, const ExpressionPtr &expr, const Sexp &sexp) {
-  int actualArgs = sexp.Args.size();
+  auto actualArgs = sexp.Args.size();
   if ((expectedMinArgs == ANY_NARGS || actualArgs >= (expectedMinArgs + 1)) &&
       (expectedMaxArgs == ANY_NARGS || actualArgs <= (expectedMaxArgs + 1))) { // (func arg[1] ... arg[expectedNArgs])
     int argNum = 0;

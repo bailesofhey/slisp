@@ -228,15 +228,11 @@ class StdLibNumericalTest: public StdLibTest {
   }
 
   void TestIdentity(const std::string &name) {
-    static const char * const values[] = {"0", "1", "42", "false", "true"};
+    static const char * const values[] = {"0", "1", "42"};
     std::string prefix = "(" + name + " ";
     for (auto &value : values) {
       std::string code = prefix + value + ")";
       const char *expectedValue = value;
-      if (std::strcmp(value, "true") == 0)
-        expectedValue = "1";
-      else if (std::strcmp(value, "false") == 0)
-        expectedValue = "0";
       ASSERT_TRUE(RunSuccess(code, expectedValue));
     }
   }
@@ -359,7 +355,6 @@ TEST_F(StdLibBitwiseTest, BitAnd) {
   ASSERT_TRUE(RunSuccess("(& 0 0)", "0"));
   ASSERT_TRUE(RunSuccess("(& 0 1)", "0"));
   ASSERT_TRUE(RunSuccess("(& 1 0)", "0"));
-  ASSERT_TRUE(RunSuccess("(& true false)", "0"));
   ASSERT_TRUE(RunSuccess("(& 1 1)", "1"));
   ASSERT_TRUE(RunSuccess("(& 3 0)", "0"));
   ASSERT_TRUE(RunSuccess("(& 3 1)", "1"));
@@ -376,7 +371,6 @@ TEST_F(StdLibBitwiseTest, BitOr) {
   ASSERT_NO_FATAL_FAILURE(TestIdentity("|"));
   ASSERT_TRUE(RunSuccess("(| 0 0)", "0"));
   ASSERT_TRUE(RunSuccess("(| 0 1)", "1"));
-  ASSERT_TRUE(RunSuccess("(| true false)", "1"));
   ASSERT_TRUE(RunSuccess("(| 1 0)", "1"));
   ASSERT_TRUE(RunSuccess("(| 1 1)", "1"));
   ASSERT_TRUE(RunSuccess("(| 2 1)", "3"));
@@ -395,7 +389,6 @@ TEST_F(StdLibBitwiseTest, BitXor) {
   ASSERT_NO_FATAL_FAILURE(TestIdentity("^"));
   ASSERT_TRUE(RunSuccess("(^ 0 0)", "0"));
   ASSERT_TRUE(RunSuccess("(^ 0 1)", "1"));
-  ASSERT_TRUE(RunSuccess("(^ true false)", "1"));
   ASSERT_TRUE(RunSuccess("(^ 1 0)", "1"));
   ASSERT_TRUE(RunSuccess("(^ 1 1)", "0"));
   ASSERT_TRUE(RunSuccess("(^ 2 1)", "3"));
@@ -542,15 +535,26 @@ class StdLibComparisonTest: public StdLibTest {
       ASSERT_TRUE(RunSuccess(Prefix + "42 42)", value1));
       ASSERT_TRUE(RunSuccess(Prefix + "\"foo\" \"foo\")", value1));
 
+      // Lists
+      ASSERT_TRUE(RunSuccess(Prefix + "nil nil)", value1));
+      ASSERT_TRUE(RunSuccess(Prefix + "() nil)", value1));
+      ASSERT_TRUE(RunSuccess(Prefix + "nil ())", value1));
+      ASSERT_TRUE(RunSuccess(Prefix + "(1) nil)", value2));
+      ASSERT_TRUE(RunSuccess(Prefix + "nil (1))", value2));
+      ASSERT_TRUE(RunSuccess(Prefix + "(1) (1))", value1));
+      ASSERT_TRUE(RunSuccess(Prefix + "(1) (2))", value2));
+      ASSERT_TRUE(RunSuccess(Prefix + "(1 2 \"foo\") (1 2))", value2));
+      ASSERT_TRUE(RunSuccess(Prefix + "(1 2) (1 2 \"foo\"))", value2));
+      ASSERT_TRUE(RunSuccess(Prefix + "(1 2 \"foo\") (1 2 4))", value2));
+      ASSERT_TRUE(RunSuccess(Prefix + "(1 2 4) (1 2 \"foo\"))", value2));
+      ASSERT_TRUE(RunSuccess(Prefix + "(1 2 \"foo\") (1 2 \"foo\"))", value1));
+      ASSERT_TRUE(RunSuccess(Prefix + "(1 2 (3 4)) (1 2 (3 4)))", value1));
+
       //Implicit Number -> Bool not implemented
       //ASSERT_TRUE(RunSuccess(Prefix + "true 1)", value1));
       //ASSERT_TRUE(RunSuccess(Prefix + "1 true)", value1));
       //ASSERT_TRUE(RunSuccess(Prefix + "true 4)", "false"));
       //ASSERT_TRUE(RunSuccess(Prefix + "4 true)", "false"));
-      ASSERT_TRUE(RunFail(Prefix + "true 1)"));
-      ASSERT_TRUE(RunFail(Prefix + "1 true)"));
-      ASSERT_TRUE(RunFail(Prefix + "true 4)"));
-      ASSERT_TRUE(RunFail(Prefix + "4 true)"));
 
       ASSERT_TRUE(RunSuccess(Prefix + "42 (+ 40 2))", value1));
       ASSERT_TRUE(RunSuccess(Prefix + "\"foo\" (reverse \"oof\"))", value1));
@@ -558,15 +562,14 @@ class StdLibComparisonTest: public StdLibTest {
       //Comparisons are currently required to be homogeneous
       //ASSERT_TRUE(RunSuccess(Prefix + "42 \"foo\")", "false"));
       //ASSERT_TRUE(RunSuccess(Prefix + "\"foo\" nil)", "true"));
-      ASSERT_TRUE(RunFail(Prefix + "42 \"foo\")"));
-      ASSERT_TRUE(RunFail(Prefix + "\"foo\" nil)"));
+      ASSERT_TRUE(RunSuccess(Prefix + "42 \"foo\")", value2));
+      ASSERT_TRUE(RunSuccess(Prefix + "\"foo\" nil)", value2));
     }
 
     void TestInEquality(const char *value1, const char *value2, const char *value3) {
       ASSERT_TRUE(RunFail(Prefix + ")"));
       ASSERT_TRUE(RunSuccess(Prefix + "\"foo\")", "true"));
       ASSERT_TRUE(RunSuccess(Prefix + "2)", "true"));
-      ASSERT_TRUE(RunSuccess(Prefix + "true)", "true"));
 
       ASSERT_TRUE(RunSuccess(Prefix + "1 1)", value3));
       ASSERT_TRUE(RunSuccess(Prefix + "2 1)", value2));

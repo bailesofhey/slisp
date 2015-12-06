@@ -564,12 +564,48 @@ bool LteT(Bool &r, T &a, T &b) {
   return r.Value && (LtT(r, a, b) || EqT(r, a, b));
 }
 
+using ExpressionPredicate = std::function<bool(const Expression &, const Expression &)>;
+bool ExpressionPredicateFn(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args, const std::string &name, ExpressionPredicate fn) {
+  int argNum = 0;
+  if (!args.empty()) {
+    ExpressionPtr firstArg = std::move(args.front());
+    args.pop_front();
+    ++argNum;
+    if (interpreter.EvaluatePartial(firstArg)) {
+      ExpressionPtr prevArg = std::move(firstArg);
+      bool result = false;
+      while (!args.empty()) {
+        ExpressionPtr currArg = std::move(args.front());
+        args.pop_front();
+        ++argNum;
+        if (interpreter.EvaluatePartial(currArg)) {
+          if (!fn(*prevArg, *currArg)) {
+            expr = ExpressionPtr { new Bool(false) };
+            return true;
+          }
+        }
+        else
+          return interpreter.PushError(EvalError { name, "Failed to evaluate arg number " + std::to_string(argNum) });
+
+        prevArg = std::move(currArg);
+      }
+      expr = ExpressionPtr { new Bool(true) };
+      return true;
+    }
+    else
+      return interpreter.PushError(EvalError { name, "Failed to evaluate arg number " + std::to_string(argNum) });
+  }
+  else
+    return interpreter.PushError(EvalError { name, "Expected at least one arg" });
+}
+
 bool StdLib::Eq(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  return BinaryPredicate("=", interpreter, expr, args, EqT<Bool>, EqT<Number>, EqT<String>);
+  return ExpressionPredicateFn(interpreter, expr, args, "=", [](const Expression &lhs, const Expression &rhs) { return lhs == rhs; });
 }
 
 bool StdLib::Ne(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  return BinaryPredicate("!=", interpreter, expr, args, NeT<Bool>, NeT<Number>, NeT<String>);
+  //return BinaryPredicate("!=", interpreter, expr, args, NeT<Bool>, NeT<Number>, NeT<String>);
+  return ExpressionPredicateFn(interpreter, expr, args, "!=", [](const Expression &lhs, const Expression &rhs) { return lhs != rhs; });
 }
 
 bool StdLib::Lt(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
@@ -928,7 +964,7 @@ void StdLib::RegisterBinaryFunction(SymbolTable &symbolTable, const std::string&
 }
 
 void StdLib::RegisterComparator(SymbolTable &symbolTable, const std::string& name, SlipFunction fn) {
-  symbolTable.PutSymbolFunction(name, fn, FuncDef { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
+  symbolTable.PutSymbolFunction(name, fn, FuncDef { FuncDef::AtleastOneArg(), FuncDef::OneArg(Bool::TypeInstance) });
 }
 
 bool StdLib::UnknownSymbol(Interpreter &interpreter, const std::string &where, const std::string &symName) {

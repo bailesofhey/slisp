@@ -39,12 +39,12 @@ bool ArgDef::Validate(ExpressionEvaluator evaluator, ExpressionPtr &expr, std::s
   return error.empty();
 }
 
-bool ArgDef::CheckArgCount(int expected, ArgList &args, std::string &error) const {
+bool ArgDef::CheckArgCount(size_t expected, ArgList &args, std::string &error) const {
   return CheckArgCount(expected, expected, args, error);
 }
 
-bool ArgDef::CheckArgCount(int expectedMin, int expectedMax, ArgList &args, std::string &error) const {
-  int actualArgCount = args.size();
+bool ArgDef::CheckArgCount(size_t expectedMin, size_t expectedMax, ArgList &args, std::string &error) const {
+  auto actualArgCount = args.size();
   if ((expectedMin == ANY_ARGS || actualArgCount >= expectedMin) &&
       (expectedMax == ANY_ARGS || actualArgCount <= expectedMax))
     return true;
@@ -63,7 +63,7 @@ bool ArgDef::CheckArgCount(int expectedMin, int expectedMax, ArgList &args, std:
   }
 }
 
-bool ArgDef::CheckArg(ExpressionEvaluator evaluator, ExpressionPtr &arg, const TypeInfo &expectedType, int argNum, std::string &error) const {
+bool ArgDef::CheckArg(ExpressionEvaluator evaluator, ExpressionPtr &arg, const TypeInfo &expectedType, size_t argNum, std::string &error) const {
   if (arg && TypeHelper::TypeMatches(expectedType, arg->Type()) || evaluator(arg)) {
     if (!TypeHelper::TypeMatches(expectedType, arg->Type())) {
       error = "Argument " + std::to_string(argNum) + ": Expected " + expectedType.TypeName + ", got " + arg->Type().TypeName;
@@ -80,12 +80,12 @@ bool ArgDef::CheckArg(ExpressionEvaluator evaluator, ExpressionPtr &arg, const T
 
 //=============================================================================
 
-FuncDef::VarArgDef::VarArgDef(const TypeInfo &type, int nArgs):
+FuncDef::VarArgDef::VarArgDef(const TypeInfo &type, size_t nArgs):
   VarArgDef(type, nArgs, nArgs)
 {
 }
 
-FuncDef::VarArgDef::VarArgDef(const TypeInfo &type, int minArgs, int maxArgs):
+FuncDef::VarArgDef::VarArgDef(const TypeInfo &type, size_t minArgs, size_t maxArgs):
   ArgDef { },
   Type { type },
   MinArgs { minArgs },
@@ -215,6 +215,10 @@ ArgDefPtr FuncDef::OneArg(const TypeInfo &type) {
   return ManyArgs(type, 1);
 }
 
+ArgDefPtr FuncDef::AtleastOneArg() {
+  return AtleastOneArg(Sexp::TypeInstance);
+}
+
 ArgDefPtr FuncDef::AtleastOneArg(const TypeInfo &type) {
   return ManyArgs(type, 1, ArgDef::ANY_ARGS);
 }
@@ -227,11 +231,11 @@ ArgDefPtr FuncDef::AnyArgs() {
   return ManyArgs(Sexp::TypeInstance, ArgDef::ANY_ARGS);
 }
 
-ArgDefPtr FuncDef::ManyArgs(const TypeInfo &type, int nArgs) {
+ArgDefPtr FuncDef::ManyArgs(const TypeInfo &type, size_t nArgs) {
   return ManyArgs(type, nArgs, nArgs);
 }
 
-ArgDefPtr FuncDef::ManyArgs(const TypeInfo &type, int minArgs, int maxArgs) {
+ArgDefPtr FuncDef::ManyArgs(const TypeInfo &type, size_t minArgs, size_t maxArgs) {
   return ArgDefPtr { new VarArgDef { type, minArgs, maxArgs } };
 }
 
@@ -440,18 +444,26 @@ bool TypeHelper::IsLiteral(const TypeInfo &type) {
       ;
 }
 
+// implicit conversion from bool to number - a good thing?
 bool TypeHelper::IsConvertableToNumber(const TypeInfo &type) {
-  return &type == &Number::TypeInstance
-      || &type == &Bool::TypeInstance
-      ;
+  //return &type == &Number::TypeInstance
+  //    || &type == &Bool::TypeInstance
+  //    ;
+  return &type == &Number::TypeInstance;
 }
 
 ExpressionPtr TypeHelper::GetNumber(ExpressionPtr &expr) {
+  //if (expr) {
+  //  if (&expr->Type() == &Number::TypeInstance)
+  //    return expr->Clone();
+  //  else if (&expr->Type() == &Bool::TypeInstance)
+  //    return ExpressionPtr { new Number(static_cast<Bool&>(*expr).Value) };
+  //}
+  //return ExpressionPtr {};
+
   if (expr) {
     if (&expr->Type() == &Number::TypeInstance)
       return expr->Clone();
-    else if (&expr->Type() == &Bool::TypeInstance)
-      return ExpressionPtr { new Number(static_cast<Bool&>(*expr).Value) };
   }
   return ExpressionPtr {};
 }

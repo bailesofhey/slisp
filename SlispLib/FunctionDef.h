@@ -18,8 +18,8 @@ using ArgDefPtr = std::unique_ptr<ArgDef>;
 
 class ArgDef {
   public:
-    static const int NO_ARGS = 0;
-    static const int ANY_ARGS = -1;
+    static const size_t NO_ARGS = 0;
+    static const size_t ANY_ARGS = -1;
     
     virtual ~ArgDef();
     virtual ArgDefPtr Clone() const = 0;
@@ -29,20 +29,21 @@ class ArgDef {
 
   protected:
     virtual bool ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const = 0;
-    bool CheckArgCount(int expectedMin, int expectedMax, ArgList &args, std::string &error) const;
-    bool CheckArgCount(int expected, ArgList &args, std::string &error) const;
-    bool CheckArg(ExpressionEvaluator evaluator, ExpressionPtr &arg, const TypeInfo &expectedType, int argNum, std::string &error) const;
+    bool CheckArgCount(size_t expectedMin, size_t expectedMax, ArgList &args, std::string &error) const;
+    bool CheckArgCount(size_t expected, ArgList &args, std::string &error) const;
+    bool CheckArg(ExpressionEvaluator evaluator, ExpressionPtr &arg, const TypeInfo &expectedType, size_t argNum, std::string &error) const;
 };
 
 class FuncDef {
   public:
     static ArgDefPtr NoArgs();
     static ArgDefPtr OneArg(const TypeInfo &type);
+    static ArgDefPtr AtleastOneArg();
     static ArgDefPtr AtleastOneArg(const TypeInfo &type);
     static ArgDefPtr AnyArgs(const TypeInfo &type);
     static ArgDefPtr AnyArgs();
-    static ArgDefPtr ManyArgs(const TypeInfo &type, int nArgs);
-    static ArgDefPtr ManyArgs(const TypeInfo &type, int minArgs, int maxArgs);
+    static ArgDefPtr ManyArgs(const TypeInfo &type, size_t nArgs);
+    static ArgDefPtr ManyArgs(const TypeInfo &type, size_t minArgs, size_t maxArgs);
     static ArgDefPtr Args(std::initializer_list<const TypeInfo*> &&args);
 
     explicit FuncDef(ArgDefPtr &in, ArgDefPtr &out);
@@ -59,8 +60,8 @@ class FuncDef {
     class VarArgDef: public ArgDef {
       public:
 
-        explicit VarArgDef(const TypeInfo &type, int nArgs);
-        explicit VarArgDef(const TypeInfo &type, int minArgs, int maxArgs);
+        explicit VarArgDef(const TypeInfo &type, size_t nArgs);
+        explicit VarArgDef(const TypeInfo &type, size_t minArgs, size_t maxArgs);
         virtual ArgDefPtr Clone() const override;
         virtual const std::string ToString() const override;
         virtual bool operator==(const ArgDef &rhs) const override;
@@ -68,8 +69,8 @@ class FuncDef {
 
       private:
         const TypeInfo &Type;
-        int MinArgs;
-        int MaxArgs;
+        size_t MinArgs;
+        size_t MaxArgs;
 
         virtual bool ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const override;
 
