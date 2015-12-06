@@ -159,11 +159,26 @@ bool StdLib::EvaluateImplicitSexp(Interpreter &interpreter, ExpressionPtr &expr,
     return false;
 }
 
+bool StdLib::EvaluateListSexp(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+  ExpressionPtr listExpr { new Sexp() };
+  Sexp *sexp = static_cast<Sexp*>(listExpr.get());
+  ArgListHelper::CopyTo(args, sexp->Args);
+  if (interpreter.EvaluatePartial(listExpr)) {
+    args.clear();
+    args.push_back(std::move(listExpr));
+    return Print(interpreter, expr, args);
+  }
+  else
+    return interpreter.PushError(EvalError { "<default function>", "Failed to evaluate list" });
+}
+
 bool StdLib::DefaultFunction(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
   if (args.size() > 1) {
     if (interpreter.EvaluatePartial(args.front())) {
       if (dynamic_cast<Function*>(args.front().get()))
         return EvaluateImplicitSexp(interpreter, expr, args);
+      else if (TypeHelper::IsLiteral(args.front()->Type()))
+        return EvaluateListSexp(interpreter, expr, args);
     }
     else
       return interpreter.PushError(EvalError { "<default function>", "Failed to evaluate arg 1" });

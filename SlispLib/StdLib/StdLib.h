@@ -74,6 +74,7 @@ class StdLib: public Library {
     static bool Apply(Interpreter &interpreted, ExpressionPtr &expr, ArgList &args);
 
     // Helpers
+    static bool EvaluateListSexp(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args); 
     static bool EvaluateImplicitSexp(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
     static bool PrintExpression(Interpreter &interpreter, ExpressionPtr &expr, std::ostream &out);
 

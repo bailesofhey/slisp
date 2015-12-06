@@ -80,22 +80,18 @@ TEST_F(StdLibDefaultFunctionTest, TestInfix) {
 
   // Implicit sexp
   ASSERT_TRUE(RunSuccess("2", "2"));
-  ASSERT_TRUE(RunSuccess("2 +", "2"));
-  ASSERT_TRUE(RunSuccess("2 +", "Function"));
+  ASSERT_TRUE(RunSuccess("2 +", "(2 <Function>)"));
 
-  //ASSERT_TRUE(RunSuccess("2 + 4", "6"));
-  //ASSERT_TRUE(RunSuccess("2 + 4 + 8", "14"));
+  ASSERT_TRUE(RunSuccess("2 + 4", "6"));
+  ASSERT_TRUE(RunSuccess("2 + 4 + 8", "14"));
 
-  //ASSERT_TRUE(RunSuccess("2 + 4 * 8", "2"));
-  //ASSERT_TRUE(RunSuccess("2 + 4 * 8", "<Function>"));
-  //ASSERT_TRUE(RunSuccess("2 + 4 * 8", "4"));
-  //ASSERT_TRUE(RunSuccess("2 + 4 * 8", "<Function>"));
-  //ASSERT_TRUE(RunSuccess("2 + 4 * 8", "8"));
+  ASSERT_TRUE(RunSuccess("2 + 4 * 8", "(2 <Function> 4 <Function> 8)"));
+  ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "(2 <Function> 4 <Function> 8)"));
+}
 
-  //ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "2"));
-  //ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "<Function>"));
-  //ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "4"));
-  //ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "<Function>"));
+TEST_F(StdLibDefaultFunctionTest, TestInfix_InterpretedFunction) {
+  ASSERT_TRUE(RunSuccess("def myAdd (a b) (+ a b)", "Function"));
+  ASSERT_TRUE(RunSuccess("2 myAdd 4", "6"));
 }
 
 class StdLibInterpreterTest: public StdLibTest {
