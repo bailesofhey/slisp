@@ -60,6 +60,44 @@ TEST_F(StdLibDefaultFunctionTest, TestLiterals) {
   ASSERT_TRUE(RunSuccess(args, "3"));
 }
 
+TEST_F(StdLibDefaultFunctionTest, TestImplicitSexp) {
+  ASSERT_TRUE(RunSuccess("not", "Function"));
+  ASSERT_TRUE(RunSuccess("not false", "true"));
+  ASSERT_TRUE(RunSuccess("+ 2 4", "6"));
+  ASSERT_TRUE(RunSuccess("+ 2 4 8", "14"));
+}
+
+TEST_F(StdLibDefaultFunctionTest, TestInfix) {
+  // Explicit sexp
+  ASSERT_TRUE(RunSuccess("(2)", "(2)"));
+  ASSERT_TRUE(RunSuccess("(2 +)", "(2 <Function>)"));
+
+  ASSERT_TRUE(RunSuccess("(2 + 4)", "6"));
+  ASSERT_TRUE(RunSuccess("(2 + 4 + 8)", "14"));
+  ASSERT_TRUE(RunSuccess("(2 + 4 * 8)", "(2 <Function> 4 <Function> 8)"));
+  ASSERT_TRUE(RunSuccess("(2 - 4 * 8)", "(2 <Function> 4 <Function> 8)"));
+  ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "(2 <Function> 4 <Function> 8)"));
+
+  // Implicit sexp
+  ASSERT_TRUE(RunSuccess("2", "2"));
+  ASSERT_TRUE(RunSuccess("2 +", "2"));
+  ASSERT_TRUE(RunSuccess("2 +", "Function"));
+
+  //ASSERT_TRUE(RunSuccess("2 + 4", "6"));
+  //ASSERT_TRUE(RunSuccess("2 + 4 + 8", "14"));
+
+  //ASSERT_TRUE(RunSuccess("2 + 4 * 8", "2"));
+  //ASSERT_TRUE(RunSuccess("2 + 4 * 8", "<Function>"));
+  //ASSERT_TRUE(RunSuccess("2 + 4 * 8", "4"));
+  //ASSERT_TRUE(RunSuccess("2 + 4 * 8", "<Function>"));
+  //ASSERT_TRUE(RunSuccess("2 + 4 * 8", "8"));
+
+  //ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "2"));
+  //ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "<Function>"));
+  //ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "4"));
+  //ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "<Function>"));
+}
+
 class StdLibInterpreterTest: public StdLibTest {
   protected:
     void TestSetFunctions();

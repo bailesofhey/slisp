@@ -134,4 +134,9 @@ class Interpreter {
     bool ReduceSexpInterpretedFunction(ExpressionPtr &expr, InterpretedFunction &function, ArgList &args);
     bool ReduceSexpList(ExpressionPtr &expr, ArgList &args);
     bool ReduceQuote(ExpressionPtr &expr);
+
+    bool EvaluateArgs(ArgList &args);
+    bool BuildInfixSexp(Sexp &wrappedSexp, ArgList &args);
+    bool BuildListSexp(Sexp &wrappedSexp, ArgList &args);
 };
+

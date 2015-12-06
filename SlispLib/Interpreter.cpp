@@ -306,12 +306,15 @@ bool Interpreter::ReduceQuote(ExpressionPtr &expr) {
 
 bool Interpreter::ReduceSymbol(ExpressionPtr &expr) {
   auto symbol = static_cast<Symbol*>(expr.get());
+  ExpressionPtr symCopy = symbol->Clone();
   ExpressionPtr value;
   if (GetCurrFrameSymbol(symbol->Value, value) && value) {
     if (EvaluatePartial(value) && value) {
       if (auto copy = value->Clone()) {
         if (copy) {
           expr = std::move(copy);
+          if (auto *fn = dynamic_cast<Function*>(expr.get()))
+            fn->Symbol = std::move(symCopy);
           return true;
         }
         else
@@ -414,25 +417,84 @@ bool Interpreter::ReduceSexpInterpretedFunction(ExpressionPtr &expr, Interpreted
   }
 }
 
-bool Interpreter::ReduceSexpList(ExpressionPtr &expr, ArgList &args) {
+// TODO: Use this from StdLib
+bool Interpreter::EvaluateArgs(ArgList &args) {
+  int argNum = 1;
+  for (auto &arg : args) {
+    if (!EvaluatePartial(arg)) 
+      return PushError(EvalError { ErrorWhere, "Failed to evaluate arg " + std::to_string(argNum) });
+    ++argNum;
+  }
+  return true;
+}
+
+// (3 + 4 + ... + N)
+bool Interpreter::BuildInfixSexp(Sexp &wrappedSexp, ArgList &args) {
+  size_t nArgs = args.size();
+  if (nArgs > 2 && ((nArgs % 2) == 1)) {
+    size_t argNum = 1;
+    Function *fn = nullptr;
+    for (auto &arg : args) {
+      if ((argNum % 2) == 0) {
+        if (auto currFn = dynamic_cast<Function*>(arg.get())) {
+          if (fn) {
+            if (*currFn != *fn) 
+              return false;
+          }
+          else {
+            fn = currFn;
+            wrappedSexp.Args.push_front(fn->Clone());
+          }
+        }
+        else
+          return false;
+      }
+      else {
+        if (TypeHelper::IsLiteral(arg->Type()))
+          wrappedSexp.Args.push_back(arg->Clone());
+        else
+          return false;
+      }
+      ++argNum;
+    }
+
+    auto evaluator = std::bind(&Interpreter::EvaluatePartial, this, _1);
+    std::string dummyError;
+    bool result = fn->Def.ValidateArgs(evaluator, wrappedSexp.Clone(), dummyError);
+    return result;
+  }
+  return false;
+}
+
+bool Interpreter::BuildListSexp(Sexp &wrappedSexp, ArgList &args) {
   ExpressionPtr listSym;
   if (GetCurrFrameSymbol(ListFuncName, listSym)) { 
     auto listFn = dynamic_cast<Function*>(listSym.get());
     if (listFn) {
-      ExpressionPtr wrappedExpr { new Sexp {} };
-      auto wrappedSexp = static_cast<Sexp*>(wrappedExpr.get());
-      wrappedSexp->Args.push_front(listFn->Clone());
-      while (!args.empty()) {
-        wrappedSexp->Args.push_back(std::move(args.front()));
-        args.pop_front();
-      }
-
-      expr = std::move(wrappedExpr);
-      return ReduceSexp(expr);
+      wrappedSexp.Args.push_front(listFn->Clone());
+      ArgListHelper::CopyTo(args, wrappedSexp.Args);
+      return true;
     }
     else
       return PushError(EvalError { ErrorWhere, "list is not a function" });
   }
   else
     return PushError(EvalError { ErrorWhere, "no list function found" });
+}
+
+bool Interpreter::ReduceSexpList(ExpressionPtr &expr, ArgList &args) {
+  if (EvaluateArgs(args)) {
+    ExpressionPtr wrappedExpr { new Sexp {} };
+    auto wrappedSexp = static_cast<Sexp*>(wrappedExpr.get());
+    if (!BuildInfixSexp(*wrappedSexp, args)) {
+      wrappedSexp->Args.clear();
+      if (!BuildListSexp(*wrappedSexp, args))
+        return false;
+    }
+
+    expr = std::move(wrappedExpr);
+    return ReduceSexp(expr);
+  }
+  else
+    return false;
 }

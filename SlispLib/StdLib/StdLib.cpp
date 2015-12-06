@@ -21,8 +21,8 @@ void StdLib::Load(Interpreter &interpreter) {
   // Default
 
   interpreter.PutDefaultFunction(CompiledFunction {
-    FuncDef { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() },
-    &StdLib::Print
+    FuncDef { FuncDef::AnyArgs(), FuncDef::NoArgs() },
+    &StdLib::DefaultFunction
   }); 
 
   // Interpreter
@@ -142,18 +142,53 @@ bool StdLib::PrintExpression(Interpreter &interpreter, ExpressionPtr &curr, std:
     return interpreter.PushError(EvalError { "print", "Invalid expression type: " + curr->ToString() });
 }
 
+bool StdLib::EvaluateImplicitSexp(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+  ExpressionPtr funcCall { new Sexp() };
+  if (funcCall) {
+    Sexp *funcCallSexp = static_cast<Sexp*>(funcCall.get());
+    ArgListHelper::CopyTo(args, funcCallSexp->Args);
+    if (interpreter.EvaluatePartial(funcCall)) {
+      args.clear();
+      args.push_back(std::move(funcCall));
+      return Print(interpreter, expr, args); 
+    }
+    else
+      return interpreter.PushError(EvalError { "<default function>", "Failed to evaluate function" });
+  }
+  else
+    return false;
+}
+
+bool StdLib::DefaultFunction(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+  if (args.size() > 1) {
+    if (interpreter.EvaluatePartial(args.front())) {
+      if (dynamic_cast<Function*>(args.front().get()))
+        return EvaluateImplicitSexp(interpreter, expr, args);
+    }
+    else
+      return interpreter.PushError(EvalError { "<default function>", "Failed to evaluate arg 1" });
+  }
+  return Print(interpreter, expr, args);
+}
+
 bool StdLib::Print(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
   ExpressionPtr curr;
   auto &cmdInterface = interpreter.GetCommandInterface();
+  int argNum = 1;
   while (!args.empty()) {
     std::stringstream out;
     curr = std::move(args.front());
     args.pop_front();
-    bool result = PrintExpression(interpreter, curr, out);
-    out << std::endl;
-    if (!result)
-      return false;
-    cmdInterface.WriteOutputLine(out.str());
+    if (interpreter.EvaluatePartial(curr)) {
+      bool result = PrintExpression(interpreter, curr, out);
+      out << std::endl;
+      if (!result)
+        return false;
+      cmdInterface.WriteOutputLine(out.str());
+    }
+    else
+      return interpreter.PushError(EvalError { "print", "Failed to evaluate arg " + std::to_string(argNum) });
+    ++argNum;
   }
 
   expr = GetNil();

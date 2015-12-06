@@ -11,7 +11,8 @@ class StdLib: public Library {
     virtual void UnLoad(Interpreter &interpreter) override;
 
   private:
-    // Interpreter
+  // Interpreter
+    static bool DefaultFunction(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
     static bool Print(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
     static bool Quit(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
     static bool Help(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
@@ -73,6 +74,7 @@ class StdLib: public Library {
     static bool Apply(Interpreter &interpreted, ExpressionPtr &expr, ArgList &args);
 
     // Helpers
+    static bool EvaluateImplicitSexp(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
     static bool PrintExpression(Interpreter &interpreter, ExpressionPtr &expr, std::ostream &out);
 
     template<class T>

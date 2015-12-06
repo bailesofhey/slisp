@@ -272,8 +272,12 @@ FuncDef FuncDef::Clone() const {
 }
 
 bool FuncDef::operator==(const FuncDef &rhs) const {
-  return In == rhs.In
-      && Out == rhs.Out;
+  return *In == *rhs.In
+      && *Out == *rhs.Out;
+}
+
+bool FuncDef::operator!=(const FuncDef &rhs) const {
+  return !(*this == rhs);
 }
 
 FuncDef& FuncDef::operator=(FuncDef func) {
@@ -317,8 +321,23 @@ Function::Function():
 
 Function::Function(FuncDef &&def):
   Literal { TypeInstance },
-  Def { std::move(def) }
+  Def { std::move(def) },
+  Symbol { }
 {
+}
+
+Function::Function(const Function &rhs):
+  Literal { TypeInstance },
+  Def { rhs.Def },
+  Symbol { }
+{
+  if (rhs.Symbol)
+    Symbol = rhs.Symbol->Clone();
+}
+
+bool Function::operator==(const Function &rhs) const {
+  return Def == rhs.Def &&
+         (Symbol && rhs.Symbol && *Symbol == *rhs.Symbol);
 }
 
 //=============================================================================
@@ -346,13 +365,13 @@ const std::string CompiledFunction::ToString() const {
 }
 
 bool CompiledFunction::operator==(const Expression &rhs) const {
-  return &rhs.Type() == &CompiledFunction::TypeInstance
-      && dynamic_cast<const CompiledFunction&>(rhs) == *this;
+  if (auto *fn = dynamic_cast<const CompiledFunction*>(&rhs))
+    return *this == *fn;
+  return false;
 }
 
 bool CompiledFunction::operator==(const CompiledFunction &rhs) const {
-  return Def == rhs.Def
-      && false; //eventually support comparing functions
+  return static_cast<const Function&>(*this) == static_cast<const Function&>(rhs);
 }
 
 bool CompiledFunction::operator!=(const CompiledFunction &rhs) const {
@@ -399,12 +418,14 @@ const std::string InterpretedFunction::ToString() const {
 }
 
 bool InterpretedFunction::operator==(const Expression &rhs) const {
-  return &rhs.Type() == &InterpretedFunction::TypeInstance
-      && dynamic_cast<const InterpretedFunction&>(rhs) == *this;
+  if (auto *fn = dynamic_cast<const InterpretedFunction*>(&rhs))
+    return *this == *fn;
+  return false;
 }
 
 bool InterpretedFunction::operator==(const InterpretedFunction &rhs) const {
-  return Code == rhs.Code
+  return static_cast<const Function&>(*this) == static_cast<const Function&>(rhs)
+      && Code == rhs.Code
       && ArgListHelper::AreEqual(Args, rhs.Args)
       && Closure == rhs.Closure;
 }
