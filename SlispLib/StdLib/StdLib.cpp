@@ -75,6 +75,12 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("head", &StdLib::Head, FuncDef { FuncDef::OneArg(Quote::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("tail", &StdLib::Tail, FuncDef { FuncDef::OneArg(Quote::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
 
+  // Logical
+
+  symbols.PutSymbolFunction("and", &StdLib::And, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Bool::TypeInstance) });
+  symbols.PutSymbolFunction("or", &StdLib::Or, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Bool::TypeInstance) });
+  symbols.PutSymbolFunction("not", &StdLib::Not, FuncDef { FuncDef::OneArg(Sexp::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
+
   // Comparison
 
   RegisterComparator(symbols, "=", &StdLib::Eq);
@@ -520,17 +526,59 @@ bool StdLib::Tail(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) 
 
 // Logical
 
-//bool StdLib::And(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-//  return false;
-//}
-//
-//bool StdLib::Or(Interpreter &interpreter, ExpressionPtr &expr) {
-//  return false;
-//}
-//
-//bool StdLib::Not(Interpreter &interpreter, ExpressionPtr &expr) {
-//  return false;
-//}
+bool StdLib::BinaryLogicalFunc(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args, bool isAnd) {
+  int argNum = 1;
+  while (!args.empty()) {
+    ExpressionPtr currArg = std::move(args.front());
+    args.pop_front();
+    if (interpreter.EvaluatePartial(currArg)) {
+      Bool *argValue = dynamic_cast<Bool*>(currArg.get());
+      if (argValue) {
+        bool value = argValue->Value;
+        if (isAnd ? !value : value) {
+          expr = ExpressionPtr { new Bool(isAnd ? false : true) };
+          return true;
+        }
+      }
+      else
+        return TypeError(interpreter, isAnd ? "and" : "or", "bool", currArg);
+    }
+    else
+      return interpreter.PushError(EvalError { isAnd ? "and" : "or", "Failed to evaluate arg " + std::to_string(argNum) });
+
+    ++argNum;
+  }
+  expr = ExpressionPtr { new Bool(isAnd ? true : false) };
+  return true;
+}
+
+bool StdLib::And(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+  return BinaryLogicalFunc(interpreter, expr, args, true);
+}
+
+bool StdLib::Or(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+  return BinaryLogicalFunc(interpreter, expr, args, false);
+}
+
+bool StdLib::Not(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+  if (!args.empty()) {
+    ExpressionPtr arg = std::move(args.front());
+    args.pop_front();
+    if (interpreter.EvaluatePartial(arg)) {
+      Bool *boolArg = dynamic_cast<Bool*>(arg.get());
+      if (boolArg) {
+        expr = ExpressionPtr { new Bool(!boolArg->Value) };
+        return true;
+      }
+      else
+        return TypeError(interpreter, "not", "bool", arg);
+    }
+    else
+      return interpreter.PushError(EvalError { "not", "Failed to evaluate arg 1" });
+  }
+  else
+    return interpreter.PushError(EvalError { "not", "Expected 1 arg" });
+}
 
 // Comparison
 
@@ -604,7 +652,6 @@ bool StdLib::Eq(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
 }
 
 bool StdLib::Ne(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  //return BinaryPredicate("!=", interpreter, expr, args, NeT<Bool>, NeT<Number>, NeT<String>);
   return ExpressionPredicateFn(interpreter, expr, args, "!=", [](const Expression &lhs, const Expression &rhs) { return lhs != rhs; });
 }
 
@@ -916,17 +963,21 @@ template <class B, class N, class S>
 bool StdLib::BinaryPredicate(const std::string &name, Interpreter &interpreter, ExpressionPtr &expr, ArgList &args, B bFn, N nFn, S sFn) {
   auto currArg = args.begin();
   if (currArg != args.end()) {
-    auto &type = (*currArg)->Type();
+    if (interpreter.EvaluatePartial(*currArg)) {
+      auto &type = (*currArg)->Type();
 
-    Bool defaultValue { true };
-    if (bFn && (&type == &Bool::TypeInstance))
-      return PredicateHelper<Bool>(name, interpreter, expr, args, bFn, defaultValue);
-    else if (nFn && (&type == &Number::TypeInstance))
-      return PredicateHelper<Number>(name, interpreter, expr, args, nFn, defaultValue);
-    else if (sFn && (&type == &String::TypeInstance))
-      return PredicateHelper<String>(name, interpreter, expr, args, sFn, defaultValue);
+      Bool defaultValue { true };
+      if (bFn && (&type == &Bool::TypeInstance))
+        return PredicateHelper<Bool>(name, interpreter, expr, args, bFn, defaultValue);
+      else if (nFn && (&type == &Number::TypeInstance))
+        return PredicateHelper<Number>(name, interpreter, expr, args, nFn, defaultValue);
+      else if (sFn && (&type == &String::TypeInstance))
+        return PredicateHelper<String>(name, interpreter, expr, args, sFn, defaultValue);
+      else
+        return TypeError(interpreter, name, "literal", *currArg);
+    }
     else
-      return TypeError(interpreter, name, "literal", *currArg);
+      return interpreter.PushError(EvalError { name, "Failed to evaluate arg 1" });
   }
   else
     return interpreter.PushError(EvalError { name, "Expected at least one argument" });
@@ -939,17 +990,24 @@ bool StdLib::PredicateHelper(const std::string &name, Interpreter &interpreter, 
   args.pop_front();
   auto last = dynamic_cast<T*>(firstArg.get());
   if (last) {
+    int argNum = 1;
     while (!args.empty()) {
-      auto curr = dynamic_cast<T*>(args.front().get());
-      if (curr) {
-        R tmp { fn(result, *last, *curr) };
-        result = tmp;
+      if (interpreter.EvaluatePartial(args.front())) {
+        auto curr = dynamic_cast<T*>(args.front().get());
+        if (curr) {
+          R tmp { fn(result, *last, *curr) };
+          result = tmp;
+        }
+        else
+          return TypeError(interpreter, name, T::TypeInstance.TypeName, args.front());
+
+        *last = *curr;
+        args.pop_front();
       }
       else
-        return TypeError(interpreter, name, T::TypeInstance.TypeName, args.front());
+        return interpreter.PushError(EvalError { name, "Failed to evaluate arg " + std::to_string(argNum) });
 
-      *last = *curr;
-      args.pop_front();
+      ++argNum;
     }
   }
   else

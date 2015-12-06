@@ -513,6 +513,87 @@ TEST_F(StdLibListTest, TestTail) {
   ASSERT_TRUE(RunSuccess("(tail (tail (tail ((1 2)) )))", "()"));
 }
 
+class StdLibLogicalTest: public StdLibTest {
+  protected:
+    std::string Prefix;
+    void TestAndOr(bool isAnd);
+};
+
+void StdLibLogicalTest::TestAndOr(bool isAnd) {
+  ASSERT_TRUE(RunFail(Prefix + ")"));
+
+  ASSERT_TRUE(RunFail(Prefix + "false)"));
+  ASSERT_TRUE(RunFail(Prefix + "true)"));
+
+  ASSERT_TRUE(RunSuccess(Prefix + "false false)", isAnd ? "false" : "false"));
+  ASSERT_TRUE(RunSuccess(Prefix + "true false)",  isAnd ? "false" : "true"));
+  ASSERT_TRUE(RunSuccess(Prefix + "false true)",  isAnd ? "false" : "true"));
+  ASSERT_TRUE(RunSuccess(Prefix + "true true)",   isAnd ? "true"  : "true"));
+
+  ASSERT_TRUE(RunSuccess(Prefix + "false false false)", isAnd ? "false" : "false"));
+  ASSERT_TRUE(RunSuccess(Prefix + "false true false)",  isAnd ? "false" : "true"));
+  ASSERT_TRUE(RunSuccess(Prefix + "false false true)",  isAnd ? "false" : "true"));
+  ASSERT_TRUE(RunSuccess(Prefix + "false true true)",   isAnd ? "false" : "true"));
+  ASSERT_TRUE(RunSuccess(Prefix + "true false false)",  isAnd ? "false" : "true"));
+  ASSERT_TRUE(RunSuccess(Prefix + "true true false)",   isAnd ? "false" : "true"));
+  ASSERT_TRUE(RunSuccess(Prefix + "true false true)",   isAnd ? "false" : "true"));
+  ASSERT_TRUE(RunSuccess(Prefix + "true true true)",    isAnd ? "true"  : "true"));
+
+  // Other types
+  ASSERT_TRUE(RunFail(Prefix + "3 2)"));
+  ASSERT_TRUE(RunFail(Prefix + "\"foo\" \"bar\")"));
+
+  // Evaluation
+  std::string evalCode = Prefix + "(< n 100) (>= n 10) (!= n 43))";
+  ASSERT_TRUE(RunSuccess("(set n 42)", "42"));
+  ASSERT_TRUE(RunSuccess(evalCode, isAnd ? "true" : "true"));
+  ASSERT_TRUE(RunSuccess("(set n 9)", "9"));
+  ASSERT_TRUE(RunSuccess(evalCode, isAnd ? "false" : "true"));
+  ASSERT_TRUE(RunSuccess("(set n 101)", "101"));
+  ASSERT_TRUE(RunSuccess(evalCode, isAnd ? "false" : "true"));
+  ASSERT_TRUE(RunSuccess("(set n 10)", "10"));
+  ASSERT_TRUE(RunSuccess(evalCode, isAnd ? "true" : "true"));
+  ASSERT_TRUE(RunSuccess("(set n 43)", "43"));
+  ASSERT_TRUE(RunSuccess(evalCode, isAnd ? "false" : "true")); 
+
+  // Short circuit
+  if (isAnd) {
+    ASSERT_TRUE(RunFail(Prefix + "true thisisnotdefined)"));
+    ASSERT_TRUE(RunSuccess(Prefix + "false thisisnotdefined)", "false"));
+    ASSERT_TRUE(RunSuccess(Prefix + "false (+ 2 5))", "false"));
+  }
+  else {
+    ASSERT_TRUE(RunSuccess(Prefix + "true thisisnotdefined)", "true"));
+    ASSERT_TRUE(RunFail(Prefix + "false thisisnotdefined)"));
+    ASSERT_TRUE(RunFail(Prefix + "false (+ 2 5))"));
+  }
+}
+
+TEST_F(StdLibLogicalTest, TestAnd) {
+  Prefix = "(and ";
+  ASSERT_NO_FATAL_FAILURE(TestAndOr(true));
+}
+
+TEST_F(StdLibLogicalTest, TestOr) {
+  Prefix = "(or ";
+  ASSERT_NO_FATAL_FAILURE(TestAndOr(false));
+}
+
+TEST_F(StdLibLogicalTest, TestNot) {
+  ASSERT_TRUE(RunFail("(not)"));
+  ASSERT_TRUE(RunFail("(not 42)"));
+  ASSERT_TRUE(RunFail("(not \"foo\")"));
+  ASSERT_TRUE(RunFail("(not (1 2 3))"));
+  ASSERT_TRUE(RunSuccess("(not false)", "true"));
+  ASSERT_TRUE(RunSuccess("(not true)", "false"));
+  
+  std::string code = "(not (< n 100))";
+  ASSERT_TRUE(RunSuccess("(set n 42)", "42"));
+  ASSERT_TRUE(RunSuccess(code, "false"));
+  ASSERT_TRUE(RunSuccess("(set n 420)", "420"));
+  ASSERT_TRUE(RunSuccess(code, "true"));
+}
+
 class StdLibComparisonTest: public StdLibTest {
   protected:
     std::string Prefix;
@@ -580,6 +661,12 @@ class StdLibComparisonTest: public StdLibTest {
       ASSERT_TRUE(RunSuccess(Prefix + "\"apple\" \"banana\")", value1));
       ASSERT_TRUE(RunSuccess(Prefix + "\"banana\" \"apple\")", value2));
       ASSERT_TRUE(RunSuccess(Prefix + "\"apple\" \"banana\" \"cantelope\" \"durian\")", value1));
+
+      ASSERT_TRUE(RunSuccess("(set n 42)", "42"));
+      ASSERT_TRUE(RunSuccess(Prefix + "n 42)", value3));
+      ASSERT_TRUE(RunSuccess(Prefix + "42 n)", value3));
+      ASSERT_TRUE(RunSuccess(Prefix + "n 43)", value1));
+      ASSERT_TRUE(RunSuccess(Prefix + "43 n)", value2));
     }
 };
 
