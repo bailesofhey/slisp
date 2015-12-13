@@ -94,9 +94,11 @@ TEST_F(StdLibDefaultFunctionTest, DISABLED_TestInfix_InterpretedFunction) {
   ASSERT_TRUE(RunSuccess("2 myAdd 4", "6"));
 }
 
-TEST_F(StdLibDefaultFunctionTest, DISABLED_TestInfix_InsideBegin) {
+TEST_F(StdLibDefaultFunctionTest, TestInfix_InsideBegin) {
   ASSERT_TRUE(RunSuccess("(begin\n2 + 4\n)", "6"));
   ASSERT_TRUE(RunSuccess("(begin\nx = 42\n)", "42"));
+  ASSERT_TRUE(RunSuccess("(begin\na = 2\nb = 3\na + b\n)", "5"));
+  ASSERT_TRUE(RunSuccess("(begin\n(a = 2)\n(begin\nb = 3\n(begin\na + b\n)))", "5"));
 }
 
 class StdLibInterpreterTest: public StdLibTest {

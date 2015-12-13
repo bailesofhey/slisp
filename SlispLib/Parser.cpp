@@ -42,60 +42,71 @@ bool Parser::Parse() {
   return false;
 }
 
-bool IsInfixArg(ExpressionPtr &expr) {
-  return true; 
+bool TransformInfixFunc(InterpreterSettings &settings, ExpressionPtr &currArg, Sexp &wrappedSexp, std::string &fnName) {
+  if (auto fnSym = dynamic_cast<Symbol*>(currArg.get())) {
+    if (fnName.empty()) {
+      if (!settings.IsInfixSymbol(fnSym->Value))
+        return false;
+      fnName = fnSym->Value;
+      wrappedSexp.Args.push_front(currArg->Clone());
+      return true;
+    }
+    else if (fnSym->Value != fnName)
+      return false; // Later: x = 3 + 4
+    else
+      return true;
+  }
+  else
+    return false;
+}
+
+bool TransformInfixArg(InterpreterSettings &settings, ExpressionPtr &currArg, Sexp &wrappedSexp, size_t argNum) {
+  if (argNum == 1) {
+    if (auto symArg = dynamic_cast<Symbol*>(currArg.get())) {
+      if (settings.IsSymbolFunction(symArg->Value))
+        return false;
+    }
+  } 
+  wrappedSexp.Args.push_back(currArg->Clone());
+  return true;
+}
+
+bool IsInfixSexp(InterpreterSettings &settings, Sexp &sexp, ArgList::iterator &currArg, ArgList::iterator &firstPos) {
+  size_t nArgs = sexp.Args.size();
+  if (nArgs < 3) // (3 + 4)
+    return false;
+
+  ExpressionPtr defaultSexpArg { new Symbol(settings.GetDefaultSexp()) };
+  if (Expression::AreEqual(defaultSexpArg, *currArg)) {
+    firstPos = ++currArg;
+    if ((nArgs % 2) == 1)
+      return false;
+  }
+  else if ((nArgs % 2) == 0)
+    return false;
+
+  return true;
 }
 
 void Parser::TransformInfixSexp(Sexp &sexp, bool isImplicit) const {
-  size_t nArgs = sexp.Args.size();
-  if (nArgs < 3) // (3 + 4)
-    return;
-
-  ExpressionPtr defaultSexpArg { new Symbol(Settings.GetDefaultSexp()) };
-  ExpressionPtr wrappedExpr { new Sexp() };
-  Sexp *wrappedSexp = static_cast<Sexp*>(wrappedExpr.get());
-  int argNum = 1;
   auto currArg = begin(sexp.Args);
   auto endArg = end(sexp.Args);
   auto firstPos = currArg;
-  std::string fnName;
 
-  bool hasDefaultSexp = false;
-  if (Expression::AreEqual(defaultSexpArg, *currArg)) {
-    firstPos = ++currArg;
-    hasDefaultSexp = true;
-    if ((nArgs % 2) == 1)
-      return;
-  }
-  else if ((nArgs % 2) == 0)
+  if (!IsInfixSexp(Settings, sexp, currArg, firstPos))
     return;
 
+  ExpressionPtr wrappedExpr { new Sexp() };
+  auto wrappedSexp = static_cast<Sexp*>(wrappedExpr.get());
+  std::string fnName;
+  size_t argNum = 1;
   while (currArg != endArg) {
     if ((argNum % 2) == 0) {
-      if (auto fnSym = dynamic_cast<Symbol*>(currArg->get())) {
-        if (fnName.empty()) {
-          fnName = fnSym->Value;
-          if (!Settings.IsInfixSymbol(fnName))
-            return;
-          wrappedSexp->Args.push_front((*currArg)->Clone());
-        }
-        else if (fnSym->Value != fnName)
-          return; // Later: x = 3 + 4
-      }
-      else
+      if (!TransformInfixFunc(Settings, *currArg, *wrappedSexp, fnName))
         return;
     }
     else {
-      if (argNum == 1) {
-        if (auto symArg = dynamic_cast<Symbol*>(currArg->get())) {
-          if (Settings.IsSymbolFunction(symArg->Value))
-            return;
-        }
-      } 
-      
-      if (IsInfixArg(*currArg)) 
-        wrappedSexp->Args.push_back((*currArg)->Clone());
-      else
+      if (!TransformInfixArg(Settings, *currArg, *wrappedSexp, argNum))
         return;
     }
 
@@ -193,9 +204,11 @@ bool Parser::ParseParenClose(Sexp &root) {
 }
 
 bool Parser::ParseSexpArgs(Sexp &root, Sexp &curr) {
-begin:
   bool parseResult = true;
-  while ((parseResult = ParseToken(curr)) &&
+  Sexp currLineSexp;
+begin:
+  currLineSexp.Args.clear();
+  while ((parseResult = ParseToken(currLineSexp)) &&
          (*Tokenizer_).Type != TokenTypes::NONE &&
          (*Tokenizer_).Type != TokenTypes::PARENCLOSE) {
     ++Tokenizer_;
@@ -204,6 +217,7 @@ begin:
   if (!parseResult)
     return false;
   else if ((*Tokenizer_).Type == TokenTypes::PARENCLOSE) {
+    ArgListHelper::CopyTo(currLineSexp.Args, curr.Args);
     TransformInfixSexp(curr, false);
     root.Args.push_back(ExpressionPtr { curr.Clone() });
     (*Tokenizer_).Type = TokenTypes::UNKNOWN;
@@ -216,6 +230,10 @@ begin:
         CommandInterface_.ReadContinuedInputLine(line);
         Tokenizer_.SetLine(line);
         ++Tokenizer_;
+
+        TransformInfixSexp(currLineSexp, true);
+
+        ArgListHelper::CopyTo(currLineSexp.Args, curr.Args);
         goto begin;
       }
       else {
