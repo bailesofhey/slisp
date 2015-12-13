@@ -455,12 +455,17 @@ bool TypeHelper::IsFunction(const TypeInfo &type) {
       ;
 }
 
-bool TypeHelper::IsLiteral(const TypeInfo &type) {
-  return &type == &Literal::TypeInstance
-      || &type == &Bool::TypeInstance
+bool TypeHelper::IsAtom(const TypeInfo &type) {
+  return &type == &Bool::TypeInstance
       || &type == &Number::TypeInstance 
       || &type == &String::TypeInstance
       || IsFunction(type)
+      ;
+}
+
+bool TypeHelper::IsLiteral(const TypeInfo &type) {
+  return IsAtom(type)
+      || &type == &Literal::TypeInstance
       || &type == &Quote::TypeInstance
       ;
 }

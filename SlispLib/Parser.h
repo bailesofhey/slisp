@@ -1,15 +1,15 @@
 #pragma once
-
 #include <iostream>
 #include <memory>
 
 #include "Tokenizer.h"
 #include "Expression.h"
 #include "CommandInterface.h"
+#include "InterpreterUtils.h"
 
 class Parser {
   public:
-    explicit Parser(CommandInterface &commandInterface, ITokenizer &tokenizer, const std::string &defaultSexp, bool debug = false);
+    explicit Parser(CommandInterface &commandInterface, ITokenizer &tokenizer, InterpreterSettings &settings, bool debug = false);
     Parser() = delete;
     Parser(const Parser&) = delete;
     Parser(Parser &&) = delete;
@@ -23,8 +23,8 @@ class Parser {
   private:
     CommandInterface      &CommandInterface_;
     ITokenizer            &Tokenizer_;
+    InterpreterSettings   &Settings;
     std::unique_ptr<Sexp> ExprTree;
-    std::string           DefaultSexp;
     std::string           Error_;
     int                   Depth;
     bool                  Debug;
@@ -39,4 +39,6 @@ class Parser {
     bool ParseSexpArgs(Sexp &root, Sexp &curr);
     bool ParseUnknown(Sexp &root);
     bool ParseNone(Sexp &root);
+
+    void TransformInfixSexp(Sexp &sexp, bool isImplicit) const;
 };

@@ -388,7 +388,7 @@ TEST_F(StackFrameTest, TestShadowing) {
 }
 
 TEST_F(InterpreterTest, TestDefaultSexp) {
-  auto defaultSexp = Interpreter_.GetDefaultSexp();
+  auto defaultSexp = Interpreter_.GetSettings().GetDefaultSexp();
   ASSERT_FALSE(defaultSexp.empty());
 }
 
@@ -398,10 +398,11 @@ TEST_F(InterpreterTest, TestDefaultFunction) {
   ExpressionPtr temp;
   ExpressionPtr func { new CompiledFunction(std::move(def), slispFn) };
   FunctionPtr defaultFn;
-  ASSERT_FALSE(Interpreter_.GetDefaultFunction(defaultFn));
+  auto &settings = Interpreter_.GetSettings();
+  ASSERT_FALSE(settings.GetDefaultFunction(defaultFn));
   ASSERT_FALSE(defaultFn);
-  Interpreter_.PutDefaultFunction(std::move(dynamic_cast<CompiledFunction&>(*func->Clone())));
-  ASSERT_TRUE(Interpreter_.GetDefaultFunction(defaultFn));
+  settings.PutDefaultFunction(std::move(dynamic_cast<CompiledFunction&>(*func->Clone())));
+  ASSERT_TRUE(settings.GetDefaultFunction(defaultFn));
   ASSERT_TRUE((bool)defaultFn);
 }
 
@@ -486,7 +487,9 @@ class EvaluationTest: public InterpreterTest {
       EvaluationTest::MyFuncCalled = false;
       EvaluationTest::MyListFuncCalled = false;
 
-      Interpreter_.PutDefaultFunction(CompiledFunction {
+      auto &settings = Interpreter_.GetSettings();
+
+      settings.PutDefaultFunction(CompiledFunction {
         FuncDef { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() },
         &DefaultFunction
       }); 
@@ -566,7 +569,7 @@ TEST_F(EvaluationTest, TestLiteral) {
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Quote(ExpressionPtr { new Bool(true) })}));
 
   FunctionPtr defaultFn;
-  ASSERT_TRUE(Interpreter_.GetDefaultFunction(defaultFn));
+  ASSERT_TRUE(Interpreter_.GetSettings().GetDefaultFunction(defaultFn));
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { defaultFn.release() }));
 
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new CompiledFunction() }));
@@ -604,15 +607,16 @@ TEST_F(EvaluationTest, TestSymbol) {
 TEST_F(EvaluationTest, TestSexpDefaultFunction) {
   ExpressionPtr trueValue { new Bool(true) },
                 falseValue { new Bool(false) };
+  auto &settings = Interpreter_.GetSettings();
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
-    ExpressionPtr { new Symbol(Interpreter_.GetDefaultSexp()) },
+    ExpressionPtr { new Symbol(settings.GetDefaultSexp()) },
     falseValue->Clone()
   })}));
   ASSERT_TRUE(CommandInterface.Output.find("0") != std::string::npos);
   ASSERT_EQ(*falseValue, *EvaluationTest::LastArgs.front());
 
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
-    ExpressionPtr { new Symbol(Interpreter_.GetDefaultSexp()) },
+    ExpressionPtr { new Symbol(settings.GetDefaultSexp()) },
     trueValue->Clone()
   })}));
   ASSERT_TRUE(CommandInterface.Output.find("1") != std::string::npos);
@@ -702,7 +706,7 @@ TEST_F(EvaluationTest, TestSexpList) {
   ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { new Sexp() }));
   ASSERT_FALSE(EvaluationTest::MyListFuncCalled);
 
-  Interpreter_.PutListFunction(CompiledFunction {
+  Interpreter_.GetSettings().PutListFunction(CompiledFunction {
     FuncDef { FuncDef::AnyArgs(), FuncDef::OneArg(Quote::TypeInstance) },
     &MyListFunc
   });

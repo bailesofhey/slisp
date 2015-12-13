@@ -145,6 +145,7 @@ struct InterpretedFunction: public Function {
 class TypeHelper {
   public:
     static bool TypeMatches(const TypeInfo &expected, const TypeInfo &actual);
+    static bool IsAtom(const TypeInfo &type);
     static bool IsLiteral(const TypeInfo &type);
     static bool IsFunction(const TypeInfo &type);
     static bool IsConvertableToNumber(const TypeInfo &type);

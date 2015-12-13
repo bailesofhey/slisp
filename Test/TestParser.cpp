@@ -5,21 +5,26 @@
 #include "Parser.h"
 #include "CommandInterface.h"
 #include "Tokenizer.h"
+#include "InterpreterUtils.h"
 
 #include "Common.h"
 
 class ParserTest: public ::testing::Test {
   public:
     ParserTest():
-      DefaultSexp("default"),
+      DummySymbols(),
+      Settings(DummySymbols),
       CommandInterface(),
       Tokenizer(),
-      Parser(CommandInterface, Tokenizer, DefaultSexp)
+      Parser(CommandInterface, Tokenizer, Settings)
     {
+      Settings.RegisterInfixSymbol("+");
+      Settings.RegisterInfixSymbol("=");
     }
   
   protected:
-    std::string DefaultSexp;
+    SymbolTable DummySymbols;
+    InterpreterSettings Settings;
     TestCommandInterface CommandInterface;
     TestTokenizer Tokenizer;
     Parser Parser;
@@ -32,7 +37,7 @@ class ParserTest: public ::testing::Test {
       ASSERT_EQ(1 + expectedArgs.size(), exprTree->Args.size());
       auto sym = dynamic_cast<Symbol*>(exprTree->Args.front().get());
       ASSERT_TRUE(sym != nullptr);
-      ASSERT_EQ(DefaultSexp, sym->Value);
+      ASSERT_EQ(Settings.GetDefaultSexp(), sym->Value);
       exprTree->Args.pop_front();
 
       ArgList expected;
@@ -127,7 +132,7 @@ TEST_F(ParserTest, TestMultiples) {
     },
     {
       new Number(42), new Symbol("foo"), new String("hello"),
-      new Number(43), new Symbol("bar"), new String("world!")
+      new Number(43), new Symbol("bar"), new String("world!") 
     }
   );
 }
@@ -146,6 +151,100 @@ TEST_F(ParserTest, TestSimpleSexps) {
   ASSERT_PARSE(
     { Token(TokenTypes::PARENOPEN, ""), Token(TokenTypes::SYMBOL, "foo"), Token(TokenTypes::PARENCLOSE, "") },
     { new Sexp({ ExpressionPtr { new Symbol("foo") } }) }
+  );
+}
+
+TEST_F(ParserTest, TestNoInfix) {
+  ASSERT_PARSE(
+    { Token(TokenTypes::SYMBOL, "x"), Token(TokenTypes::SYMBOL, "*"), Token(TokenTypes::NUMBER, "42") },
+    { new Symbol("x"), new Symbol("*"), new Number(42) }
+  );
+  ASSERT_PARSE(
+    { Token(TokenTypes::PARENOPEN, "("), Token(TokenTypes::SYMBOL, "x"), Token(TokenTypes::SYMBOL, "*"), Token(TokenTypes::NUMBER, "42"), Token(TokenTypes::PARENCLOSE, ")") },
+    { new Sexp({ ExpressionPtr { new Symbol("x") }, ExpressionPtr { new Symbol("*") }, ExpressionPtr { new Number(42) } }) }
+  );
+}
+
+TEST_F(ParserTest, TestImplicitInfix_Set) {
+  ASSERT_PARSE(
+    { Token(TokenTypes::SYMBOL, "x"), Token(TokenTypes::SYMBOL, "="), Token(TokenTypes::NUMBER, "42") },
+    { new Sexp({ ExpressionPtr { new Symbol("=") }, ExpressionPtr { new Symbol("x") }, ExpressionPtr { new Number(42) }})}
+  );
+  ASSERT_PARSE(
+    { Token(TokenTypes::SYMBOL, "x"), Token(TokenTypes::SYMBOL, "="), Token(TokenTypes::STRING, "foo") },
+    { new Sexp({ ExpressionPtr { new Symbol("=") }, ExpressionPtr { new Symbol("x") }, ExpressionPtr { new String("foo") }})}
+  );
+  ASSERT_PARSE(
+    { Token(TokenTypes::SYMBOL, "x"), Token(TokenTypes::SYMBOL, "="), Token(TokenTypes::SYMBOL, "n") },
+    { new Sexp({ ExpressionPtr { new Symbol("=") }, ExpressionPtr { new Symbol("x") }, ExpressionPtr { new Symbol("n") }})}
+  );
+
+  // Functions
+
+  ASSERT_PARSE(
+    { Token(TokenTypes::SYMBOL, "x"), Token(TokenTypes::SYMBOL, "="), Token(TokenTypes::PARENOPEN, "("), Token(TokenTypes::SYMBOL, "myFn"), Token(TokenTypes::PARENCLOSE, ")") },
+    { new Sexp({ ExpressionPtr { new Symbol("=") }, ExpressionPtr { new Symbol("x") }, ExpressionPtr { new Sexp({ExpressionPtr { new Symbol("myFn") }}) }})}
+  );
+  ASSERT_PARSE(
+    { Token(TokenTypes::SYMBOL, "x"), Token(TokenTypes::SYMBOL, "="), Token(TokenTypes::PARENOPEN, "("), Token(TokenTypes::SYMBOL, "myFn"), Token(TokenTypes::NUMBER, "42"), Token(TokenTypes::PARENCLOSE, ")") },
+    { new Sexp({ ExpressionPtr { new Symbol("=") }, ExpressionPtr { new Symbol("x") }, ExpressionPtr { new Sexp({ExpressionPtr { new Symbol("myFn") }, ExpressionPtr { new Number(42) }}) } }) }
+  );
+}
+
+TEST_F(ParserTest, TestImplicitInfix_Add) {
+  ASSERT_PARSE(
+    { Token(TokenTypes::SYMBOL, "x"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::NUMBER, "42") },
+    { new Sexp({ ExpressionPtr { new Symbol("+") }, ExpressionPtr { new Symbol("x") }, ExpressionPtr { new Number(42) }})}
+  );
+  ASSERT_PARSE(
+    { Token(TokenTypes::SYMBOL, "x"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::STRING, "foo") },
+    { new Sexp({ ExpressionPtr { new Symbol("+") }, ExpressionPtr { new Symbol("x") }, ExpressionPtr { new String("foo") }})}
+  );
+
+  ASSERT_PARSE(
+    { Token(TokenTypes::NUMBER, "8"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::NUMBER, "42") },
+    { new Sexp({ ExpressionPtr { new Symbol("+") }, ExpressionPtr { new Number(8) }, ExpressionPtr { new Number(42) }})}
+  );
+  ASSERT_PARSE(
+    { Token(TokenTypes::STRING, "foo"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::STRING, "bar") },
+    { new Sexp({ ExpressionPtr { new Symbol("+") }, ExpressionPtr { new String("foo") }, ExpressionPtr { new String("bar") }})}
+  );
+
+  ASSERT_PARSE(
+    { Token(TokenTypes::NUMBER, "8"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::NUMBER, "42"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::NUMBER, "5") },
+    { new Sexp({ ExpressionPtr { new Symbol("+") }, ExpressionPtr { new Number(8) }, ExpressionPtr { new Number(42) }, ExpressionPtr { new Number(5) }})}
+  );
+  ASSERT_PARSE(
+    { Token(TokenTypes::STRING, "foo"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::STRING, "bar"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::STRING, "baz") },
+    { new Sexp({ ExpressionPtr { new Symbol("+") }, ExpressionPtr { new String("foo") }, ExpressionPtr { new String("bar") }, ExpressionPtr { new String("baz") }})}
+  );
+
+  // 8 + 42 +
+  ASSERT_PARSE(
+    { Token(TokenTypes::NUMBER, "8"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::NUMBER, "42"), Token(TokenTypes::SYMBOL, "+") },
+    { new Number(8), new Symbol("+"), new Number(42), new Symbol("+") } 
+  );
+}
+
+TEST_F(ParserTest, TestExplicitInfix_Add) {
+  ASSERT_PARSE(
+    { Token(TokenTypes::PARENOPEN, "("), Token(TokenTypes::SYMBOL, "x"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::NUMBER, "42"), Token(TokenTypes::PARENCLOSE, ")") },
+    { new Sexp({ ExpressionPtr { new Symbol("+") }, ExpressionPtr { new Symbol("x") }, ExpressionPtr { new Number(42) }})}
+  );
+}
+
+TEST_F(ParserTest, DISABLED_TestImplicitInfix_SetAndAdd) {
+  ASSERT_PARSE(
+    { Token(TokenTypes::SYMBOL, "x"), Token(TokenTypes::SYMBOL, "="), Token(TokenTypes::NUMBER, "42"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::NUMBER, "31") },
+    { new Sexp({ ExpressionPtr { new Symbol("=") },
+                 ExpressionPtr { new Symbol("x") },
+                 ExpressionPtr { new Sexp({ ExpressionPtr { new Symbol("+") },
+                                            ExpressionPtr { new Number(42) },
+                                            ExpressionPtr { new Number(31) }
+                                          })
+                                }
+              })
+    }
   );
 }
 

@@ -15,112 +15,6 @@ using namespace std::placeholders;
 
 //=============================================================================
 
-EvalError::EvalError(const std::string &where, const std::string &what):
-  Where { where },
-  What { what }
-{
-}
-
-//=============================================================================
-
-void SymbolTable::PutSymbol(const std::string &symbolName, ExpressionPtr &value) {
-  auto search = Symbols.find(symbolName);
-  if (search != Symbols.end())
-    search->second = std::move(value);
-  else
-    Symbols.emplace(symbolName, std::move(value));
-}
-
-void SymbolTable::PutSymbolBool(const std::string &symbolName, bool value) {
-  PutSymbol(symbolName, ExpressionPtr { new Bool { value } });
-}
-
-void SymbolTable::PutSymbolString(const std::string &symbolName, const std::string &value) {
-  PutSymbol(symbolName, ExpressionPtr { new String { value } });
-}
-
-void SymbolTable::PutSymbolNumber(const std::string &symbolName, int64_t value) {
-  PutSymbol(symbolName, ExpressionPtr { new Number { value } });
-}
-
-void SymbolTable::PutSymbolQuote(const std::string &symbolName, ExpressionPtr &&value) {
-  PutSymbol(symbolName, ExpressionPtr { new Quote { std::move(value) } });
-}
-
-void SymbolTable::PutSymbolFunction(const std::string &symbolName, Function &&func) {
-  PutSymbol(symbolName, func.Clone());
-}
-
-void SymbolTable::PutSymbolFunction(const std::string &symbolName, SlipFunction fn, FuncDef &&def) {
-  PutSymbol(symbolName, ExpressionPtr { new CompiledFunction { std::move(def), fn } });
-}
-
-bool SymbolTable::GetSymbol(const std::string &symbolName, ExpressionPtr &value) {
-  auto it = Symbols.find(symbolName);
-  if (it != Symbols.end()) {
-    if (it->second)
-      value = ExpressionPtr { it->second->Clone() };
-    else
-      value = ExpressionPtr { };
-    return true;
-  }
-  else
-    return false;
-}
-
-void SymbolTable::DeleteSymbol(const std::string &symbolName) {
-  Symbols.erase(symbolName);
-}
-
-void SymbolTable::ForEach(std::function<void(const std::string &, ExpressionPtr &)> fn) {
-  for (auto &sym : Symbols)
-    fn(sym.first, sym.second);
-}
-
-size_t SymbolTable::GetCount() const {
-  int count = 0;
-  const_cast<SymbolTable*>(this)->ForEach([&count](const std::string &, ExpressionPtr &) { ++count; });
-  return count;
-}
-
-//=============================================================================
-
-Scope::Scope(SymbolTable &symbols):
-  Symbols { symbols },
-  ShadowedSymbols {},
-  ScopedSymbols {}
-{
-}
-
-Scope::~Scope() {
-  for (auto &scopedSymbol : ScopedSymbols) {
-    Symbols.DeleteSymbol(scopedSymbol);
-  }
-
-  ShadowedSymbols.ForEach([this](const std::string &symbolName, ExpressionPtr &value) {
-    Symbols.PutSymbol(symbolName, std::move(value));
-  });
-}
-
-void Scope::PutSymbol(const std::string &symbolName, ExpressionPtr &value) {
-  ExpressionPtr oldValue;
-  if (!IsScopedSymbol(symbolName)) {
-    if (Symbols.GetSymbol(symbolName, oldValue)) {
-      ShadowedSymbols.PutSymbol(symbolName, std::move(oldValue));
-    }
-  }
-  Symbols.PutSymbol(symbolName, std::move(value));
-  ScopedSymbols.push_back(symbolName);
-}
-
-bool Scope::IsScopedSymbol(const std::string &symbolName) const {
-  auto scopeBegin = begin(ScopedSymbols),
-       scopeEnd   = end(ScopedSymbols);
-  return find(scopeBegin, scopeEnd, symbolName) != scopeEnd;
-}
-
-//=============================================================================
-
 StackFrame::StackFrame(Interpreter &interp, Function &func):
   Interp { interp },
   Func { func },
@@ -166,18 +60,21 @@ SymbolTable& StackFrame::GetLocalSymbols() {
 
 Interpreter::Interpreter(CommandInterface &cmdInterface):
   CmdInterface { cmdInterface },
-  DynamicSymbols {},
-  StackFrames {},
-  MainFunc {},
+  DynamicSymbols { },
+  Settings { DynamicSymbols },
+  StackFrames { },
+  MainFunc { },
   MainFrame {*this, MainFunc},
-  TypeReducers {},
-  Errors {},
-  DefaultSexp { "__default_sexp__" },
-  ListFuncName { "list" },
+  TypeReducers { },
+  Errors { },
   ErrorWhere { "Interpreter" },
   StopRequested_ { false }
 {
   RegisterReducers();
+}
+
+InterpreterSettings& Interpreter::GetSettings() {
+  return Settings;
 }
 
 std::list<EvalError> Interpreter::GetErrors() const {
@@ -199,41 +96,6 @@ void Interpreter::Stop() {
 
 bool Interpreter::StopRequested() const {
   return StopRequested_ || !CmdInterface.HasMore();
-}
-
-void Interpreter::PutDefaultFunction(Function &&func) {
-  DynamicSymbols.PutSymbolFunction(DefaultSexp, std::move(func));
-}
-
-bool Interpreter::GetSpecialFunction(const std::string &name, FunctionPtr &func) {
-  ExpressionPtr symbol;
-  if (DynamicSymbols.GetSymbol(name, symbol)) {
-    if (auto sym = dynamic_cast<Function*>(symbol.get())) {
-      symbol.release();
-      func.reset(sym);
-      return true;
-    }
-    else
-      throw std::exception("Special function not a function");
-  }
-  else
-    return false;
-}
-
-bool Interpreter::GetDefaultFunction(FunctionPtr &func) {
-  return GetSpecialFunction(DefaultSexp, func);
-}
-
-const std::string Interpreter::GetDefaultSexp() const {
-  return DefaultSexp;
-}
-
-void Interpreter::PutListFunction(Function &&func) {
-  DynamicSymbols.PutSymbolFunction(ListFuncName, std::move(func));
-}
-
-bool Interpreter::GetListFunction(FunctionPtr &func) {
-  return GetSpecialFunction(ListFuncName, func);
 }
 
 SymbolTable& Interpreter::GetDynamicSymbols() {
@@ -336,6 +198,7 @@ bool Interpreter::ReduceSexp(ExpressionPtr &expr) {
   if (!args.empty()) {
     ExpressionPtr firstArg = std::move(args.front());
     args.pop_front();
+
     if (EvaluatePartial(firstArg)) {
       args.push_front(std::move(firstArg));
       auto &funcExpr = args.front();
@@ -428,47 +291,9 @@ bool Interpreter::EvaluateArgs(ArgList &args) {
   return true;
 }
 
-// (3 + 4 + ... + N)
-bool Interpreter::BuildInfixSexp(Sexp &wrappedSexp, ArgList &args) {
-  size_t nArgs = args.size();
-  if (nArgs > 2 && ((nArgs % 2) == 1)) {
-    size_t argNum = 1;
-    Function *fn = nullptr;
-    for (auto &arg : args) {
-      if ((argNum % 2) == 0) {
-        if (auto currFn = dynamic_cast<Function*>(arg.get())) {
-          if (fn) {
-            if (*currFn != *fn) 
-              return false;
-          }
-          else {
-            fn = currFn;
-            wrappedSexp.Args.push_front(fn->Clone());
-          }
-        }
-        else
-          return false;
-      }
-      else {
-        if (TypeHelper::IsLiteral(arg->Type()))
-          wrappedSexp.Args.push_back(arg->Clone());
-        else
-          return false;
-      }
-      ++argNum;
-    }
-
-    auto evaluator = std::bind(&Interpreter::EvaluatePartial, this, _1);
-    std::string dummyError;
-    bool result = fn->Def.ValidateArgs(evaluator, wrappedSexp.Clone(), dummyError);
-    return result;
-  }
-  return false;
-}
-
 bool Interpreter::BuildListSexp(Sexp &wrappedSexp, ArgList &args) {
   ExpressionPtr listSym;
-  if (GetCurrFrameSymbol(ListFuncName, listSym)) { 
+  if (GetCurrFrameSymbol(Settings.GetListSexp(), listSym)) { 
     auto listFn = dynamic_cast<Function*>(listSym.get());
     if (listFn) {
       wrappedSexp.Args.push_front(listFn->Clone());
@@ -486,11 +311,8 @@ bool Interpreter::ReduceSexpList(ExpressionPtr &expr, ArgList &args) {
   if (EvaluateArgs(args)) {
     ExpressionPtr wrappedExpr { new Sexp {} };
     auto wrappedSexp = static_cast<Sexp*>(wrappedExpr.get());
-    if (!BuildInfixSexp(*wrappedSexp, args)) {
-      wrappedSexp->Args.clear();
-      if (!BuildListSexp(*wrappedSexp, args))
-        return false;
-    }
+    if (!BuildListSexp(*wrappedSexp, args))
+      return false;
 
     expr = std::move(wrappedExpr);
     return ReduceSexp(expr);

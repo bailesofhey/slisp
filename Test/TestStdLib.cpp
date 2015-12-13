@@ -89,9 +89,14 @@ TEST_F(StdLibDefaultFunctionTest, TestInfix) {
   ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "(2 <Function> 4 <Function> 8)"));
 }
 
-TEST_F(StdLibDefaultFunctionTest, TestInfix_InterpretedFunction) {
+TEST_F(StdLibDefaultFunctionTest, DISABLED_TestInfix_InterpretedFunction) {
   ASSERT_TRUE(RunSuccess("def myAdd (a b) (+ a b)", "Function"));
   ASSERT_TRUE(RunSuccess("2 myAdd 4", "6"));
+}
+
+TEST_F(StdLibDefaultFunctionTest, DISABLED_TestInfix_InsideBegin) {
+  ASSERT_TRUE(RunSuccess("(begin\n2 + 4\n)", "6"));
+  ASSERT_TRUE(RunSuccess("(begin\nx = 42\n)", "42"));
 }
 
 class StdLibInterpreterTest: public StdLibTest {
@@ -234,6 +239,22 @@ void StdLibInterpreterTest::TestSetFunctions() {
 
 TEST_F(StdLibInterpreterTest, TestSet) {
   ASSERT_NO_FATAL_FAILURE(TestSetFunctions());
+}
+
+TEST_F(StdLibInterpreterTest, TestSetOperator) {
+  ASSERT_TRUE(RunFail("n"));
+  ASSERT_TRUE(RunSuccess("(= n 42)", "42"));
+  ASSERT_TRUE(RunSuccess("n", "42"));
+  ASSERT_TRUE(RunSuccess("(= n 102)", "102"));
+  ASSERT_TRUE(RunSuccess("n", "102"));
+  ASSERT_TRUE(RunSuccess("(unset n)", "102"));
+  ASSERT_TRUE(RunFail("n"));
+
+  // infix set
+  ASSERT_TRUE(RunSuccess("n = 42", "42"));
+  ASSERT_TRUE(RunSuccess("n", "42"));
+  ASSERT_TRUE(RunSuccess("n = 102", "102"));
+  ASSERT_TRUE(RunSuccess("n", "102"));
 }
 
 TEST_F(StdLibInterpreterTest, TestUnSet) {
@@ -705,7 +726,7 @@ class StdLibComparisonTest: public StdLibTest {
 };
 
 TEST_F(StdLibComparisonTest, TestEq) {
-  Prefix = "(= ";
+  Prefix = "(== ";
   ASSERT_NO_FATAL_FAILURE(TestEquality("true", "false"));
   ASSERT_TRUE(RunSuccess(Prefix + "6 (+ 2 4) (- 7 1) (* 2 3) (/ 24 6))", "false"));
   ASSERT_TRUE(RunSuccess(Prefix + "6 (+ 2 4) (- 7 1) (* 2 3) (/ 24 4))", "true"));

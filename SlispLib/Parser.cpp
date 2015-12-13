@@ -3,16 +3,18 @@
 
 #include "Tokenizer.h"
 #include "Parser.h"
+#include "FunctionDef.h"
+#include "InterpreterUtils.h"
 
 using std::cout;
 using std::endl;
 
 //=============================================================================
 
-Parser::Parser(CommandInterface &commandInterface, ITokenizer &tokenizer, const std::string &defaultSexp, bool debug):
+Parser::Parser(CommandInterface &commandInterface, ITokenizer &tokenizer, InterpreterSettings &settings, bool debug):
   CommandInterface_ { commandInterface },
   Tokenizer_ { tokenizer },
-  DefaultSexp { defaultSexp },
+  Settings { settings },
   Debug { debug }
 {
 }
@@ -30,10 +32,82 @@ bool Parser::Parse() {
       parseResult = ParseToken(*ExprTree);
       ++Tokenizer_;
     }
+
+    if (parseResult)
+      TransformInfixSexp(*ExprTree, true);
+
     return parseResult;
   }
 
   return false;
+}
+
+bool IsInfixArg(ExpressionPtr &expr) {
+  return true; 
+}
+
+void Parser::TransformInfixSexp(Sexp &sexp, bool isImplicit) const {
+  size_t nArgs = sexp.Args.size();
+  if (nArgs < 3) // (3 + 4)
+    return;
+
+  ExpressionPtr defaultSexpArg { new Symbol(Settings.GetDefaultSexp()) };
+  ExpressionPtr wrappedExpr { new Sexp() };
+  Sexp *wrappedSexp = static_cast<Sexp*>(wrappedExpr.get());
+  int argNum = 1;
+  auto currArg = begin(sexp.Args);
+  auto endArg = end(sexp.Args);
+  auto firstPos = currArg;
+  std::string fnName;
+
+  bool hasDefaultSexp = false;
+  if (Expression::AreEqual(defaultSexpArg, *currArg)) {
+    firstPos = ++currArg;
+    hasDefaultSexp = true;
+    if ((nArgs % 2) == 1)
+      return;
+  }
+  else if ((nArgs % 2) == 0)
+    return;
+
+  while (currArg != endArg) {
+    if ((argNum % 2) == 0) {
+      if (auto fnSym = dynamic_cast<Symbol*>(currArg->get())) {
+        if (fnName.empty()) {
+          fnName = fnSym->Value;
+          if (!Settings.IsInfixSymbol(fnName))
+            return;
+          wrappedSexp->Args.push_front((*currArg)->Clone());
+        }
+        else if (fnSym->Value != fnName)
+          return; // Later: x = 3 + 4
+      }
+      else
+        return;
+    }
+    else {
+      if (argNum == 1) {
+        if (auto symArg = dynamic_cast<Symbol*>(currArg->get())) {
+          if (Settings.IsSymbolFunction(symArg->Value))
+            return;
+        }
+      } 
+      
+      if (IsInfixArg(*currArg)) 
+        wrappedSexp->Args.push_back((*currArg)->Clone());
+      else
+        return;
+    }
+
+    ++argNum;
+    ++currArg;
+  }
+
+  sexp.Args.erase(firstPos, endArg);
+  if (isImplicit)
+    sexp.Args.push_back(std::move(wrappedExpr));
+  else
+    ArgListHelper::CopyTo(wrappedSexp->Args, sexp.Args);
 }
 
 const std::string& Parser::Error() const {
@@ -46,7 +120,7 @@ std::unique_ptr<Sexp> Parser::ExpressionTree() const {
 
 void Parser::Reset() {
   ExprTree = std::unique_ptr<Sexp>(new Sexp);
-  ExprTree->Args.push_back(ExpressionPtr { new Symbol { DefaultSexp } });
+  ExprTree->Args.push_back(ExpressionPtr { new Symbol { Settings.GetDefaultSexp() } });
   Error_ = "";
   Depth = 0;
 }
@@ -130,6 +204,7 @@ begin:
   if (!parseResult)
     return false;
   else if ((*Tokenizer_).Type == TokenTypes::PARENCLOSE) {
+    TransformInfixSexp(curr, false);
     root.Args.push_back(ExpressionPtr { curr.Clone() });
     (*Tokenizer_).Type = TokenTypes::UNKNOWN;
     return true;

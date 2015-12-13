@@ -10,44 +10,7 @@
 #include "Expression.h"
 #include "FunctionDef.h"
 #include "CommandInterface.h"
-
-struct EvalError {
-  std::string Where; //TODO: Function
-  std::string What;
-
-  explicit EvalError(const std::string &where, const std::string &what);
-};
-
-class SymbolTable {
-  public:
-    void PutSymbol(const std::string &symbolName, ExpressionPtr &value);
-    void PutSymbolBool(const std::string &symbolName, bool value);
-    void PutSymbolNumber(const std::string &symbolName, int64_t value);
-    void PutSymbolString(const std::string &symbolName, const std::string &value);
-    void PutSymbolFunction(const std::string &symbolName, Function &&func);
-    void PutSymbolFunction(const std::string &symbolName, SlipFunction fn, FuncDef &&def);
-    void PutSymbolQuote(const std::string &symbolName, ExpressionPtr &&value);
-    bool GetSymbol(const std::string &symbolName, ExpressionPtr &value);
-    void DeleteSymbol(const std::string &symbolName);
-    void ForEach(std::function<void(const std::string &, ExpressionPtr &)>);
-    size_t GetCount() const;
-
-  private:
-    SymbolTableType Symbols;
-};
-
-class Scope {
-  public:
-    explicit Scope(SymbolTable &symbols);
-    ~Scope();
-    void PutSymbol(const std::string &symbolName, ExpressionPtr &value);
-    bool IsScopedSymbol(const std::string &symbolName) const;
-
-  private:
-    SymbolTable                  &Symbols;
-    SymbolTable                  ShadowedSymbols;
-    std::vector<std::string>     ScopedSymbols;
-};
+#include "InterpreterUtils.h"
 
 class Interpreter;
 
@@ -78,6 +41,8 @@ class Interpreter {
     bool Evaluate(ExpressionPtr &expr);
     bool EvaluatePartial(ExpressionPtr &expr);
 
+    InterpreterSettings& GetSettings();
+
     bool PushError(const EvalError &error);
     std::list<EvalError> GetErrors() const;
     void ClearErrors();
@@ -86,13 +51,6 @@ class Interpreter {
     bool StopRequested() const;
 
     SymbolTable& GetDynamicSymbols();
-
-    void PutDefaultFunction(Function &&func);
-    bool GetDefaultFunction(FunctionPtr &func);
-    const std::string GetDefaultSexp() const;
-
-    void PutListFunction(Function &&func);
-    bool GetListFunction(FunctionPtr &func);
 
     StackFrame& GetCurrentStackFrame();
     void PushStackFrame(StackFrame &stackFrame);
@@ -106,13 +64,12 @@ class Interpreter {
     
     CommandInterface        &CmdInterface;
     SymbolTable             DynamicSymbols;
+    InterpreterSettings     Settings;
     std::stack<StackFrame*> StackFrames;
     CompiledFunction        MainFunc;
     StackFrame              MainFrame;
     TypeReducersType        TypeReducers;
     std::list<EvalError>    Errors;
-    std::string             DefaultSexp;
-    std::string             ListFuncName;
     std::string             ErrorWhere;
     Sexp                    *Current;
     bool                    StopRequested_;
@@ -136,7 +93,6 @@ class Interpreter {
     bool ReduceQuote(ExpressionPtr &expr);
 
     bool EvaluateArgs(ArgList &args);
-    bool BuildInfixSexp(Sexp &wrappedSexp, ArgList &args);
     bool BuildListSexp(Sexp &wrappedSexp, ArgList &args);
 };
 

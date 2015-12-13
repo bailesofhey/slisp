@@ -11,7 +11,7 @@ class StdLib: public Library {
     virtual void UnLoad(Interpreter &interpreter) override;
 
   private:
-  // Interpreter
+    // Interpreter
     static bool DefaultFunction(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
     static bool Print(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
     static bool Quit(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
@@ -89,8 +89,8 @@ class StdLib: public Library {
 
     static bool BinaryLogicalFunc(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args, bool isAnd);
 
-    static void RegisterBinaryFunction(SymbolTable &symbolTable, const std::string &name, SlipFunction fn);
-    static void RegisterComparator(SymbolTable &symbolTable, const std::string& name, SlipFunction fn);
+    static void RegisterBinaryFunction(InterpreterSettings &settings, SymbolTable &symbolTable, const std::string &name, SlipFunction fn);
+    static void RegisterComparator(InterpreterSettings &settings, SymbolTable &symbolTable, const std::string& name, SlipFunction fn);
     static bool UnknownSymbol(Interpreter &interpreter, const std::string &where, const std::string &symName);
     static bool TypeError(Interpreter &interpreter, const std::string &where, const ExpressionPtr &expected, const ExpressionPtr &actual);
     static bool TypeError(Interpreter &interpreter, const std::string &where, const std::string &expectedName, const ExpressionPtr &actual);

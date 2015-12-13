@@ -11,6 +11,7 @@ void StdLib::Load(Interpreter &interpreter) {
   // Constants
 
   auto &symbols = interpreter.GetDynamicSymbols();
+  auto &settings = interpreter.GetSettings();
 
   int major = 0,
       minor = 1;
@@ -20,7 +21,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   // Default
 
-  interpreter.PutDefaultFunction(CompiledFunction {
+  settings.PutDefaultFunction(CompiledFunction {
     FuncDef { FuncDef::AnyArgs(), FuncDef::NoArgs() },
     &StdLib::DefaultFunction
   }); 
@@ -30,29 +31,34 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("print", &StdLib::Print, FuncDef { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() });
   symbols.PutSymbolFunction("quit", &StdLib::Quit, FuncDef { FuncDef::NoArgs(), FuncDef::NoArgs() });
   symbols.PutSymbolFunction("help", &StdLib::Help, FuncDef { FuncDef::AnyArgs(Symbol::TypeInstance), FuncDef::NoArgs() });
+
   symbols.PutSymbolFunction("set", &StdLib::Set, FuncDef { FuncDef::Args({&Symbol::TypeInstance, &Literal::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction("=", &StdLib::Set, FuncDef { FuncDef::Args({&Symbol::TypeInstance, &Literal::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) });
+  settings.RegisterInfixSymbol("=");
+
   symbols.PutSymbolFunction("unset", &StdLib::UnSet, FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
 
   // Generic
 
   symbols.PutSymbolFunction("+", &StdLib::Add, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+  settings.RegisterInfixSymbol("+");
 
   // Numerical
 
   symbols.PutSymbolFunction("inc", &StdLib::Inc, FuncDef { FuncDef::OneArg(Number::TypeInstance), FuncDef::OneArg(Number::TypeInstance) });
   symbols.PutSymbolFunction("dec", &StdLib::Dec, FuncDef { FuncDef::OneArg(Number::TypeInstance), FuncDef::OneArg(Number::TypeInstance) });
-  RegisterBinaryFunction(symbols, "-", &StdLib::Sub);
-  RegisterBinaryFunction(symbols, "*", &StdLib::Mult);
-  RegisterBinaryFunction(symbols, "/", &StdLib::Div);
-  RegisterBinaryFunction(symbols, "%", &StdLib::Mod);
+  RegisterBinaryFunction(settings, symbols, "-", &StdLib::Sub);
+  RegisterBinaryFunction(settings, symbols, "*", &StdLib::Mult);
+  RegisterBinaryFunction(settings, symbols, "/", &StdLib::Div);
+  RegisterBinaryFunction(settings, symbols, "%", &StdLib::Mod);
 
   // Bitwise
 
-  RegisterBinaryFunction(symbols, "<<", &StdLib::LeftShift);
-  RegisterBinaryFunction(symbols, ">>", &StdLib::RightShift);
-  RegisterBinaryFunction(symbols, "&", &StdLib::BitAnd);
-  RegisterBinaryFunction(symbols, "|", &StdLib::BitOr);
-  RegisterBinaryFunction(symbols, "^", &StdLib::BitXor);
+  RegisterBinaryFunction(settings, symbols, "<<", &StdLib::LeftShift);
+  RegisterBinaryFunction(settings, symbols, ">>", &StdLib::RightShift);
+  RegisterBinaryFunction(settings, symbols, "&", &StdLib::BitAnd);
+  RegisterBinaryFunction(settings, symbols, "|", &StdLib::BitOr);
+  RegisterBinaryFunction(settings, symbols, "^", &StdLib::BitXor);
   symbols.PutSymbolFunction("~", &StdLib::BitNot, FuncDef { FuncDef::OneArg(Number::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
 
   // String 
@@ -67,7 +73,11 @@ void StdLib::Load(Interpreter &interpreter) {
   // Lists
 
   symbols.PutSymbolQuote("nil", ExpressionPtr { new Sexp { } });
-  interpreter.PutListFunction(CompiledFunction {
+  settings.PutListFunction(CompiledFunction {
+    FuncDef { FuncDef::AnyArgs(), FuncDef::OneArg(Quote::TypeInstance) },
+    &StdLib::List
+  });
+  symbols.PutSymbolFunction("list", CompiledFunction {
     FuncDef { FuncDef::AnyArgs(), FuncDef::OneArg(Quote::TypeInstance) },
     &StdLib::List
   });
@@ -83,12 +93,12 @@ void StdLib::Load(Interpreter &interpreter) {
 
   // Comparison
 
-  RegisterComparator(symbols, "=", &StdLib::Eq);
-  RegisterComparator(symbols, "!=", &StdLib::Ne);
-  RegisterComparator(symbols, "<", &StdLib::Lt);
-  RegisterComparator(symbols, ">", &StdLib::Gt);
-  RegisterComparator(symbols, "<=", &StdLib::Lte);
-  RegisterComparator(symbols, ">=", &StdLib::Gte);
+  RegisterComparator(settings, symbols, "==", &StdLib::Eq);
+  RegisterComparator(settings, symbols, "!=", &StdLib::Ne);
+  RegisterComparator(settings, symbols, "<", &StdLib::Lt);
+  RegisterComparator(settings, symbols, ">", &StdLib::Gt);
+  RegisterComparator(settings, symbols, "<=", &StdLib::Lte);
+  RegisterComparator(settings, symbols, ">=", &StdLib::Gte);
 
   // Branching, scoping, evaluation
 
@@ -142,23 +152,6 @@ bool StdLib::PrintExpression(Interpreter &interpreter, ExpressionPtr &curr, std:
     return interpreter.PushError(EvalError { "print", "Invalid expression type: " + curr->ToString() });
 }
 
-bool StdLib::EvaluateImplicitSexp(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  ExpressionPtr funcCall { new Sexp() };
-  if (funcCall) {
-    Sexp *funcCallSexp = static_cast<Sexp*>(funcCall.get());
-    ArgListHelper::CopyTo(args, funcCallSexp->Args);
-    if (interpreter.EvaluatePartial(funcCall)) {
-      args.clear();
-      args.push_back(std::move(funcCall));
-      return Print(interpreter, expr, args); 
-    }
-    else
-      return interpreter.PushError(EvalError { "<default function>", "Failed to evaluate function" });
-  }
-  else
-    return false;
-}
-
 bool StdLib::EvaluateListSexp(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
   ExpressionPtr listExpr { new Sexp() };
   Sexp *sexp = static_cast<Sexp*>(listExpr.get());
@@ -173,16 +166,8 @@ bool StdLib::EvaluateListSexp(Interpreter &interpreter, ExpressionPtr &expr, Arg
 }
 
 bool StdLib::DefaultFunction(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  if (args.size() > 1) {
-    if (interpreter.EvaluatePartial(args.front())) {
-      if (dynamic_cast<Function*>(args.front().get()))
-        return EvaluateImplicitSexp(interpreter, expr, args);
-      else if (TypeHelper::IsLiteral(args.front()->Type()))
-        return EvaluateListSexp(interpreter, expr, args);
-    }
-    else
-      return interpreter.PushError(EvalError { "<default function>", "Failed to evaluate arg 1" });
-  }
+  if (args.size() > 1)
+    return EvaluateListSexp(interpreter, expr, args);
   return Print(interpreter, expr, args);
 }
 
@@ -217,7 +202,7 @@ bool StdLib::Quit(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) 
 }
 
 bool StdLib::Help(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  std::string defaultSexp = interpreter.GetDefaultSexp();
+  std::string defaultSexp = interpreter.GetSettings().GetDefaultSexp();
   std::stringstream ss;
   Interpreter::SymbolFunctor functor = [&ss, &defaultSexp](const std::string &symbolName, ExpressionPtr &expr) {
     if (&expr->Type() == &Function::TypeInstance && symbolName != defaultSexp) {
@@ -698,7 +683,7 @@ bool ExpressionPredicateFn(Interpreter &interpreter, ExpressionPtr &expr, ArgLis
 }
 
 bool StdLib::Eq(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  return ExpressionPredicateFn(interpreter, expr, args, "=", [](const Expression &lhs, const Expression &rhs) { return lhs == rhs; });
+  return ExpressionPredicateFn(interpreter, expr, args, "==", [](const Expression &lhs, const Expression &rhs) { return lhs == rhs; });
 }
 
 bool StdLib::Ne(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
@@ -1067,12 +1052,14 @@ bool StdLib::PredicateHelper(const std::string &name, Interpreter &interpreter, 
   return true;
 }
 
-void StdLib::RegisterBinaryFunction(SymbolTable &symbolTable, const std::string& name, SlipFunction fn) {
+void StdLib::RegisterBinaryFunction(InterpreterSettings &settings, SymbolTable &symbolTable, const std::string& name, SlipFunction fn) {
   symbolTable.PutSymbolFunction(name, fn, FuncDef { FuncDef::AtleastOneArg(Number::TypeInstance), FuncDef::OneArg(Number::TypeInstance) });
+  settings.RegisterInfixSymbol(name);
 }
 
-void StdLib::RegisterComparator(SymbolTable &symbolTable, const std::string& name, SlipFunction fn) {
+void StdLib::RegisterComparator(InterpreterSettings &settings, SymbolTable &symbolTable, const std::string& name, SlipFunction fn) {
   symbolTable.PutSymbolFunction(name, fn, FuncDef { FuncDef::AtleastOneArg(), FuncDef::OneArg(Bool::TypeInstance) });
+  settings.RegisterInfixSymbol(name);
 }
 
 bool StdLib::UnknownSymbol(Interpreter &interpreter, const std::string &where, const std::string &symName) {

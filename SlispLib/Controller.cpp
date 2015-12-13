@@ -6,8 +6,9 @@
 Controller::Controller():
   CmdInterface(),
   Interpreter_(CmdInterface),
+  Settings(Interpreter_.GetSettings()),
   Tokenizer_(),
-  Parser_(CmdInterface, Tokenizer_, Interpreter_.GetDefaultSexp()),
+  Parser_(CmdInterface, Tokenizer_, Settings),
   Lib()
 {
   Lib.Load(Interpreter_);

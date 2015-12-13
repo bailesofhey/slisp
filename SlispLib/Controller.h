@@ -25,6 +25,7 @@ class Controller {
   private:
     ConsoleInterface CmdInterface;
     Interpreter Interpreter_;
+    InterpreterSettings& Settings;
     Tokenizer Tokenizer_;
     Parser Parser_;
     StdLib Lib;
