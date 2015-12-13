@@ -34,31 +34,29 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction("set", &StdLib::Set, FuncDef { FuncDef::Args({&Symbol::TypeInstance, &Literal::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("=", &StdLib::Set, FuncDef { FuncDef::Args({&Symbol::TypeInstance, &Literal::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) });
-  settings.RegisterInfixSymbol("=");
 
   symbols.PutSymbolFunction("unset", &StdLib::UnSet, FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
 
   // Generic
 
   symbols.PutSymbolFunction("+", &StdLib::Add, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
-  settings.RegisterInfixSymbol("+");
 
   // Numerical
 
   symbols.PutSymbolFunction("inc", &StdLib::Inc, FuncDef { FuncDef::OneArg(Number::TypeInstance), FuncDef::OneArg(Number::TypeInstance) });
   symbols.PutSymbolFunction("dec", &StdLib::Dec, FuncDef { FuncDef::OneArg(Number::TypeInstance), FuncDef::OneArg(Number::TypeInstance) });
-  RegisterBinaryFunction(settings, symbols, "-", &StdLib::Sub);
-  RegisterBinaryFunction(settings, symbols, "*", &StdLib::Mult);
-  RegisterBinaryFunction(settings, symbols, "/", &StdLib::Div);
-  RegisterBinaryFunction(settings, symbols, "%", &StdLib::Mod);
+  RegisterBinaryFunction(symbols, "-", &StdLib::Sub);
+  RegisterBinaryFunction(symbols, "*", &StdLib::Mult);
+  RegisterBinaryFunction(symbols, "/", &StdLib::Div);
+  RegisterBinaryFunction(symbols, "%", &StdLib::Mod);
 
   // Bitwise
 
-  RegisterBinaryFunction(settings, symbols, "<<", &StdLib::LeftShift);
-  RegisterBinaryFunction(settings, symbols, ">>", &StdLib::RightShift);
-  RegisterBinaryFunction(settings, symbols, "&", &StdLib::BitAnd);
-  RegisterBinaryFunction(settings, symbols, "|", &StdLib::BitOr);
-  RegisterBinaryFunction(settings, symbols, "^", &StdLib::BitXor);
+  RegisterBinaryFunction(symbols, "<<", &StdLib::LeftShift);
+  RegisterBinaryFunction(symbols, ">>", &StdLib::RightShift);
+  RegisterBinaryFunction(symbols, "&", &StdLib::BitAnd);
+  RegisterBinaryFunction(symbols, "|", &StdLib::BitOr);
+  RegisterBinaryFunction(symbols, "^", &StdLib::BitXor);
   symbols.PutSymbolFunction("~", &StdLib::BitNot, FuncDef { FuncDef::OneArg(Number::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
 
   // String 
@@ -88,17 +86,22 @@ void StdLib::Load(Interpreter &interpreter) {
   // Logical
 
   symbols.PutSymbolFunction("and", &StdLib::And, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Bool::TypeInstance) });
+  symbols.PutSymbolFunction("&&", &StdLib::And, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Bool::TypeInstance) });
+
   symbols.PutSymbolFunction("or", &StdLib::Or, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Bool::TypeInstance) });
+  symbols.PutSymbolFunction("||", &StdLib::Or, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Bool::TypeInstance) });
+
   symbols.PutSymbolFunction("not", &StdLib::Not, FuncDef { FuncDef::OneArg(Sexp::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
+  symbols.PutSymbolFunction("!", &StdLib::Not, FuncDef { FuncDef::OneArg(Sexp::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
 
   // Comparison
 
-  RegisterComparator(settings, symbols, "==", &StdLib::Eq);
-  RegisterComparator(settings, symbols, "!=", &StdLib::Ne);
-  RegisterComparator(settings, symbols, "<", &StdLib::Lt);
-  RegisterComparator(settings, symbols, ">", &StdLib::Gt);
-  RegisterComparator(settings, symbols, "<=", &StdLib::Lte);
-  RegisterComparator(settings, symbols, ">=", &StdLib::Gte);
+  RegisterComparator(symbols, "==", &StdLib::Eq);
+  RegisterComparator(symbols, "!=", &StdLib::Ne);
+  RegisterComparator(symbols, "<", &StdLib::Lt);
+  RegisterComparator(symbols, ">", &StdLib::Gt);
+  RegisterComparator(symbols, "<=", &StdLib::Lte);
+  RegisterComparator(symbols, ">=", &StdLib::Gte);
 
   // Branching, scoping, evaluation
 
@@ -118,6 +121,42 @@ void StdLib::Load(Interpreter &interpreter) {
   });
   symbols.PutSymbolFunction("apply", &StdLib::Apply, FuncDef { FuncDef::Args({ &Function::TypeInstance, &Sexp::TypeInstance }), FuncDef::OneArg(Literal::TypeInstance) });
 
+  // Register infix operators by precedence (using C++ rules, where appropriate)
+  settings.RegisterInfixSymbol("not");
+  settings.RegisterInfixSymbol("!");
+  settings.RegisterInfixSymbol("~");
+
+  settings.RegisterInfixSymbol("*");
+  settings.RegisterInfixSymbol("/");
+  settings.RegisterInfixSymbol("%");
+
+  settings.RegisterInfixSymbol("+");
+  settings.RegisterInfixSymbol("-");
+
+  settings.RegisterInfixSymbol("<<");
+  settings.RegisterInfixSymbol(">>");
+
+  settings.RegisterInfixSymbol("<");
+  settings.RegisterInfixSymbol("<=");
+  settings.RegisterInfixSymbol(">");
+  settings.RegisterInfixSymbol(">=");
+
+  settings.RegisterInfixSymbol("==");
+  settings.RegisterInfixSymbol("!=");
+
+  settings.RegisterInfixSymbol("&");
+
+  settings.RegisterInfixSymbol("^");
+
+  settings.RegisterInfixSymbol("|");
+
+  settings.RegisterInfixSymbol("and");
+  settings.RegisterInfixSymbol("&&");
+
+  settings.RegisterInfixSymbol("or");
+  settings.RegisterInfixSymbol("||");
+
+  settings.RegisterInfixSymbol("=");
 }
 
 void StdLib::UnLoad(Interpreter &interpreter) {
@@ -1052,14 +1091,12 @@ bool StdLib::PredicateHelper(const std::string &name, Interpreter &interpreter, 
   return true;
 }
 
-void StdLib::RegisterBinaryFunction(InterpreterSettings &settings, SymbolTable &symbolTable, const std::string& name, SlipFunction fn) {
+void StdLib::RegisterBinaryFunction(SymbolTable &symbolTable, const std::string& name, SlipFunction fn) {
   symbolTable.PutSymbolFunction(name, fn, FuncDef { FuncDef::AtleastOneArg(Number::TypeInstance), FuncDef::OneArg(Number::TypeInstance) });
-  settings.RegisterInfixSymbol(name);
 }
 
-void StdLib::RegisterComparator(InterpreterSettings &settings, SymbolTable &symbolTable, const std::string& name, SlipFunction fn) {
+void StdLib::RegisterComparator(SymbolTable &symbolTable, const std::string& name, SlipFunction fn) {
   symbolTable.PutSymbolFunction(name, fn, FuncDef { FuncDef::AtleastOneArg(), FuncDef::OneArg(Bool::TypeInstance) });
-  settings.RegisterInfixSymbol(name);
 }
 
 bool StdLib::UnknownSymbol(Interpreter &interpreter, const std::string &where, const std::string &symName) {

@@ -74,9 +74,25 @@ TEST_F(StdLibDefaultFunctionTest, TestInfix) {
 
   ASSERT_TRUE(RunSuccess("(2 + 4)", "6"));
   ASSERT_TRUE(RunSuccess("(2 + 4 + 8)", "14"));
-  ASSERT_TRUE(RunSuccess("(2 + 4 * 8)", "(2 <Function> 4 <Function> 8)"));
-  ASSERT_TRUE(RunSuccess("(2 - 4 * 8)", "(2 <Function> 4 <Function> 8)"));
+  ASSERT_TRUE(RunSuccess("(2 + 4 * 8)", "34"));
+  ASSERT_TRUE(RunSuccess("(2 - 4 * 8)", "-30"));
   ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "(2 <Function> 4 <Function> 8)"));
+
+  ASSERT_TRUE(RunSuccess("(a = 3)", "3"));
+  ASSERT_TRUE(RunSuccess("(unset a)", "3"));
+  ASSERT_TRUE(RunSuccess("(a = 3 + 4)", "7"));
+  ASSERT_TRUE(RunSuccess("(unset a)", "7"));
+  ASSERT_TRUE(RunSuccess("(a = (3 + 4))", "7"));
+  ASSERT_TRUE(RunSuccess("(unset a)", "7"));
+  ASSERT_TRUE(RunSuccess("(a = (+ 3 4))", "7"));
+  ASSERT_TRUE(RunSuccess("(unset a)", "7"));
+  ASSERT_TRUE(RunSuccess("(a = (3 + 4 + 5))", "12"));
+  ASSERT_TRUE(RunSuccess("(unset a)", "12"));
+  ASSERT_TRUE(RunSuccess("(a = (3 + 4 + 5 * 6))", "37"));
+  ASSERT_TRUE(RunSuccess("(unset a)", "37"));
+  ASSERT_TRUE(RunSuccess("(a = (3 + 4 + 5 * 6 * 7))", "217"));
+  ASSERT_TRUE(RunSuccess("(unset a)", "217"));
+  ASSERT_TRUE(RunSuccess("(a = \"foo\" + \"bar\" + \"baz\")", "foobarbaz"));
 
   // Implicit sexp
   ASSERT_TRUE(RunSuccess("2", "2"));
@@ -85,13 +101,31 @@ TEST_F(StdLibDefaultFunctionTest, TestInfix) {
   ASSERT_TRUE(RunSuccess("2 + 4", "6"));
   ASSERT_TRUE(RunSuccess("2 + 4 + 8", "14"));
 
-  ASSERT_TRUE(RunSuccess("2 + 4 * 8", "(2 <Function> 4 <Function> 8)"));
+  ASSERT_TRUE(RunSuccess("2 + 4 * 8", "34"));
   ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "(2 <Function> 4 <Function> 8)"));
+
+  ASSERT_TRUE(RunSuccess("a = 3", "3"));
+  ASSERT_TRUE(RunSuccess("unset a", "3"));
+  ASSERT_TRUE(RunSuccess("a = 3 + 4", "7"));
+  ASSERT_TRUE(RunSuccess("unset a)", "7"));
+  ASSERT_TRUE(RunSuccess("a = (3 + 4)", "7"));
+  ASSERT_TRUE(RunSuccess("unset a)", "7"));
+  ASSERT_TRUE(RunSuccess("a = (+ 3 4)", "7"));
+  ASSERT_TRUE(RunSuccess("unset a", "7"));
+  ASSERT_TRUE(RunSuccess("a = 3 + 4 + 5", "12"));
+  ASSERT_TRUE(RunSuccess("unset a", "12"));
+  ASSERT_TRUE(RunSuccess("a = 3 + 4 + 5 * 6", "37"));
+  ASSERT_TRUE(RunSuccess("unset a", "37"));
+  ASSERT_TRUE(RunSuccess("a = 3 + 4 + 5 * 6 * 7", "217"));
+  ASSERT_TRUE(RunSuccess("unset a", "217"));
+  ASSERT_TRUE(RunSuccess("a = \"foo\" + \"bar\" + \"baz\"", "foobarbaz"));
 }
 
-TEST_F(StdLibDefaultFunctionTest, DISABLED_TestInfix_InterpretedFunction) {
+TEST_F(StdLibDefaultFunctionTest, TestInfix_InterpretedFunction) {
   ASSERT_TRUE(RunSuccess("def myAdd (a b) (+ a b)", "Function"));
-  ASSERT_TRUE(RunSuccess("2 myAdd 4", "6"));
+  ASSERT_TRUE(RunSuccess("2 myAdd 4", "(2 <Function> 4)"));
+
+  //TODO: RegisterInfix
 }
 
 TEST_F(StdLibDefaultFunctionTest, TestInfix_InsideBegin) {

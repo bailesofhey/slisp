@@ -49,6 +49,8 @@ class Scope {
 
 class InterpreterSettings {
   public:
+    static const int NO_PRECEDENCE = -1;
+
     explicit InterpreterSettings(SymbolTable &dynamicSymbols);
 
     const std::string GetDefaultSexp() const;
@@ -62,7 +64,7 @@ class InterpreterSettings {
 
     void RegisterInfixSymbol(const std::string &symbolName);
     void UnregisterInfixSymbol(const std::string &symbolName);
-    bool IsInfixSymbol(const std::string &symbolName) const;
+    int GetInfixSymbolPrecedence(const std::string &symbolName) const;
 
     bool IsSymbolFunction(const std::string &symbolName) const;
 

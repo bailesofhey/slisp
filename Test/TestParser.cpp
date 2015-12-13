@@ -18,8 +18,13 @@ class ParserTest: public ::testing::Test {
       Tokenizer(),
       Parser(CommandInterface, Tokenizer, Settings)
     {
+      DummySymbols.PutSymbolFunction("+", &DummyFn, FuncDef { FuncDef::NoArgs(), FuncDef::NoArgs() });
       Settings.RegisterInfixSymbol("+");
       Settings.RegisterInfixSymbol("=");
+    }
+
+    static bool DummyFn(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+      return false;
     }
   
   protected:
@@ -233,7 +238,22 @@ TEST_F(ParserTest, TestExplicitInfix_Add) {
   );
 }
 
-TEST_F(ParserTest, DISABLED_TestImplicitInfix_SetAndAdd) {
+TEST_F(ParserTest, TestImplicitInfix_SetAndAdd) {
+  ASSERT_PARSE(
+    { Token(TokenTypes::SYMBOL, "x"), Token(TokenTypes::SYMBOL, "="), Token(TokenTypes::PARENOPEN, "("), Token(TokenTypes::NUMBER, "42"),
+                                                                                                         Token(TokenTypes::SYMBOL, "+"),
+                                                                                                         Token(TokenTypes::NUMBER, "31"),
+                                                                      Token(TokenTypes::PARENCLOSE, ")") },
+    { new Sexp({ ExpressionPtr { new Symbol("=") },
+                 ExpressionPtr { new Symbol("x") },
+                 ExpressionPtr { new Sexp({ ExpressionPtr { new Symbol("+") },
+                                            ExpressionPtr { new Number(42) },
+                                            ExpressionPtr { new Number(31) }
+                                          })
+                                }
+              })
+    }
+  );
   ASSERT_PARSE(
     { Token(TokenTypes::SYMBOL, "x"), Token(TokenTypes::SYMBOL, "="), Token(TokenTypes::NUMBER, "42"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::NUMBER, "31") },
     { new Sexp({ ExpressionPtr { new Symbol("=") },

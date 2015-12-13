@@ -1,5 +1,6 @@
 #include <iostream>
 #include <memory>
+#include <algorithm>
 
 #include "Tokenizer.h"
 #include "Parser.h"
@@ -42,36 +43,7 @@ bool Parser::Parse() {
   return false;
 }
 
-bool TransformInfixFunc(InterpreterSettings &settings, ExpressionPtr &currArg, Sexp &wrappedSexp, std::string &fnName) {
-  if (auto fnSym = dynamic_cast<Symbol*>(currArg.get())) {
-    if (fnName.empty()) {
-      if (!settings.IsInfixSymbol(fnSym->Value))
-        return false;
-      fnName = fnSym->Value;
-      wrappedSexp.Args.push_front(currArg->Clone());
-      return true;
-    }
-    else if (fnSym->Value != fnName)
-      return false; // Later: x = 3 + 4
-    else
-      return true;
-  }
-  else
-    return false;
-}
-
-bool TransformInfixArg(InterpreterSettings &settings, ExpressionPtr &currArg, Sexp &wrappedSexp, size_t argNum) {
-  if (argNum == 1) {
-    if (auto symArg = dynamic_cast<Symbol*>(currArg.get())) {
-      if (settings.IsSymbolFunction(symArg->Value))
-        return false;
-    }
-  } 
-  wrappedSexp.Args.push_back(currArg->Clone());
-  return true;
-}
-
-bool IsInfixSexp(InterpreterSettings &settings, Sexp &sexp, ArgList::iterator &currArg, ArgList::iterator &firstPos) {
+bool HasInfixArgCount(InterpreterSettings &settings, Sexp &sexp, ArgList::iterator &currArg, ArgList::iterator &firstPos) {
   size_t nArgs = sexp.Args.size();
   if (nArgs < 3) // (3 + 4)
     return false;
@@ -88,37 +60,118 @@ bool IsInfixSexp(InterpreterSettings &settings, Sexp &sexp, ArgList::iterator &c
   return true;
 }
 
-void Parser::TransformInfixSexp(Sexp &sexp, bool isImplicit) const {
-  auto currArg = begin(sexp.Args);
-  auto endArg = end(sexp.Args);
-  auto firstPos = currArg;
+using InfixOp = std::pair<std::string, int>;
+bool PopulateInfixOperators(InterpreterSettings &settings, ArgList::const_iterator &firstPosArg, ArgList::const_iterator &endArg, std::vector<InfixOp> &infixOperators) {
+  auto currArg = firstPosArg;
+  if (auto firstArgSym = dynamic_cast<Symbol*>((*currArg).get())) {
+    if (settings.IsSymbolFunction(firstArgSym->Value))
+      return false;
+  }
 
-  if (!IsInfixSexp(Settings, sexp, currArg, firstPos))
-    return;
-
-  ExpressionPtr wrappedExpr { new Sexp() };
-  auto wrappedSexp = static_cast<Sexp*>(wrappedExpr.get());
-  std::string fnName;
   size_t argNum = 1;
   while (currArg != endArg) {
     if ((argNum % 2) == 0) {
-      if (!TransformInfixFunc(Settings, *currArg, *wrappedSexp, fnName))
-        return;
+      if (auto fnSym = dynamic_cast<Symbol*>((*currArg).get())) {
+        std::string op = fnSym->Value;
+        int precedence = settings.GetInfixSymbolPrecedence(op);
+        if (precedence == InterpreterSettings::NO_PRECEDENCE)
+          return false;
+        infixOperators.push_back({ op, precedence });
+      }
+      else
+        return false;
     }
-    else {
-      if (!TransformInfixArg(Settings, *currArg, *wrappedSexp, argNum))
-        return;
+    ++currArg;
+    ++argNum;
+  }
+  return true;
+}
+
+void Parser::TransformInfixSexp(Sexp &sexp, bool isImplicit) const {
+  auto firstArg = begin(sexp.Args);
+  auto currArg = firstArg; 
+  auto endArg = end(sexp.Args);
+  auto firstPos = currArg;
+
+  if (!HasInfixArgCount(Settings, sexp, currArg, firstPos))
+    return;
+
+  std::vector<InfixOp> infixOperators;
+  if (!PopulateInfixOperators(Settings, firstPos, endArg, infixOperators))
+    return;
+
+  std::sort(begin(infixOperators), end(infixOperators), [](const InfixOp &lhs, const InfixOp &rhs) { 
+    return lhs.second < rhs.second;
+  });
+
+  ArgList newArgs;
+  ArgListHelper::CopyTo(sexp.Args, newArgs);
+
+  if (firstArg != firstPos)
+    newArgs.pop_front();
+
+  for (auto &infixOp : infixOperators) {
+    auto fnFirst = begin(newArgs);
+    auto fnCurr = fnFirst;
+    auto fnArg = end(newArgs);
+    ExpressionPtr opSym { new Symbol(infixOp.first) };
+    ExpressionPtr opExpr { new Sexp() };
+    Sexp &opSexp = static_cast<Sexp&>(*opExpr);
+    size_t fnArgNum = 1;
+    size_t totalArgNum = 1;
+    bool insideOp = false;
+    while (fnCurr != end(newArgs)) {
+      bool consumedCurrArg = false;
+
+      if ((totalArgNum % 2) == 0) {
+        if (Expression::AreEqual(*fnCurr, opSym)) {
+          if (fnArgNum == 1) {
+            opSexp.Args.push_front((*fnCurr)->Clone());
+            insideOp = true;
+            --fnCurr;
+            --totalArgNum;
+            continue;
+          }
+          consumedCurrArg = true;
+        }
+        else {
+          if (insideOp) {
+            newArgs.insert(fnCurr, opExpr->Clone());
+
+            insideOp = false;
+            fnArgNum = 1;
+            opSexp.Args.clear();
+            continue;
+          }
+        }
+      }
+      else {
+        if (insideOp) {
+          opSexp.Args.push_back((*fnCurr)->Clone());
+          ++fnArgNum;
+          consumedCurrArg = true;
+        }
+      }
+
+      auto oldCurr = fnCurr;
+      ++fnCurr;
+      ++totalArgNum;
+      if (consumedCurrArg)
+        newArgs.erase(oldCurr);
     }
 
-    ++argNum;
-    ++currArg;
+    if (!opSexp.Args.empty())
+      newArgs.insert(fnCurr, opExpr->Clone());
+  
   }
 
   sexp.Args.erase(firstPos, endArg);
-  if (isImplicit)
-    sexp.Args.push_back(std::move(wrappedExpr));
-  else
-    ArgListHelper::CopyTo(wrappedSexp->Args, sexp.Args);
+  if (auto unwrappedNewArgsSexp = dynamic_cast<Sexp*>(newArgs.front().get())) {
+    if (isImplicit)
+      sexp.Args.push_back(unwrappedNewArgsSexp->Clone());
+    else
+      ArgListHelper::CopyTo(unwrappedNewArgsSexp->Args, sexp.Args);
+  }
 }
 
 const std::string& Parser::Error() const {

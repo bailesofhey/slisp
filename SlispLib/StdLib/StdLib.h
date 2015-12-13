@@ -75,7 +75,6 @@ class StdLib: public Library {
 
     // Helpers
     static bool EvaluateListSexp(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args); 
-    static bool EvaluateImplicitSexp(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
     static bool PrintExpression(Interpreter &interpreter, ExpressionPtr &expr, std::ostream &out);
 
     template<class T>
@@ -89,8 +88,8 @@ class StdLib: public Library {
 
     static bool BinaryLogicalFunc(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args, bool isAnd);
 
-    static void RegisterBinaryFunction(InterpreterSettings &settings, SymbolTable &symbolTable, const std::string &name, SlipFunction fn);
-    static void RegisterComparator(InterpreterSettings &settings, SymbolTable &symbolTable, const std::string& name, SlipFunction fn);
+    static void RegisterBinaryFunction(SymbolTable &symbolTable, const std::string &name, SlipFunction fn);
+    static void RegisterComparator(SymbolTable &symbolTable, const std::string& name, SlipFunction fn);
     static bool UnknownSymbol(Interpreter &interpreter, const std::string &where, const std::string &symName);
     static bool TypeError(Interpreter &interpreter, const std::string &where, const ExpressionPtr &expected, const ExpressionPtr &actual);
     static bool TypeError(Interpreter &interpreter, const std::string &where, const std::string &expectedName, const ExpressionPtr &actual);

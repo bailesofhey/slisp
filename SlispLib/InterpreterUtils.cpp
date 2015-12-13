@@ -151,9 +151,12 @@ void InterpreterSettings::UnregisterInfixSymbol(const std::string &symbolName) {
   std::remove(begin(InfixSymbolNames), end(InfixSymbolNames), symbolName);
 }
 
-bool InterpreterSettings::IsInfixSymbol(const std::string &symbolName) const {
-  auto endName = end(InfixSymbolNames);
-  return std::find(begin(InfixSymbolNames), endName, symbolName) != endName;
+int InterpreterSettings::GetInfixSymbolPrecedence(const std::string &symbolName) const {
+  for (int i = 0; i < InfixSymbolNames.size(); ++i) {
+    if (InfixSymbolNames[i] == symbolName)
+      return i;
+  }
+  return NO_PRECEDENCE;
 }
 
 bool InterpreterSettings::IsSymbolFunction(const std::string &symbolName) const {
