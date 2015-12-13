@@ -148,7 +148,11 @@ void InterpreterSettings::RegisterInfixSymbol(const std::string &symbolName) {
 }
 
 void InterpreterSettings::UnregisterInfixSymbol(const std::string &symbolName) {
-  std::remove(begin(InfixSymbolNames), end(InfixSymbolNames), symbolName);
+  auto beg = begin(InfixSymbolNames);
+  auto en = end(InfixSymbolNames);
+  auto target = std::find(beg, en, symbolName);
+  if (target != en)
+    InfixSymbolNames.erase(target);
 }
 
 int InterpreterSettings::GetInfixSymbolPrecedence(const std::string &symbolName) const {

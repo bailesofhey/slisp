@@ -37,6 +37,9 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction("unset", &StdLib::UnSet, FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
 
+  symbols.PutSymbolFunction("infix-register", &StdLib::InfixRegister, FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::NoArgs() });
+  symbols.PutSymbolFunction("infix-unregister", &StdLib::InfixUnregister, FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::NoArgs() });
+
   // Generic
 
   symbols.PutSymbolFunction("+", &StdLib::Add, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
@@ -314,6 +317,34 @@ bool StdLib::UnSet(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args)
   }
   else
     return UnknownSymbol(interpreter, "unset", symName);
+}
+
+bool StdLib::InfixRegistrationFunction(const std::string &name, bool unregister, Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+  auto sym = static_cast<Symbol&>(*args.front());
+  ExpressionPtr fnExpr;
+  if (interpreter.GetDynamicSymbols().GetSymbol(sym.Value, fnExpr)) {
+    if (TypeHelper::TypeMatches(Function::TypeInstance, fnExpr->Type())) {
+      auto &settings = interpreter.GetSettings();
+      if (unregister)
+        settings.UnregisterInfixSymbol(sym.Value);
+      else
+        settings.RegisterInfixSymbol(sym.Value);
+      expr = GetNil(); 
+      return true;
+    }
+    else
+      return TypeError(interpreter, name, "function", fnExpr);
+  }
+  else
+    return interpreter.PushError(EvalError { name, "Symbol not found" });
+}
+
+bool StdLib::InfixRegister(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+  return InfixRegistrationFunction("infix-register", false, interpreter, expr, args);
+}
+
+bool StdLib::InfixUnregister(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+  return InfixRegistrationFunction("infix-unregister", true, interpreter, expr, args);
 }
 
 // Generic Functions

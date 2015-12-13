@@ -18,6 +18,8 @@ class StdLib: public Library {
     static bool Help(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
     static bool Set(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
     static bool UnSet(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
+    static bool InfixRegister(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
+    static bool InfixUnregister(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
 
     // Generic
     static bool Add(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
@@ -82,6 +84,7 @@ class StdLib: public Library {
 
     static bool PrintSexp(Interpreter &interpreter, Sexp &sexp, std::ostream &out);
     static bool PrintBool(bool expr, std::ostream &out);
+    static bool InfixRegistrationFunction(const std::string &name, bool unregister, Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
 
     template<class F>
     static bool BinaryFunction(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args, F fn, const std::string &name);
