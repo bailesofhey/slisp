@@ -32,6 +32,15 @@ class StackFrame {
     Scope       DynamicScope;
 };
 
+class EvaluationContext {
+  public:
+    Interpreter   &Interp;
+    ExpressionPtr &Expr;
+    ArgList       &Args;
+
+    explicit EvaluationContext(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
+};
+
 class Interpreter {
   public:    
     using SymbolFunctor = std::function<void(const std::string&, ExpressionPtr&)>;

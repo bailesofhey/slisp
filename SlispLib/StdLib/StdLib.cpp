@@ -32,13 +32,29 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("quit", &StdLib::Quit, FuncDef { FuncDef::NoArgs(), FuncDef::NoArgs() });
   symbols.PutSymbolFunction("help", &StdLib::Help, FuncDef { FuncDef::AnyArgs(Symbol::TypeInstance), FuncDef::NoArgs() });
 
-  symbols.PutSymbolFunction("set", &StdLib::Set, FuncDef { FuncDef::Args({&Symbol::TypeInstance, &Literal::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) });
-  symbols.PutSymbolFunction("=", &StdLib::Set, FuncDef { FuncDef::Args({&Symbol::TypeInstance, &Literal::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) });
-
-  symbols.PutSymbolFunction("unset", &StdLib::UnSet, FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
 
   symbols.PutSymbolFunction("infix-register", &StdLib::InfixRegister, FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::NoArgs() });
   symbols.PutSymbolFunction("infix-unregister", &StdLib::InfixUnregister, FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::NoArgs() });
+
+  // Assignment Operators
+  FuncDef setDef { FuncDef::Args({&Symbol::TypeInstance, &Literal::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) };
+  symbols.PutSymbolFunction("set", &StdLib::Set, setDef.Clone()); 
+  symbols.PutSymbolFunction("=", &StdLib::Set, setDef.Clone()); 
+  symbols.PutSymbolFunction("+=", &StdLib::Set, setDef.Clone()); 
+  symbols.PutSymbolFunction("-=", &StdLib::Set, setDef.Clone()); 
+  symbols.PutSymbolFunction("*=", &StdLib::Set, setDef.Clone()); 
+  symbols.PutSymbolFunction("/=", &StdLib::Set, setDef.Clone()); 
+  symbols.PutSymbolFunction("%=", &StdLib::Set, setDef.Clone()); 
+  symbols.PutSymbolFunction("<<=", &StdLib::Set, setDef.Clone()); 
+  symbols.PutSymbolFunction(">>=", &StdLib::Set, setDef.Clone()); 
+  symbols.PutSymbolFunction("&=", &StdLib::Set, setDef.Clone()); 
+  symbols.PutSymbolFunction("^=", &StdLib::Set, setDef.Clone()); 
+  symbols.PutSymbolFunction("|=", &StdLib::Set, setDef.Clone()); 
+
+  symbols.PutSymbolFunction("++", &StdLib::PreIncrement, FuncDef { FuncDef::OneArg(Number::TypeInstance), FuncDef::OneArg(Number::TypeInstance) });
+  symbols.PutSymbolFunction("--", &StdLib::PreDecrement, FuncDef { FuncDef::OneArg(Number::TypeInstance), FuncDef::OneArg(Number::TypeInstance) });
+
+  symbols.PutSymbolFunction("unset", &StdLib::UnSet, FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
 
   // Generic
 
@@ -125,6 +141,9 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("apply", &StdLib::Apply, FuncDef { FuncDef::Args({ &Function::TypeInstance, &Sexp::TypeInstance }), FuncDef::OneArg(Literal::TypeInstance) });
 
   // Register infix operators by precedence (using C++ rules, where appropriate)
+  settings.RegisterInfixSymbol("++");
+  settings.RegisterInfixSymbol("--");
+
   settings.RegisterInfixSymbol("not");
   settings.RegisterInfixSymbol("!");
   settings.RegisterInfixSymbol("~");
@@ -160,6 +179,16 @@ void StdLib::Load(Interpreter &interpreter) {
   settings.RegisterInfixSymbol("||");
 
   settings.RegisterInfixSymbol("=");
+  settings.RegisterInfixSymbol("+=");
+  settings.RegisterInfixSymbol("-=");
+  settings.RegisterInfixSymbol("*=");
+  settings.RegisterInfixSymbol("/=");
+  settings.RegisterInfixSymbol("%=");
+  settings.RegisterInfixSymbol("<<=");
+  settings.RegisterInfixSymbol(">>=");
+  settings.RegisterInfixSymbol("&=");
+  settings.RegisterInfixSymbol("^=");
+  settings.RegisterInfixSymbol("|=");
 }
 
 void StdLib::UnLoad(Interpreter &interpreter) {
@@ -194,57 +223,57 @@ bool StdLib::PrintExpression(Interpreter &interpreter, ExpressionPtr &curr, std:
     return interpreter.PushError(EvalError { "print", "Invalid expression type: " + curr->ToString() });
 }
 
-bool StdLib::EvaluateListSexp(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+bool StdLib::EvaluateListSexp(EvaluationContext &ctx) {
   ExpressionPtr listExpr { new Sexp() };
   Sexp *sexp = static_cast<Sexp*>(listExpr.get());
-  ArgListHelper::CopyTo(args, sexp->Args);
-  if (interpreter.EvaluatePartial(listExpr)) {
-    args.clear();
-    args.push_back(std::move(listExpr));
-    return Print(interpreter, expr, args);
+  ArgListHelper::CopyTo(ctx.Args, sexp->Args);
+  if (ctx.Interp.EvaluatePartial(listExpr)) {
+    ctx.Args.clear();
+    ctx.Args.push_back(std::move(listExpr));
+    return Print(ctx);
   }
   else
-    return interpreter.PushError(EvalError { "<default function>", "Failed to evaluate list" });
+    return ctx.Interp.PushError(EvalError { "<default function>", "Failed to evaluate list" });
 }
 
-bool StdLib::DefaultFunction(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  if (args.size() > 1)
-    return EvaluateListSexp(interpreter, expr, args);
-  return Print(interpreter, expr, args);
+bool StdLib::DefaultFunction(EvaluationContext &ctx) {
+  if (ctx.Args.size() > 1)
+    return EvaluateListSexp(ctx);
+  return Print(ctx);
 }
 
-bool StdLib::Print(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+bool StdLib::Print(EvaluationContext &ctx) {
   ExpressionPtr curr;
-  auto &cmdInterface = interpreter.GetCommandInterface();
+  auto &cmdInterface = ctx.Interp.GetCommandInterface();
   int argNum = 1;
-  while (!args.empty()) {
+  while (!ctx.Args.empty()) {
     std::stringstream out;
-    curr = std::move(args.front());
-    args.pop_front();
-    if (interpreter.EvaluatePartial(curr)) {
-      bool result = PrintExpression(interpreter, curr, out);
+    curr = std::move(ctx.Args.front());
+    ctx.Args.pop_front();
+    if (ctx.Interp.EvaluatePartial(curr)) {
+      bool result = PrintExpression(ctx.Interp, curr, out);
       out << std::endl;
       if (!result)
         return false;
       cmdInterface.WriteOutputLine(out.str());
     }
     else
-      return interpreter.PushError(EvalError { "print", "Failed to evaluate arg " + std::to_string(argNum) });
+      return ctx.Interp.PushError(EvalError { "print", "Failed to evaluate arg " + std::to_string(argNum) });
     ++argNum;
   }
 
-  expr = GetNil();
+  ctx.Expr = GetNil();
   return true;
 }
 
-bool StdLib::Quit(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  interpreter.Stop();
-  expr = ExpressionPtr { new Number { 0 } };
+bool StdLib::Quit(EvaluationContext &ctx) {
+  ctx.Interp.Stop();
+  ctx.Expr = ExpressionPtr { new Number { 0 } };
   return true;
 }
 
-bool StdLib::Help(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  std::string defaultSexp = interpreter.GetSettings().GetDefaultSexp();
+bool StdLib::Help(EvaluationContext &ctx) {
+  std::string defaultSexp = ctx.Interp.GetSettings().GetDefaultSexp();
   std::stringstream ss;
   Interpreter::SymbolFunctor functor = [&ss, &defaultSexp](const std::string &symbolName, ExpressionPtr &expr) {
     if (&expr->Type() == &Function::TypeInstance && symbolName != defaultSexp) {
@@ -253,13 +282,13 @@ bool StdLib::Help(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) 
     }
   };
 
-  auto &symbols = interpreter.GetDynamicSymbols();
-  if (args.empty())
+  auto &symbols = ctx.Interp.GetDynamicSymbols();
+  if (ctx.Args.empty())
     symbols.ForEach(functor);
   else {
-    while (!args.empty()) {
-      ExpressionPtr currArg = std::move(args.front());
-      args.pop_front();
+    while (!ctx.Args.empty()) {
+      ExpressionPtr currArg = std::move(ctx.Args.front());
+      ctx.Args.pop_front();
 
       if (&currArg->Type() == &Symbol::TypeInstance) {
         auto sym = static_cast<Symbol*>(currArg.get());
@@ -268,271 +297,279 @@ bool StdLib::Help(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) 
           functor(sym->Value, currValue);
         }
         else
-          return UnknownSymbol(interpreter, "help", sym->Value);
+          return UnknownSymbol(ctx.Interp, "help", sym->Value);
       }
     }
   }
 
-  expr = GetNil();
-  interpreter.GetCommandInterface().WriteOutputLine(ss.str());
+  ctx.Expr = GetNil();
+  ctx.Interp.GetCommandInterface().WriteOutputLine(ss.str());
   return true;
 }
 
-bool StdLib::Set(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  ExpressionPtr sym = std::move(args.front());
-  args.pop_front();
+bool StdLib::Set(EvaluationContext &ctx) {
+  ExpressionPtr sym = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
     
-  ExpressionPtr value = std::move(args.front());
-  args.pop_front();
+  ExpressionPtr value = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
 
   std::string symName = "";
   auto symE = static_cast<Symbol*>(sym.get());
   symName = symE->Value;
 
   ExpressionPtr temp;
-  auto &currStackFrame = interpreter.GetCurrentStackFrame();
+  auto &currStackFrame = ctx.Interp.GetCurrentStackFrame();
   if (currStackFrame.GetLocalSymbols().GetSymbol(symName, temp))
     currStackFrame.PutLocalSymbol(symName, value->Clone());
   else
     currStackFrame.PutDynamicSymbol(symName, value->Clone());
 
-  expr = std::move(value);
+  ctx.Expr = std::move(value);
   return true;
 }
 
-bool StdLib::UnSet(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  ExpressionPtr sym = std::move(args.front());
-  args.pop_front();
+bool StdLib::UnSet(EvaluationContext &ctx) {
+  ExpressionPtr sym = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
 
   std::string symName = "";
   auto symE = static_cast<Symbol*>(sym.get());
   symName = symE->Value;
 
   ExpressionPtr value;
-  auto &currFrame = interpreter.GetCurrentStackFrame();
+  auto &currFrame = ctx.Interp.GetCurrentStackFrame();
   if (currFrame.GetSymbol(symName, value)) {
     currFrame.DeleteSymbol(symName);
-    expr = std::move(value);
+    ctx.Expr = std::move(value);
     return true;
   }
   else
-    return UnknownSymbol(interpreter, "unset", symName);
+    return UnknownSymbol(ctx.Interp, "unset", symName);
 }
 
-bool StdLib::InfixRegistrationFunction(const std::string &name, bool unregister, Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  auto sym = static_cast<Symbol&>(*args.front());
+bool StdLib::InfixRegistrationFunction(EvaluationContext &ctx, const std::string &name, bool unregister) {
+  auto sym = static_cast<Symbol&>(*ctx.Args.front());
   ExpressionPtr fnExpr;
-  if (interpreter.GetDynamicSymbols().GetSymbol(sym.Value, fnExpr)) {
+  if (ctx.Interp.GetDynamicSymbols().GetSymbol(sym.Value, fnExpr)) {
     if (TypeHelper::TypeMatches(Function::TypeInstance, fnExpr->Type())) {
-      auto &settings = interpreter.GetSettings();
+      auto &settings = ctx.Interp.GetSettings();
       if (unregister)
         settings.UnregisterInfixSymbol(sym.Value);
       else
         settings.RegisterInfixSymbol(sym.Value);
-      expr = GetNil(); 
+      ctx.Expr = GetNil(); 
       return true;
     }
     else
-      return TypeError(interpreter, name, "function", fnExpr);
+      return TypeError(ctx.Interp, name, "function", fnExpr);
   }
   else
-    return interpreter.PushError(EvalError { name, "Symbol not found" });
+    return ctx.Interp.PushError(EvalError { name, "Symbol not found" });
 }
 
-bool StdLib::InfixRegister(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  return InfixRegistrationFunction("infix-register", false, interpreter, expr, args);
+bool StdLib::InfixRegister(EvaluationContext &ctx) {
+  return InfixRegistrationFunction(ctx, "infix-register", false);
 }
 
-bool StdLib::InfixUnregister(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  return InfixRegistrationFunction("infix-unregister", true, interpreter, expr, args);
+bool StdLib::InfixUnregister(EvaluationContext &ctx) {
+  return InfixRegistrationFunction(ctx, "infix-unregister", true);
 }
 
 // Generic Functions
 
-bool StdLib::Add(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  auto currArg = args.begin();
-  if (currArg != args.end()) {
-    if (interpreter.EvaluatePartial(*currArg)) {
+bool StdLib::Add(EvaluationContext &ctx) {
+  auto currArg = ctx.Args.begin();
+  if (currArg != ctx.Args.end()) {
+    if (ctx.Interp.EvaluatePartial(*currArg)) {
       auto &type = (*currArg)->Type();
       if (TypeHelper::IsConvertableToNumber(type))
-        return AddNum(interpreter, expr, args);
+        return AddNum(ctx);
       else if (&type == &String::TypeInstance)
-        return AddString(interpreter, expr, args);
+        return AddString(ctx);
       else if (&type == &Quote::TypeInstance)
-        return AddList(interpreter, expr, args);
+        return AddList(ctx);
       else
-        return TypeError(interpreter, "+", "string, number or list", *currArg);
+        return TypeError(ctx.Interp, "+", "string, number or list", *currArg);
     }
     else
-      return interpreter.PushError(EvalError { "+", "Failed to evaluate first arg" });
+      return ctx.Interp.PushError(EvalError { "+", "Failed to evaluate first arg" });
   }
   else
-    return interpreter.PushError(EvalError { "+", "Expected at least one argument" });
+    return ctx.Interp.PushError(EvalError { "+", "Expected at least one argument" });
 }
 
 // Number Functions
 
-bool StdLib::Inc(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  return UnaryNumberFn("inc", interpreter, expr, args, [](int64_t num) { return num + 1; });
+bool StdLib::Inc(EvaluationContext &ctx) {
+  return UnaryNumberFn(ctx, "inc", [](int64_t num) { return num + 1; });
 }
 
-bool StdLib::Dec(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  return UnaryNumberFn("dec", interpreter, expr, args, [](int64_t num) { return num - 1; });
+bool StdLib::Dec(EvaluationContext &ctx) {
+  return UnaryNumberFn(ctx, "dec", [](int64_t num) { return num - 1; });
+}
+
+bool StdLib::PreIncrement(EvaluationContext &ctx) {
+  return false;
+}
+
+bool StdLib::PreDecrement(EvaluationContext &ctx) {
+  return false;
 }
 
 template <class F>
-bool StdLib::UnaryNumberFn(const std::string &name, Interpreter &interpreter, ExpressionPtr &expr, ArgList &args, F fn) {
-  ExpressionPtr numExpr { TypeHelper::GetNumber(args.front()) };
+bool StdLib::UnaryNumberFn(EvaluationContext &ctx, const std::string &name, F fn) {
+  ExpressionPtr numExpr { TypeHelper::GetNumber(ctx.Args.front()) };
   auto num = dynamic_cast<Number*>(numExpr.get());
   if (num) {
-    expr = ExpressionPtr { new Number { fn(num->Value) } };
+    ctx.Expr = ExpressionPtr { new Number { fn(num->Value) } };
     return true;
   }
-  return TypeError(interpreter, name, "number", args.front() );
+  return TypeError(ctx.Interp, name, "number", ctx.Args.front() );
 }
 
-bool StdLib::AddNum(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+bool StdLib::AddNum(EvaluationContext &ctx) {
   auto fn = [](int64_t a, int64_t b) { return a + b; };
-  return BinaryFunction(interpreter, expr, args, fn, "+");
+  return BinaryFunction(ctx, fn, "+");
 }
 
-bool StdLib::Sub(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+bool StdLib::Sub(EvaluationContext &ctx) {
   auto fn = [](int64_t a, int64_t b) { return a - b; };
-  return BinaryFunction(interpreter, expr, args, fn, "-");
+  return BinaryFunction(ctx, fn, "-");
 }
 
-bool StdLib::Mult(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+bool StdLib::Mult(EvaluationContext &ctx) {
   auto fn = [](int64_t a, int64_t b) { return a * b; };
-  return BinaryFunction(interpreter, expr, args, fn, "*");
+  return BinaryFunction(ctx, fn, "*");
 }
 
-bool StdLib::CheckDivideByZero(const std::string &name, Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+bool StdLib::CheckDivideByZero(EvaluationContext &ctx, const std::string &name) {
   int argNum = 0;
-  for (auto &arg : args) {
+  for (auto &arg : ctx.Args) {
     if (argNum) {
       ExpressionPtr numExpr = TypeHelper::GetNumber(arg);
       if (numExpr) {
         auto *num = dynamic_cast<Number*>(numExpr.get());
         if (num && num->Value == 0)
-          return interpreter.PushError(EvalError { name, "Divide by zero" });
+          return ctx.Interp.PushError(EvalError { name, "Divide by zero" });
       }
       else
-        return TypeError(interpreter, name, "number", arg);
+        return TypeError(ctx.Interp, name, "number", arg);
     }
     ++argNum;
   }
   return true;
 }
 
-bool StdLib::Div(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  if (CheckDivideByZero("/", interpreter, expr, args)) {
+bool StdLib::Div(EvaluationContext &ctx) {
+  if (CheckDivideByZero(ctx, "/")) {
     auto fn = [](int64_t a, int64_t b) { return a / b; };
-    return BinaryFunction(interpreter, expr, args, fn, "/");
+    return BinaryFunction(ctx, fn, "/");
   }
   return false;
 }
 
-bool StdLib::Mod(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  if (CheckDivideByZero("%", interpreter, expr, args)) {
+bool StdLib::Mod(EvaluationContext &ctx) {
+  if (CheckDivideByZero(ctx, "%")) {
     auto fn = [](int64_t a, int64_t b) { return a % b; };
-    return BinaryFunction(interpreter, expr, args, fn, "%");
+    return BinaryFunction(ctx, fn, "%");
   }
   return false;
 }
 
 // Bitwise Functions
 
-bool StdLib::LeftShift(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+bool StdLib::LeftShift(EvaluationContext &ctx) {
   auto fn = [](int64_t a, int64_t b) { return a << b; };
-  return BinaryFunction(interpreter, expr, args, fn, "<<");
+  return BinaryFunction(ctx, fn, "<<");
 }
 
-bool StdLib::RightShift(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+bool StdLib::RightShift(EvaluationContext &ctx) {
   auto fn = [](int64_t a, int64_t b) { return a >> b; };
-  return BinaryFunction(interpreter, expr, args, fn, ">>");
+  return BinaryFunction(ctx, fn, ">>");
 }
 
-bool StdLib::BitAnd(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+bool StdLib::BitAnd(EvaluationContext &ctx) {
   auto fn = [](int64_t a, int64_t b) { return a & b; };
-  return BinaryFunction(interpreter, expr, args, fn, "&");
+  return BinaryFunction(ctx, fn, "&");
 }
 
-bool StdLib::BitOr(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+bool StdLib::BitOr(EvaluationContext &ctx) {
   auto fn = [](int64_t a, int64_t b) { return a | b; };
-  return BinaryFunction(interpreter, expr, args, fn, "|");
+  return BinaryFunction(ctx, fn, "|");
 }
 
-bool StdLib::BitXor(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+bool StdLib::BitXor(EvaluationContext &ctx) {
   auto fn = [](int64_t a, int64_t b) { return a ^ b; };
-  return BinaryFunction(interpreter, expr, args, fn, "^");
+  return BinaryFunction(ctx, fn, "^");
 }
 
-bool StdLib::BitNot(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  ExpressionPtr numExpr = TypeHelper::GetNumber(args.front());
+bool StdLib::BitNot(EvaluationContext &ctx) {
+  ExpressionPtr numExpr = TypeHelper::GetNumber(ctx.Args.front());
   if (numExpr) {
     auto *num = dynamic_cast<Number*>(numExpr.get());
     if (num) {
-      expr = ExpressionPtr { new Number(~num->Value) };
+      ctx.Expr = ExpressionPtr { new Number(~num->Value) };
       return true;
     }
   }
-  return TypeError(interpreter, "~", "number", args.front());
+  return TypeError(ctx.Interp, "~", "number", ctx.Args.front());
 }
 
 // String functions
 
-bool StdLib::AddString(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+bool StdLib::AddString(EvaluationContext &ctx) {
   std::stringstream ss;
-  while (!args.empty()) {
-    auto str = dynamic_cast<String*>(args.front().get());
+  while (!ctx.Args.empty()) {
+    auto str = dynamic_cast<String*>(ctx.Args.front().get());
     if (str)
       ss << str->Value;
     else
-      return TypeError(interpreter, "+", "string", args.front());
+      return TypeError(ctx.Interp, "+", "string", ctx.Args.front());
 
-    args.pop_front();
+    ctx.Args.pop_front();
   }
 
-  expr = ExpressionPtr { new String { ss.str() } };
+  ctx.Expr = ExpressionPtr { new String { ss.str() } };
   return true;
 }
 
-bool StdLib::Reverse(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  ExpressionPtr arg = std::move(args.front());
-  args.pop_front();
+bool StdLib::Reverse(EvaluationContext &ctx) {
+  ExpressionPtr arg = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
   auto argString = static_cast<String*>(arg.get());
   std::reverse(argString->Value.begin(), argString->Value.end());
 
-  expr = std::move(arg);
+  ctx.Expr = std::move(arg);
   return true;
 }
 
 // Lists
 
-bool StdLib::List(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+bool StdLib::List(EvaluationContext &ctx) {
   ExpressionPtr listExpr { new Sexp {} };
   auto list = static_cast<Sexp*>(listExpr.get());
   int argNum = 1;
-  while (!args.empty()) {
-    ExpressionPtr arg = std::move(args.front());
-    args.pop_front();
-    if (interpreter.EvaluatePartial(arg))
+  while (!ctx.Args.empty()) {
+    ExpressionPtr arg = std::move(ctx.Args.front());
+    ctx.Args.pop_front();
+    if (ctx.Interp.EvaluatePartial(arg))
       list->Args.push_back(std::move(arg));
     else
-      return interpreter.PushError(EvalError { "list", "failed to evaluate argument " + std::to_string(argNum) });
+      return ctx.Interp.PushError(EvalError { "list", "failed to evaluate argument " + std::to_string(argNum) });
     ++argNum;
   }
 
-  expr = ExpressionPtr { new Quote { std::move(listExpr) } };
+  ctx.Expr = ExpressionPtr { new Quote { std::move(listExpr) } };
   return true;
 }
 
-bool StdLib::Map(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  ExpressionPtr fnExpr { std::move(args.front()) };
-  args.pop_front();
+bool StdLib::Map(EvaluationContext &ctx) {
+  ExpressionPtr fnExpr { std::move(ctx.Args.front()) };
+  ctx.Args.pop_front();
 
-  ExpressionPtr quoteExpr { std::move(args.front()) };
-  args.pop_front();
+  ExpressionPtr quoteExpr { std::move(ctx.Args.front()) };
+  ctx.Args.pop_front();
 
   ExpressionPtr resultExpr { new Sexp {} };
 
@@ -547,8 +584,8 @@ bool StdLib::Map(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
       auto evalSexp = static_cast<Sexp*>(evalExpr.get());
       evalSexp->Args.push_back(fn->Clone());
       evalSexp->Args.push_back(item->Clone());
-      if (!interpreter.EvaluatePartial(evalExpr))
-        return interpreter.PushError(EvalError { 
+      if (!ctx.Interp.EvaluatePartial(evalExpr))
+        return ctx.Interp.PushError(EvalError { 
           "map",
           "Failed to call " +  fn->ToString() + " on item " + std::to_string(i)
         });
@@ -557,17 +594,17 @@ bool StdLib::Map(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
     }
   }
   else 
-    return TypeError(interpreter, "map", "list", quote->Value);
+    return TypeError(ctx.Interp, "map", "list", quote->Value);
 
-  expr = ExpressionPtr { new Quote { std::move(resultExpr) } };
+  ctx.Expr = ExpressionPtr { new Quote { std::move(resultExpr) } };
   return true;
 }
 
-bool StdLib::AddList(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+bool StdLib::AddList(EvaluationContext &ctx) {
   ExpressionPtr resultExpr { new Sexp {} };
   auto resultList = static_cast<Sexp*>(resultExpr.get());
-  while (!args.empty()) {
-    auto quote = dynamic_cast<Quote*>(args.front().get());
+  while (!ctx.Args.empty()) {
+    auto quote = dynamic_cast<Quote*>(ctx.Args.front().get());
     if (quote) {
       auto list = dynamic_cast<Sexp*>(quote->Value.get());
       if (list) {
@@ -577,42 +614,42 @@ bool StdLib::AddList(Interpreter &interpreter, ExpressionPtr &expr, ArgList &arg
         }
       }
       else
-        return TypeError(interpreter, "+", "list", quote->Value);
+        return TypeError(ctx.Interp, "+", "list", quote->Value);
     }
     else
-      return TypeError(interpreter, "+", "list", args.front());
+      return TypeError(ctx.Interp, "+", "list", ctx.Args.front());
 
-    args.pop_front();
+    ctx.Args.pop_front();
   }
 
-  expr = ExpressionPtr { new Quote { std::move(resultExpr) } };
+  ctx.Expr = ExpressionPtr { new Quote { std::move(resultExpr) } };
   return true;
 }
 
-bool StdLib::Head(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  ExpressionPtr quoteExpr { std::move(args.front()) };
+bool StdLib::Head(EvaluationContext &ctx) {
+  ExpressionPtr quoteExpr { std::move(ctx.Args.front()) };
   auto quote = static_cast<Quote*>(quoteExpr.get());
   auto list = dynamic_cast<Sexp*>(quote->Value.get());
   if (list) {
     if (list->Args.empty())
-      expr = StdLib::GetNil();
+      ctx.Expr = StdLib::GetNil();
     else {
-      expr = std::move(list->Args.front());
+      ctx.Expr = std::move(list->Args.front());
       list->Args.pop_front();
     }
     return true;
   }
   else
-    return TypeError(interpreter, "head", "list", quote->Value);
+    return TypeError(ctx.Interp, "head", "list", quote->Value);
 }
 
-bool StdLib::Tail(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  ExpressionPtr quoteExpr { std::move(args.front()) };
+bool StdLib::Tail(EvaluationContext &ctx) {
+  ExpressionPtr quoteExpr { std::move(ctx.Args.front()) };
   auto quote = static_cast<Quote*>(quoteExpr.get());
   auto list = dynamic_cast<Sexp*>(quote->Value.get());
   if (list) {
     if (list->Args.empty())
-      expr = StdLib::GetNil();
+      ctx.Expr = StdLib::GetNil();
     else {
       list->Args.pop_front();
       ExpressionPtr tail { new Sexp {} };
@@ -621,68 +658,68 @@ bool StdLib::Tail(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) 
         newList->Args.push_back(std::move(list->Args.front()));
         list->Args.pop_front();
       }
-      expr = ExpressionPtr { new Quote { std::move(tail) } };
+      ctx.Expr = ExpressionPtr { new Quote { std::move(tail) } };
     }
     return true;
   }
   else
-    return TypeError(interpreter, "tail", "list", quote->Value);
+    return TypeError(ctx.Interp, "tail", "list", quote->Value);
 }
 
 // Logical
 
-bool StdLib::BinaryLogicalFunc(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args, bool isAnd) {
+bool StdLib::BinaryLogicalFunc(EvaluationContext &ctx, bool isAnd) {
   int argNum = 1;
-  while (!args.empty()) {
-    ExpressionPtr currArg = std::move(args.front());
-    args.pop_front();
-    if (interpreter.EvaluatePartial(currArg)) {
+  while (!ctx.Args.empty()) {
+    ExpressionPtr currArg = std::move(ctx.Args.front());
+    ctx.Args.pop_front();
+    if (ctx.Interp.EvaluatePartial(currArg)) {
       Bool *argValue = dynamic_cast<Bool*>(currArg.get());
       if (argValue) {
         bool value = argValue->Value;
         if (isAnd ? !value : value) {
-          expr = ExpressionPtr { new Bool(isAnd ? false : true) };
+          ctx.Expr = ExpressionPtr { new Bool(isAnd ? false : true) };
           return true;
         }
       }
       else
-        return TypeError(interpreter, isAnd ? "and" : "or", "bool", currArg);
+        return TypeError(ctx.Interp, isAnd ? "and" : "or", "bool", currArg);
     }
     else
-      return interpreter.PushError(EvalError { isAnd ? "and" : "or", "Failed to evaluate arg " + std::to_string(argNum) });
+      return ctx.Interp.PushError(EvalError { isAnd ? "and" : "or", "Failed to evaluate arg " + std::to_string(argNum) });
 
     ++argNum;
   }
-  expr = ExpressionPtr { new Bool(isAnd ? true : false) };
+  ctx.Expr = ExpressionPtr { new Bool(isAnd ? true : false) };
   return true;
 }
 
-bool StdLib::And(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  return BinaryLogicalFunc(interpreter, expr, args, true);
+bool StdLib::And(EvaluationContext &ctx) {
+  return BinaryLogicalFunc(ctx, true);
 }
 
-bool StdLib::Or(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  return BinaryLogicalFunc(interpreter, expr, args, false);
+bool StdLib::Or(EvaluationContext &ctx) {
+  return BinaryLogicalFunc(ctx, false);
 }
 
-bool StdLib::Not(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  if (!args.empty()) {
-    ExpressionPtr arg = std::move(args.front());
-    args.pop_front();
-    if (interpreter.EvaluatePartial(arg)) {
+bool StdLib::Not(EvaluationContext &ctx) {
+  if (!ctx.Args.empty()) {
+    ExpressionPtr arg = std::move(ctx.Args.front());
+    ctx.Args.pop_front();
+    if (ctx.Interp.EvaluatePartial(arg)) {
       Bool *boolArg = dynamic_cast<Bool*>(arg.get());
       if (boolArg) {
-        expr = ExpressionPtr { new Bool(!boolArg->Value) };
+        ctx.Expr = ExpressionPtr { new Bool(!boolArg->Value) };
         return true;
       }
       else
-        return TypeError(interpreter, "not", "bool", arg);
+        return TypeError(ctx.Interp, "not", "bool", arg);
     }
     else
-      return interpreter.PushError(EvalError { "not", "Failed to evaluate arg 1" });
+      return ctx.Interp.PushError(EvalError { "not", "Failed to evaluate arg 1" });
   }
   else
-    return interpreter.PushError(EvalError { "not", "Expected 1 arg" });
+    return ctx.Interp.PushError(EvalError { "not", "Expected 1 arg" });
 }
 
 // Comparison
@@ -718,119 +755,119 @@ bool LteT(Bool &r, T &a, T &b) {
 }
 
 using ExpressionPredicate = std::function<bool(const Expression &, const Expression &)>;
-bool ExpressionPredicateFn(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args, const std::string &name, ExpressionPredicate fn) {
+bool ExpressionPredicateFn(EvaluationContext &ctx, const std::string &name, ExpressionPredicate fn) {
   int argNum = 0;
-  if (!args.empty()) {
-    ExpressionPtr firstArg = std::move(args.front());
-    args.pop_front();
+  if (!ctx.Args.empty()) {
+    ExpressionPtr firstArg = std::move(ctx.Args.front());
+    ctx.Args.pop_front();
     ++argNum;
-    if (interpreter.EvaluatePartial(firstArg)) {
+    if (ctx.Interp.EvaluatePartial(firstArg)) {
       ExpressionPtr prevArg = std::move(firstArg);
       bool result = false;
-      while (!args.empty()) {
-        ExpressionPtr currArg = std::move(args.front());
-        args.pop_front();
+      while (!ctx.Args.empty()) {
+        ExpressionPtr currArg = std::move(ctx.Args.front());
+        ctx.Args.pop_front();
         ++argNum;
-        if (interpreter.EvaluatePartial(currArg)) {
+        if (ctx.Interp.EvaluatePartial(currArg)) {
           if (!fn(*prevArg, *currArg)) {
-            expr = ExpressionPtr { new Bool(false) };
+            ctx.Expr = ExpressionPtr { new Bool(false) };
             return true;
           }
         }
         else
-          return interpreter.PushError(EvalError { name, "Failed to evaluate arg number " + std::to_string(argNum) });
+          return ctx.Interp.PushError(EvalError { name, "Failed to evaluate arg number " + std::to_string(argNum) });
 
         prevArg = std::move(currArg);
       }
-      expr = ExpressionPtr { new Bool(true) };
+      ctx.Expr = ExpressionPtr { new Bool(true) };
       return true;
     }
     else
-      return interpreter.PushError(EvalError { name, "Failed to evaluate arg number " + std::to_string(argNum) });
+      return ctx.Interp.PushError(EvalError { name, "Failed to evaluate arg number " + std::to_string(argNum) });
   }
   else
-    return interpreter.PushError(EvalError { name, "Expected at least one arg" });
+    return ctx.Interp.PushError(EvalError { name, "Expected at least one arg" });
 }
 
-bool StdLib::Eq(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  return ExpressionPredicateFn(interpreter, expr, args, "==", [](const Expression &lhs, const Expression &rhs) { return lhs == rhs; });
+bool StdLib::Eq(EvaluationContext &ctx) {
+  return ExpressionPredicateFn(ctx, "==", [](const Expression &lhs, const Expression &rhs) { return lhs == rhs; });
 }
 
-bool StdLib::Ne(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  return ExpressionPredicateFn(interpreter, expr, args, "!=", [](const Expression &lhs, const Expression &rhs) { return lhs != rhs; });
+bool StdLib::Ne(EvaluationContext &ctx) {
+  return ExpressionPredicateFn(ctx, "!=", [](const Expression &lhs, const Expression &rhs) { return lhs != rhs; });
 }
 
-bool StdLib::Lt(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  return BinaryPredicate("<", interpreter, expr, args, LtT<Bool>, LtT<Number>, LtT<String>);
+bool StdLib::Lt(EvaluationContext &ctx) {
+  return BinaryPredicate(ctx, "<", LtT<Bool>, LtT<Number>, LtT<String>);
 }
 
-bool StdLib::Gt(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  return BinaryPredicate(">", interpreter, expr, args, GtT<Bool>, GtT<Number>, GtT<String>);
+bool StdLib::Gt(EvaluationContext &ctx) {
+  return BinaryPredicate(ctx, ">", GtT<Bool>, GtT<Number>, GtT<String>);
 }
 
-bool StdLib::Lte(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  return BinaryPredicate("<=", interpreter, expr, args, LteT<Bool>, LteT<Number>, LteT<String>);
+bool StdLib::Lte(EvaluationContext &ctx) {
+  return BinaryPredicate(ctx, "<=", LteT<Bool>, LteT<Number>, LteT<String>);
 }
 
-bool StdLib::Gte(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  return BinaryPredicate(">=", interpreter, expr, args, GteT<Bool>, GteT<Number>, GteT<String>);
+bool StdLib::Gte(EvaluationContext &ctx) {
+  return BinaryPredicate(ctx, ">=", GteT<Bool>, GteT<Number>, GteT<String>);
 }
 
 // Branching, scoping and evaluation
 
-bool StdLib::QuoteFn(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  ExpressionPtr quote { new Quote { std::move(args.front()) } };
-  args.pop_front();
-  expr = std::move(quote);
+bool StdLib::QuoteFn(EvaluationContext &ctx) {
+  ExpressionPtr quote { new Quote { std::move(ctx.Args.front()) } };
+  ctx.Args.pop_front();
+  ctx.Expr = std::move(quote);
   return true;
 }
 
-bool StdLib::Unquote(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  ExpressionPtr quoteExpr { std::move(args.front()) };
+bool StdLib::Unquote(EvaluationContext &ctx) {
+  ExpressionPtr quoteExpr { std::move(ctx.Args.front()) };
   ExpressionPtr toEvaluate;
   if (auto quote = dynamic_cast<Quote*>(quoteExpr.get()))
     toEvaluate = std::move(quote->Value);
   else
     toEvaluate = std::move(quoteExpr);
 
-  if (interpreter.EvaluatePartial(toEvaluate)) {
-    expr = std::move(toEvaluate);
+  if (ctx.Interp.EvaluatePartial(toEvaluate)) {
+    ctx.Expr = std::move(toEvaluate);
     return true;
   }
   else
-    return interpreter.PushError(EvalError { "unquote", "Failed to evaluate expression" });
+    return ctx.Interp.PushError(EvalError { "unquote", "Failed to evaluate expression" });
 }
 
-bool StdLib::If(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  ExpressionPtr condExpr = std::move(args.front());
-  args.pop_front();
+bool StdLib::If(EvaluationContext &ctx) {
+  ExpressionPtr condExpr = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
 
-  ExpressionPtr trueExpr = std::move(args.front());
-  args.pop_front();
+  ExpressionPtr trueExpr = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
    
-  ExpressionPtr falseExpr = std::move(args.front());
-  args.pop_front();
+  ExpressionPtr falseExpr = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
 
   auto cond = static_cast<Bool*>(condExpr.get());
   ExpressionPtr *branchExpr = cond->Value ? &trueExpr : &falseExpr;
-  if (interpreter.EvaluatePartial(*branchExpr)) {
-    expr = std::move(*branchExpr);
+  if (ctx.Interp.EvaluatePartial(*branchExpr)) {
+    ctx.Expr = std::move(*branchExpr);
     return true;
   }
   else
-    return interpreter.PushError(EvalError { "if", "Failed to evaluate branch" } );
+    return ctx.Interp.PushError(EvalError { "if", "Failed to evaluate branch" } );
 }
 
 // Go through all the code and harden, perform additional argument checking
 
-bool StdLib::Let(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  Scope scope(interpreter.GetCurrentStackFrame().GetLocalSymbols());
-  ExpressionPtr varsExpr = std::move(args.front());
-  args.pop_front();
+bool StdLib::Let(EvaluationContext &ctx) {
+  Scope scope(ctx.Interp.GetCurrentStackFrame().GetLocalSymbols());
+  ExpressionPtr varsExpr = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
 
   auto vars = dynamic_cast<Sexp*>(varsExpr.get());
   if (!vars)
-    return TypeError(interpreter, "let", "sexp", varsExpr);
+    return TypeError(ctx.Interp, "let", "sexp", varsExpr);
 
   for (auto &varExpr : vars->Args) {
     auto var = dynamic_cast<Sexp*>(varExpr.get());
@@ -845,55 +882,55 @@ bool StdLib::Let(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
 
         auto varName = dynamic_cast<Symbol*>(varNameExpr.get());
         if (varName) {
-          if (interpreter.EvaluatePartial(varValueExpr)) {
+          if (ctx.Interp.EvaluatePartial(varValueExpr)) {
             if (!scope.IsScopedSymbol(varName->Value))
               scope.PutSymbol(varName->Value, varValueExpr);
             else
-              return interpreter.PushError(EvalError { "let", "Duplicate binding for " + varName->Value });
+              return ctx.Interp.PushError(EvalError { "let", "Duplicate binding for " + varName->Value });
           }
           else
-            return interpreter.PushError(EvalError { "let", "Failed to evaluate value for " + varName->Value } );
+            return ctx.Interp.PushError(EvalError { "let", "Failed to evaluate value for " + varName->Value } );
         }
         else
-          return TypeError(interpreter, "let", "symbol", varNameExpr);
+          return TypeError(ctx.Interp, "let", "symbol", varNameExpr);
       }
       else
-        return interpreter.PushError(EvalError {
+        return ctx.Interp.PushError(EvalError {
           "let",
           "Expected 2 args: (name1 value1). Got " + std::to_string(nVarArgs) + " args"
         });
     }
     else
-      return TypeError(interpreter, "let", "(name1 value1)", varExpr);
+      return TypeError(ctx.Interp, "let", "(name1 value1)", varExpr);
   }
 
-  return Begin(interpreter, expr, args);
+  return Begin(ctx);
 }
 
-bool StdLib::Begin(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+bool StdLib::Begin(EvaluationContext &ctx) {
   ExpressionPtr currCodeExpr;
-  while (!args.empty()) {
-    currCodeExpr = std::move(args.front());
-    args.pop_front();
+  while (!ctx.Args.empty()) {
+    currCodeExpr = std::move(ctx.Args.front());
+    ctx.Args.pop_front();
 
-    if (!interpreter.EvaluatePartial(currCodeExpr))
-      return interpreter.PushError(EvalError { "let", "Failed to evaluate let body" });
+    if (!ctx.Interp.EvaluatePartial(currCodeExpr))
+      return ctx.Interp.PushError(EvalError { "let", "Failed to evaluate let body" });
   }
 
-  expr = std::move(currCodeExpr);
+  ctx.Expr = std::move(currCodeExpr);
   return true;
 }
 
-bool StdLib::Lambda(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  ExpressionPtr formalsExpr = std::move(args.front());
-  args.pop_front();
+bool StdLib::Lambda(EvaluationContext &ctx) {
+  ExpressionPtr formalsExpr = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
 
-  ExpressionPtr codeExpr = std::move(args.front());
-  args.pop_front();
+  ExpressionPtr codeExpr = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
   
   ArgList anonFuncArgs;
   int nArgs = 0;
-  if (LambdaPrepareFormals(interpreter, formalsExpr, anonFuncArgs, nArgs)) {
+  if (LambdaPrepareFormals(ctx.Interp, formalsExpr, anonFuncArgs, nArgs)) {
     ExpressionPtr func {
       new InterpretedFunction {
         FuncDef {
@@ -905,11 +942,11 @@ bool StdLib::Lambda(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args
       } 
     };
     auto *interpFunc = static_cast<InterpretedFunction*>(func.get());
-    auto &locals = interpreter.GetCurrentStackFrame().GetLocalSymbols();
+    auto &locals = ctx.Interp.GetCurrentStackFrame().GetLocalSymbols();
     locals.ForEach([interpFunc](const std::string &name, ExpressionPtr &value) {
       interpFunc->Closure.emplace(name, value->Clone());
     });
-    expr = std::move(func);
+    ctx.Expr = std::move(func);
     return true;
   }
   else
@@ -935,71 +972,71 @@ bool StdLib::LambdaPrepareFormals(Interpreter &interpreter, ExpressionPtr &forma
   return true;
 }
 
-bool StdLib::Def(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-  ExpressionPtr symbolExpr { std::move(args.front()) };
-  args.pop_front();
+bool StdLib::Def(EvaluationContext &ctx) {
+  ExpressionPtr symbolExpr { std::move(ctx.Args.front()) };
+  ctx.Args.pop_front();
 
   ExpressionPtr lambdaExpr { new Sexp { } };
   auto lambda = static_cast<Sexp*>(lambdaExpr.get());
   lambda->Args.push_back(ExpressionPtr { new Symbol { "lambda" } });
-  lambda->Args.push_back(std::move(args.front()));
-  args.pop_front();
-  lambda->Args.push_back(std::move(args.front()));
-  args.pop_front();
+  lambda->Args.push_back(std::move(ctx.Args.front()));
+  ctx.Args.pop_front();
+  lambda->Args.push_back(std::move(ctx.Args.front()));
+  ctx.Args.pop_front();
 
-  if (interpreter.EvaluatePartial(lambdaExpr)) {
+  if (ctx.Interp.EvaluatePartial(lambdaExpr)) {
     ExpressionPtr setExpr { new Sexp {} };
     auto set = static_cast<Sexp*>(setExpr.get());
     set->Args.push_back(ExpressionPtr { new Symbol { "set" } });
     set->Args.push_back(std::move(symbolExpr));
     set->Args.push_back(std::move(lambdaExpr)); 
-    if (interpreter.EvaluatePartial(setExpr)) {
-      expr = std::move(setExpr);
+    if (ctx.Interp.EvaluatePartial(setExpr)) {
+      ctx.Expr = std::move(setExpr);
       return true;
     }
     else
-      return interpreter.PushError(EvalError { "def", "evaluating set expression failed" });
+      return ctx.Interp.PushError(EvalError { "def", "evaluating set expression failed" });
   }
   else
-    return interpreter.PushError(EvalError { "def", "evaluating lambda expression failed" });
+    return ctx.Interp.PushError(EvalError { "def", "evaluating lambda expression failed" });
 }
 
-bool StdLib::Apply(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+bool StdLib::Apply(EvaluationContext &ctx) {
   ExpressionPtr applicationExpr { new Sexp { } };
   auto application = static_cast<Sexp*>(applicationExpr.get());
-  application->Args.push_back(std::move(args.front()));
-  args.pop_front();
+  application->Args.push_back(std::move(ctx.Args.front()));
+  ctx.Args.pop_front();
 
-  ExpressionPtr appArgsExpr { std::move(args.front()) };
-  args.pop_front();
+  ExpressionPtr appArgsExpr { std::move(ctx.Args.front()) };
+  ctx.Args.pop_front();
 
-  if (interpreter.EvaluatePartial(appArgsExpr)) {
-    ExpressionPtr args;
+  if (ctx.Interp.EvaluatePartial(appArgsExpr)) {
+    ExpressionPtr newArgs;
     if (auto quote = dynamic_cast<Quote*>(appArgsExpr.get())) {
-      args = std::move(quote->Value);
+      newArgs = std::move(quote->Value);
     }
     else
-      args = std::move(appArgsExpr);
+      newArgs = std::move(appArgsExpr);
 
-    auto appArgsSexp = dynamic_cast<Sexp*>(args.get());
+    auto appArgsSexp = dynamic_cast<Sexp*>(newArgs.get());
     if (appArgsSexp) {
       while (!appArgsSexp->Args.empty()) {
         application->Args.push_back(std::move(appArgsSexp->Args.front()));
         appArgsSexp->Args.pop_front();
       }
 
-      if (interpreter.EvaluatePartial(applicationExpr)) {
-        expr = std::move(applicationExpr);
+      if (ctx.Interp.EvaluatePartial(applicationExpr)) {
+        ctx.Expr = std::move(applicationExpr);
         return true;
       }
       else
-        return interpreter.PushError(EvalError { "apply", "failed to evaluate function application" });
+        return ctx.Interp.PushError(EvalError { "apply", "failed to evaluate function application" });
     }
     else
-      return TypeError(interpreter, "apply", "list", args);
+      return TypeError(ctx.Interp, "apply", "list", newArgs);
   }
   else
-    return interpreter.PushError(EvalError { "apply", "failed to evaluate argument list" });
+    return ctx.Interp.PushError(EvalError { "apply", "failed to evaluate argument list" });
 }
 
 // Helpers
@@ -1037,12 +1074,12 @@ bool StdLib::PrintBool(bool expr, std::ostream &out) {
 }
 
 template<class F>
-static bool StdLib::BinaryFunction(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args, F fn, const std::string &name) {
+static bool StdLib::BinaryFunction(EvaluationContext &ctx, F fn, const std::string &name) {
   bool first = true;
   Number result { 0 };
-  while (!args.empty()) {
+  while (!ctx.Args.empty()) {
     bool ok = false;
-    ExpressionPtr numExpr = TypeHelper::GetNumber(args.front());
+    ExpressionPtr numExpr = TypeHelper::GetNumber(ctx.Args.front());
     if (numExpr) {
       auto num = dynamic_cast<Number*>(numExpr.get());
       if (num) {
@@ -1054,71 +1091,71 @@ static bool StdLib::BinaryFunction(Interpreter &interpreter, ExpressionPtr &expr
       }
     }
     if (!ok)
-      return TypeError(interpreter, name, "number", args.front());
+      return TypeError(ctx.Interp, name, "number", ctx.Args.front());
 
     first = false;
-    args.pop_front();
+    ctx.Args.pop_front();
   }
 
-  expr = ExpressionPtr { new Number { result } };
+  ctx.Expr = ExpressionPtr { new Number { result } };
   return true;
 }
 
 template <class B, class N, class S>
-bool StdLib::BinaryPredicate(const std::string &name, Interpreter &interpreter, ExpressionPtr &expr, ArgList &args, B bFn, N nFn, S sFn) {
-  auto currArg = args.begin();
-  if (currArg != args.end()) {
-    if (interpreter.EvaluatePartial(*currArg)) {
+bool StdLib::BinaryPredicate(EvaluationContext &ctx, const std::string &name, B bFn, N nFn, S sFn) {
+  auto currArg = ctx.Args.begin();
+  if (currArg != ctx.Args.end()) {
+    if (ctx.Interp.EvaluatePartial(*currArg)) {
       auto &type = (*currArg)->Type();
 
       Bool defaultValue { true };
       if (bFn && (&type == &Bool::TypeInstance))
-        return PredicateHelper<Bool>(name, interpreter, expr, args, bFn, defaultValue);
+        return PredicateHelper<Bool>(ctx, name, bFn, defaultValue);
       else if (nFn && (&type == &Number::TypeInstance))
-        return PredicateHelper<Number>(name, interpreter, expr, args, nFn, defaultValue);
+        return PredicateHelper<Number>(ctx, name, nFn, defaultValue);
       else if (sFn && (&type == &String::TypeInstance))
-        return PredicateHelper<String>(name, interpreter, expr, args, sFn, defaultValue);
+        return PredicateHelper<String>(ctx, name, sFn, defaultValue);
       else
-        return TypeError(interpreter, name, "literal", *currArg);
+        return TypeError(ctx.Interp, name, "literal", *currArg);
     }
     else
-      return interpreter.PushError(EvalError { name, "Failed to evaluate arg 1" });
+      return ctx.Interp.PushError(EvalError { name, "Failed to evaluate arg 1" });
   }
   else
-    return interpreter.PushError(EvalError { name, "Expected at least one argument" });
+    return ctx.Interp.PushError(EvalError { name, "Expected at least one argument" });
 }
 
 template <class T, class F, class R>
-bool StdLib::PredicateHelper(const std::string &name, Interpreter &interpreter, ExpressionPtr &expr, ArgList &args, F fn, R defaultResult) {
+bool StdLib::PredicateHelper(EvaluationContext &ctx, const std::string &name, F fn, R defaultResult) {
   R result { defaultResult };
-  ExpressionPtr firstArg = std::move(args.front());
-  args.pop_front();
+  ExpressionPtr firstArg = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
   auto last = dynamic_cast<T*>(firstArg.get());
   if (last) {
     int argNum = 1;
-    while (!args.empty()) {
-      if (interpreter.EvaluatePartial(args.front())) {
-        auto curr = dynamic_cast<T*>(args.front().get());
+    while (!ctx.Args.empty()) {
+      if (ctx.Interp.EvaluatePartial(ctx.Args.front())) {
+        auto curr = dynamic_cast<T*>(ctx.Args.front().get());
         if (curr) {
           R tmp { fn(result, *last, *curr) };
           result = tmp;
         }
         else
-          return TypeError(interpreter, name, T::TypeInstance.TypeName, args.front());
+          return TypeError(ctx.Interp, name, T::TypeInstance.TypeName, ctx.Args.front());
 
         *last = *curr;
-        args.pop_front();
+        ctx.Args.pop_front();
       }
       else
-        return interpreter.PushError(EvalError { name, "Failed to evaluate arg " + std::to_string(argNum) });
+        return ctx.Interp.PushError(EvalError { name, "Failed to evaluate arg " + std::to_string(argNum) });
 
       ++argNum;
     }
   }
   else
-    return TypeError(interpreter, name, T::TypeInstance.TypeName, firstArg);
+    return TypeError(ctx.Interp, name, T::TypeInstance.TypeName, firstArg);
 
-  expr = ExpressionPtr { result.Clone() };
+  ctx.Expr = ExpressionPtr { result.Clone() };
   return true;
 }
 

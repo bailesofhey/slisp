@@ -12,84 +12,88 @@ class StdLib: public Library {
 
   private:
     // Interpreter
-    static bool DefaultFunction(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Print(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Quit(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Help(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Set(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool UnSet(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool InfixRegister(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool InfixUnregister(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
+    static bool DefaultFunction(EvaluationContext &ctx);
+    static bool Print(EvaluationContext &ctx);
+    static bool Quit(EvaluationContext &ctx);
+    static bool Help(EvaluationContext &ctx);
+    static bool InfixRegister(EvaluationContext &ctx);
+    static bool InfixUnregister(EvaluationContext &ctx);
+
+    // Assignment operators
+    static bool Set(EvaluationContext &ctx);
+    static bool UnSet(EvaluationContext &ctx);
 
     // Generic
-    static bool Add(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
+    static bool Add(EvaluationContext &ctx);
 
     // Numerical
-    static bool AddNum(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Inc(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Dec(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Sub(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Mult(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Div(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Mod(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
+    static bool AddNum(EvaluationContext &ctx);
+    static bool PreIncrement(EvaluationContext &ctx);
+    static bool PreDecrement(EvaluationContext &ctx);
+    static bool Inc(EvaluationContext &ctx);
+    static bool Dec(EvaluationContext &ctx);
+    static bool Sub(EvaluationContext &ctx);
+    static bool Mult(EvaluationContext &ctx);
+    static bool Div(EvaluationContext &ctx);
+    static bool Mod(EvaluationContext &ctx);
 
     // Bitwise
-    static bool LeftShift(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool RightShift(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool BitAnd(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool BitOr(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool BitXor(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool BitNot(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
+    static bool LeftShift(EvaluationContext &ctx);
+    static bool RightShift(EvaluationContext &ctx);
+    static bool BitAnd(EvaluationContext &ctx);
+    static bool BitOr(EvaluationContext &ctx);
+    static bool BitXor(EvaluationContext &ctx);
+    static bool BitNot(EvaluationContext &ctx);
 
     // String
-    static bool AddString(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Reverse(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
+    static bool AddString(EvaluationContext &ctx);
+    static bool Reverse(EvaluationContext &ctx);
 
     // Lists
-    static bool AddList(Interpreter &intepreter, ExpressionPtr &expr, ArgList &args);
-    static bool List(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Map(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Head(Interpreter &intepreter, ExpressionPtr &expr, ArgList &args);
-    static bool Tail(Interpreter &intepreter, ExpressionPtr &expr, ArgList &args);
+    static bool AddList(EvaluationContext &ctx);
+    static bool List(EvaluationContext &ctx);
+    static bool Map(EvaluationContext &ctx);
+    static bool Head(EvaluationContext &ctx);
+    static bool Tail(EvaluationContext &ctx);
 
     // Logical
-    static bool And(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Or(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Not(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
+    static bool And(EvaluationContext &ctx);
+    static bool Or(EvaluationContext &ctx);
+    static bool Not(EvaluationContext &ctx);
 
     // Comparison
-    static bool Eq(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Ne(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Lt(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Gt(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Lte(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Gte(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
+    static bool Eq(EvaluationContext &ctx);
+    static bool Ne(EvaluationContext &ctx);
+    static bool Lt(EvaluationContext &ctx);
+    static bool Gt(EvaluationContext &ctx);
+    static bool Lte(EvaluationContext &ctx);
+    static bool Gte(EvaluationContext &ctx);
 
     // Branching, scoping, evaluation
-    static bool If(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Let(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool QuoteFn(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Unquote(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Begin(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
-    static bool Lambda(Interpreter &interpreted, ExpressionPtr &expr, ArgList &args);
-    static bool Def(Interpreter &interpreted, ExpressionPtr &expr, ArgList &args);
-    static bool Apply(Interpreter &interpreted, ExpressionPtr &expr, ArgList &args);
+    static bool If(EvaluationContext &ctx);
+    static bool Let(EvaluationContext &ctx);
+    static bool QuoteFn(EvaluationContext &ctx);
+    static bool Unquote(EvaluationContext &ctx);
+    static bool Begin(EvaluationContext &ctx);
+    static bool Lambda(EvaluationContext &ctx);
+    static bool Def(EvaluationContext &ctx);
+    static bool Apply(EvaluationContext &ctx);
 
     // Helpers
-    static bool EvaluateListSexp(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args); 
-    static bool PrintExpression(Interpreter &interpreter, ExpressionPtr &expr, std::ostream &out);
+    static bool EvaluateListSexp(EvaluationContext &ctx); 
+    static bool PrintExpression(Interpreter &interpreter, ExpressionPtr &curr, std::ostream &out);
 
     template<class T>
     static bool PrintLiteral(T *expr, std::ostream &out, char *wrapper = nullptr);
 
     static bool PrintSexp(Interpreter &interpreter, Sexp &sexp, std::ostream &out);
     static bool PrintBool(bool expr, std::ostream &out);
-    static bool InfixRegistrationFunction(const std::string &name, bool unregister, Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
+    static bool InfixRegistrationFunction(EvaluationContext &ctx, const std::string &name, bool unregister);
 
     template<class F>
-    static bool BinaryFunction(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args, F fn, const std::string &name);
+    static bool BinaryFunction(EvaluationContext &ctx, F fn, const std::string &name);
 
-    static bool BinaryLogicalFunc(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args, bool isAnd);
+    static bool BinaryLogicalFunc(EvaluationContext &ctx, bool isAnd);
 
     static void RegisterBinaryFunction(SymbolTable &symbolTable, const std::string &name, SlipFunction fn);
     static void RegisterComparator(SymbolTable &symbolTable, const std::string& name, SlipFunction fn);
@@ -98,18 +102,18 @@ class StdLib: public Library {
     static bool TypeError(Interpreter &interpreter, const std::string &where, const std::string &expectedName, const ExpressionPtr &actual);
 
     template <class T, class F, class R>
-    static bool PredicateHelper(const std::string &name, Interpreter &interpreter, ExpressionPtr &expr, ArgList &args, F fn, R defaultResult);
+    static bool PredicateHelper(EvaluationContext &ctx, const std::string &name, F fn, R defaultResult);
 
     template <class B, class N, class S>
-    static bool BinaryPredicate(const std::string &name, Interpreter &interpreter, ExpressionPtr &expr, ArgList &args, B bFn = nullptr, N nFn = nullptr, S sFn = nullptr);
+    static bool BinaryPredicate(EvaluationContext &ctx, const std::string &name, B bFn = nullptr, N nFn = nullptr, S sFn = nullptr);
 
 
     template <class F>
-    static bool UnaryNumberFn(const std::string &name, Interpreter &interpreter, ExpressionPtr &expr, ArgList &args, F fn);
+    static bool UnaryNumberFn(EvaluationContext &ctx, const std::string &name, F fn);
 
     static ExpressionPtr GetNil();
 
     static bool LambdaPrepareFormals(Interpreter &interpreter, ExpressionPtr &formalsExpr, ArgList &anonFuncArgs, int &nArgs);
 
-    static bool CheckDivideByZero(const std::string &name, Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
+    static bool CheckDivideByZero(EvaluationContext &ctx, const std::string &name);
 };

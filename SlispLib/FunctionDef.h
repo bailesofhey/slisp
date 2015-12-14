@@ -9,10 +9,10 @@
 
 #include "Expression.h"
 
-class Interpreter;
+class EvaluationContext;
 class ArgDef;
 
-using SlipFunction = std::function<bool(Interpreter &, ExpressionPtr &, ArgList &)>;
+using SlipFunction = std::function<bool(EvaluationContext&)>;
 using ExpressionEvaluator = std::function<bool(ExpressionPtr &)>;
 using ArgDefPtr = std::unique_ptr<ArgDef>;
 

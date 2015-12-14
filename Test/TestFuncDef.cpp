@@ -12,7 +12,7 @@ bool TestEvaluator(ExpressionPtr &) {
   return false;
 }
 
-bool TestSlispFn(Interpreter &, ExpressionPtr&, ArgList&) {
+bool TestSlispFn(EvaluationContext &ctx) {
   throw std::exception("This should not be called");
 }
 

@@ -151,6 +151,10 @@ TEST_F(StdLibDefaultFunctionTest, TestInfix_Multiline) {
   ASSERT_TRUE(RunSuccess("(3 + 4\n)", "7"));
   ASSERT_TRUE(RunSuccess("(3\n+\n4)", "7"));
   ASSERT_TRUE(RunSuccess("(\n3\n+\n4\n)", "7"));
+
+  ASSERT_TRUE(RunSuccess("(+ 1 2 3 4 5 6)", "21"));
+  ASSERT_TRUE(RunSuccess("(1 + 2 +\n3 + 4 +\n5 + 6)", "21"));
+  ASSERT_TRUE(RunSuccess("(1 + 2 +\n(3 + 4) +\n(5 + 6))", "21"));
 }
 
 TEST_F(StdLibDefaultFunctionTest, TestInfix_InsideBegin) {
@@ -164,8 +168,6 @@ TEST_F(StdLibDefaultFunctionTest, TestInfix_InsideBegin) {
 }
 
 class StdLibInterpreterTest: public StdLibTest {
-  protected:
-    void TestSetFunctions();
 };
 
 TEST_F(StdLibInterpreterTest, TestPrint) {
@@ -224,7 +226,12 @@ TEST_F(StdLibInterpreterTest, TestHelp) {
   ASSERT_TRUE(RunSuccess("(help help)", "help"));
 }
 
-void StdLibInterpreterTest::TestSetFunctions() {
+class StdLibAssignmentTest: public StdLibTest {
+  protected:
+    void TestSetFunctions();
+};
+
+void StdLibAssignmentTest::TestSetFunctions() {
   ASSERT_TRUE(RunFail("(set)"));
   ASSERT_TRUE(RunFail("(unset)"));
   ASSERT_TRUE(RunFail("(set 42)"));
@@ -301,11 +308,11 @@ void StdLibInterpreterTest::TestSetFunctions() {
   ASSERT_TRUE(RunSuccess("a", "(+ 2 3)"));
 }
 
-TEST_F(StdLibInterpreterTest, TestSet) {
+TEST_F(StdLibAssignmentTest, TestSet) {
   ASSERT_NO_FATAL_FAILURE(TestSetFunctions());
 }
 
-TEST_F(StdLibInterpreterTest, TestSetOperator) {
+TEST_F(StdLibAssignmentTest, TestSetOperator) {
   ASSERT_TRUE(RunFail("n"));
   ASSERT_TRUE(RunSuccess("(= n 42)", "42"));
   ASSERT_TRUE(RunSuccess("n", "42"));
@@ -321,8 +328,24 @@ TEST_F(StdLibInterpreterTest, TestSetOperator) {
   ASSERT_TRUE(RunSuccess("n", "102"));
 }
 
-TEST_F(StdLibInterpreterTest, TestUnSet) {
+TEST_F(StdLibAssignmentTest, TestUnSet) {
   ASSERT_NO_FATAL_FAILURE(TestSetFunctions());
+}
+
+TEST_F(StdLibAssignmentTest, DISABLED_TestSetWithOp) {
+  ASSERT_TRUE(RunSuccess("a = 42", "42"));
+  ASSERT_TRUE(RunSuccess("++ a", "43"));
+  ASSERT_TRUE(RunSuccess("-- a", "42"));
+  ASSERT_TRUE(RunSuccess("a += 10", "52"));
+  ASSERT_TRUE(RunSuccess("a -= 10", "42"));
+  ASSERT_TRUE(RunSuccess("a *= 10", "420"));
+  ASSERT_TRUE(RunSuccess("a /= 10", "42"));
+  ASSERT_TRUE(RunSuccess("a %= 10", "2"));
+  ASSERT_TRUE(RunSuccess("a <<= 10", "2048"));
+  ASSERT_TRUE(RunSuccess("a >>= 10", "2"));
+  ASSERT_TRUE(RunSuccess("a |= 8", "10"));
+  ASSERT_TRUE(RunSuccess("a &= 8", "8"));
+  ASSERT_TRUE(RunSuccess("a ^= 15", "7"));
 }
 
 class StdLibNumericalTest: public StdLibTest {

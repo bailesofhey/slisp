@@ -23,7 +23,7 @@ class ParserTest: public ::testing::Test {
       Settings.RegisterInfixSymbol("=");
     }
 
-    static bool DummyFn(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+    static bool DummyFn(EvaluationContext &ctx) {
       return false;
     }
   

@@ -58,6 +58,15 @@ SymbolTable& StackFrame::GetLocalSymbols() {
 
 //=============================================================================
 
+EvaluationContext::EvaluationContext(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args):
+  Interp(interpreter),
+  Expr(expr),
+  Args(args)
+{
+}
+
+//=============================================================================
+
 Interpreter::Interpreter(CommandInterface &cmdInterface):
   CmdInterface { cmdInterface },
   DynamicSymbols { },
@@ -239,7 +248,7 @@ bool Interpreter::ReduceSexpFunction(ExpressionPtr &expr, Function &function) {
 }
 
 bool Interpreter::ReduceSexpCompiledFunction(ExpressionPtr &expr, CompiledFunction &function, ArgList &args) {
-  return function.Fn(*this, expr, args);
+  return function.Fn(EvaluationContext { *this, expr, args });
 }
 
 bool Interpreter::ReduceSexpInterpretedFunction(ExpressionPtr &expr, InterpretedFunction &function, ArgList &args) {

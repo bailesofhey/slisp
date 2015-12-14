@@ -55,8 +55,8 @@ TEST(SymbolTable, TestPutSymbolQuote) {
 
 TEST(SymbolTable, TestPutSymbolFunction) {
   SymbolTable table;
-  auto slispFn1 = [](Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) { return false; };
-  auto slispFn2 = [](Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) { return true; };
+  auto slispFn1 = [](EvaluationContext&) { return false; };
+  auto slispFn2 = [](EvaluationContext&) { return true; };
   FuncDef def1  { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() };
   FuncDef def2  { FuncDef::OneArg(String::TypeInstance), FuncDef::NoArgs() };
   ExpressionPtr temp;
@@ -393,7 +393,7 @@ TEST_F(InterpreterTest, TestDefaultSexp) {
 }
 
 TEST_F(InterpreterTest, TestDefaultFunction) {
-  auto slispFn = [](Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) { return true; };
+  auto slispFn = [](EvaluationContext&) { return true; };
   FuncDef def { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() };
   ExpressionPtr temp;
   ExpressionPtr func { new CompiledFunction(std::move(def), slispFn) };
@@ -533,23 +533,23 @@ class EvaluationTest: public InterpreterTest {
     void TestNotEnoughArgs(const std::string &funcName);
     void TestTooManyArgs(const std::string &funcName);
     
-    static bool DefaultFunction(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
-      LastResult = std::move(expr);
+    static bool DefaultFunction(EvaluationContext &ctx) {
+      LastResult = std::move(ctx.Expr);
       LastArgs.clear();
-      ArgListHelper::CopyTo(args, LastArgs);
-      interpreter.GetCommandInterface().WriteOutputLine(LastArgs.front()->ToString());
+      ArgListHelper::CopyTo(ctx.Args, LastArgs);
+      ctx.Interp.GetCommandInterface().WriteOutputLine(LastArgs.front()->ToString());
       return Result;
     }
 
-    static bool MyCompiledFunc(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+    static bool MyCompiledFunc(EvaluationContext &ctx) {
       MyFuncCalled = true;
       return Result;
     }
 
-    static bool MyListFunc(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args) {
+    static bool MyListFunc(EvaluationContext &ctx) {
       MyListFuncCalled = true;
       MyListLastArgCount = 0;
-      for (auto &arg : args)
+      for (auto &arg : ctx.Args)
         ++MyListLastArgCount;
       return Result;
     }
