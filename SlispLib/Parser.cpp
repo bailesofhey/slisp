@@ -259,6 +259,7 @@ bool Parser::ParseParenClose(Sexp &root) {
 bool Parser::ParseSexpArgs(Sexp &root, Sexp &curr) {
   bool parseResult = true;
   Sexp currLineSexp;
+  bool isMultiline = false;
 begin:
   currLineSexp.Args.clear();
   while ((parseResult = ParseToken(currLineSexp)) &&
@@ -270,8 +271,10 @@ begin:
   if (!parseResult)
     return false;
   else if ((*Tokenizer_).Type == TokenTypes::PARENCLOSE) {
+    TransformInfixSexp(currLineSexp, isMultiline ? true : false);
     ArgListHelper::CopyTo(currLineSexp.Args, curr.Args);
-    TransformInfixSexp(curr, false);
+    if (isMultiline)
+      TransformInfixSexp(curr, false); 
     root.Args.push_back(ExpressionPtr { curr.Clone() });
     (*Tokenizer_).Type = TokenTypes::UNKNOWN;
     return true;
@@ -285,6 +288,7 @@ begin:
         ++Tokenizer_;
 
         TransformInfixSexp(currLineSexp, true);
+        isMultiline = true;
 
         ArgListHelper::CopyTo(currLineSexp.Args, curr.Args);
         goto begin;

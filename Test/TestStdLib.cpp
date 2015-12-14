@@ -126,17 +126,31 @@ TEST_F(StdLibDefaultFunctionTest, TestInfix) {
 }
 
 TEST_F(StdLibDefaultFunctionTest, TestInfix_InterpretedFunction) {
-  ASSERT_TRUE(RunSuccess("2 + 4", "6"));
   ASSERT_TRUE(RunSuccess("def myAdd (a b) (+ a b)", "Function"));
-  ASSERT_TRUE(RunSuccess("2 myAdd 4", "(2 <Function> 4)"));
+  ASSERT_TRUE(RunSuccess("def myFuncWithNoArgs () 10", "Function"));
 
+  ASSERT_TRUE(RunSuccess("2 + 4", "6"));
+  ASSERT_TRUE(RunSuccess("2 myAdd 4", "(2 <Function> 4)"));
   ASSERT_TRUE(RunSuccess("infix-register myAdd", "()"));
   ASSERT_TRUE(RunSuccess("2 myAdd 4", "6"));
+  ASSERT_TRUE(RunSuccess("2 myAdd (myFuncWithNoArgs)", "12"));
+
   ASSERT_TRUE(RunSuccess("infix-unregister myAdd", "()"));
   ASSERT_TRUE(RunSuccess("2 myAdd 4", "(2 <Function> 4)"));
+  ASSERT_TRUE(RunSuccess("2 myAdd (myFuncWithNoArgs)", "(2 <Function> 10)"));
   ASSERT_TRUE(RunSuccess("2 + 4", "6"));
   ASSERT_TRUE(RunSuccess("infix-unregister +", "()"));
   ASSERT_TRUE(RunSuccess("2 + 4", "(2 <Function> 4)"));
+}
+
+TEST_F(StdLibDefaultFunctionTest, TestInfix_Multiline) {
+  ASSERT_TRUE(RunSuccess("(3 + 4)", "7"));
+  ASSERT_TRUE(RunSuccess("(\n3 + 4)", "7"));
+  ASSERT_TRUE(RunSuccess("(3\n+ 4)", "7"));
+  ASSERT_TRUE(RunSuccess("(3 +\n4)", "7"));
+  ASSERT_TRUE(RunSuccess("(3 + 4\n)", "7"));
+  ASSERT_TRUE(RunSuccess("(3\n+\n4)", "7"));
+  ASSERT_TRUE(RunSuccess("(\n3\n+\n4\n)", "7"));
 }
 
 TEST_F(StdLibDefaultFunctionTest, TestInfix_InsideBegin) {
@@ -144,6 +158,9 @@ TEST_F(StdLibDefaultFunctionTest, TestInfix_InsideBegin) {
   ASSERT_TRUE(RunSuccess("(begin\nx = 42\n)", "42"));
   ASSERT_TRUE(RunSuccess("(begin\na = 2\nb = 3\na + b\n)", "5"));
   ASSERT_TRUE(RunSuccess("(begin\n(a = 2)\n(begin\nb = 3\n(begin\na + b\n)))", "5"));
+  ASSERT_TRUE(RunSuccess("(begin\n(2 + 4)\n)", "6"));
+  ASSERT_TRUE(RunSuccess("(begin\n(2 + 4))", "6"));
+  ASSERT_TRUE(RunSuccess("(begin\n2 + 4)", "6"));
 }
 
 class StdLibInterpreterTest: public StdLibTest {
