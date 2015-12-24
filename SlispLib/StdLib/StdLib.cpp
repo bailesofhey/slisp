@@ -51,8 +51,8 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("^=", &StdLib::Set, setDef.Clone()); 
   symbols.PutSymbolFunction("|=", &StdLib::Set, setDef.Clone()); 
 
-  symbols.PutSymbolFunction("++", &StdLib::PreIncrement, FuncDef { FuncDef::OneArg(Number::TypeInstance), FuncDef::OneArg(Number::TypeInstance) });
-  symbols.PutSymbolFunction("--", &StdLib::PreDecrement, FuncDef { FuncDef::OneArg(Number::TypeInstance), FuncDef::OneArg(Number::TypeInstance) });
+  symbols.PutSymbolFunction("++", &StdLib::Set, FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::NoArgs() }); 
+  symbols.PutSymbolFunction("--", &StdLib::Set, FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::NoArgs() }); 
 
   symbols.PutSymbolFunction("unset", &StdLib::UnSet, FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
 
@@ -307,6 +307,18 @@ bool StdLib::Help(EvaluationContext &ctx) {
   return true;
 }
 
+void BuildOpSexp(EvaluationContext &ctx, const std::string &op, ExpressionPtr &symToSetExpr) {
+  ExpressionPtr opExpr { new Sexp() };
+  Sexp &opSexp = static_cast<Sexp&>(*opExpr);
+  opSexp.Args.push_back(ExpressionPtr { new Symbol(op) });
+  opSexp.Args.push_back(symToSetExpr->Clone());
+  ArgListHelper::CopyTo(ctx.Args, opSexp.Args);
+  
+  if (!ctx.Args.empty())
+    ctx.Args.pop_front();
+  ctx.Args.push_front(std::move(opExpr));
+}
+
 bool StdLib::Set(EvaluationContext &ctx) {
   ExpressionPtr symToSetExpr = std::move(ctx.Args.front());
   ctx.Args.pop_front();
@@ -319,18 +331,14 @@ bool StdLib::Set(EvaluationContext &ctx) {
       if (thisFn->Symbol) {
         if (auto *thisFnSym = dynamic_cast<Symbol*>(thisFn->Symbol.get())) {
           std::string setOp = thisFnSym->Value;
-          if (setOp.length() > 1 && setOp.back() == '=') {
+          if (setOp.length() > 1 && setOp.back() == '=') { 
             std::string op = setOp.substr(0, setOp.length() - 1);
-            ExpressionPtr opExpr { new Sexp() };
-            Sexp &opSexp = static_cast<Sexp&>(*opExpr);
-            opSexp.Args.push_back(ExpressionPtr { new Symbol(op) });
-            opSexp.Args.push_back(symToSetExpr->Clone());
-            ArgListHelper::CopyTo(ctx.Args, opSexp.Args);
-
-            ctx.Args.pop_front();
-            ctx.Args.push_front(std::move(opExpr));
+            BuildOpSexp(ctx, op, symToSetExpr);
           }
-
+          else if (setOp == "++")
+            BuildOpSexp(ctx, "inc", symToSetExpr);
+          else if (setOp == "--")
+            BuildOpSexp(ctx, "dec", symToSetExpr);
 
           ExpressionPtr value = std::move(ctx.Args.front());
           ctx.Args.pop_front();
@@ -432,14 +440,6 @@ bool StdLib::Inc(EvaluationContext &ctx) {
 
 bool StdLib::Dec(EvaluationContext &ctx) {
   return UnaryNumberFn(ctx, "dec", [](int64_t num) { return num - 1; });
-}
-
-bool StdLib::PreIncrement(EvaluationContext &ctx) {
-  return false;
-}
-
-bool StdLib::PreDecrement(EvaluationContext &ctx) {
-  return false;
 }
 
 template <class F>

@@ -28,8 +28,6 @@ class StdLib: public Library {
 
     // Numerical
     static bool AddNum(EvaluationContext &ctx);
-    static bool PreIncrement(EvaluationContext &ctx);
-    static bool PreDecrement(EvaluationContext &ctx);
     static bool Inc(EvaluationContext &ctx);
     static bool Dec(EvaluationContext &ctx);
     static bool Sub(EvaluationContext &ctx);

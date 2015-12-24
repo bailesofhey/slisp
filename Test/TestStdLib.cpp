@@ -334,8 +334,6 @@ TEST_F(StdLibAssignmentTest, TestUnSet) {
 
 TEST_F(StdLibAssignmentTest, TestSetWithOp) {
   ASSERT_TRUE(RunSuccess("a = 42", "42"));
-  //ASSERT_TRUE(RunSuccess("++ a", "43"));
-  //ASSERT_TRUE(RunSuccess("-- a", "42"));
   ASSERT_TRUE(RunSuccess("a += 10", "52"));
   ASSERT_TRUE(RunSuccess("a -= 10", "42"));
   ASSERT_TRUE(RunSuccess("a *= 10", "420"));
@@ -346,6 +344,12 @@ TEST_F(StdLibAssignmentTest, TestSetWithOp) {
   ASSERT_TRUE(RunSuccess("a |= 8", "10"));
   ASSERT_TRUE(RunSuccess("a &= 8", "8"));
   ASSERT_TRUE(RunSuccess("a ^= 15", "7"));
+}
+
+TEST_F(StdLibAssignmentTest, TestSetWithOpIncrementDecrement) {
+  ASSERT_TRUE(RunSuccess("a = 42", "42"));
+  ASSERT_TRUE(RunSuccess("++ a", "43"));
+  ASSERT_TRUE(RunSuccess("-- a", "42"));
 }
 
 class StdLibNumericalTest: public StdLibTest {
