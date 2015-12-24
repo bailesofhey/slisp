@@ -233,7 +233,9 @@ bool Interpreter::ReduceSexpFunction(ExpressionPtr &expr, Function &function) {
   auto funcToCall = static_cast<Function*>(funcCopy.get());
   if (funcDef.ValidateArgs(evaluator, expr, error)) {
     auto e = static_cast<Sexp*>(expr.get());
-    auto &args = e->Args;
+    ArgList args;
+    ArgListHelper::CopyTo(e->Args, args);
+    args.pop_front();
     if (auto compiledFunction = dynamic_cast<CompiledFunction*>(funcToCall))
       return ReduceSexpCompiledFunction(expr, *compiledFunction, args);
     else if (auto interpretedFunction = dynamic_cast<InterpretedFunction*>(funcToCall))

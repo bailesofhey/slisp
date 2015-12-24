@@ -22,7 +22,9 @@ bool ArgDef::Validate(ExpressionEvaluator evaluator, ExpressionPtr &expr, std::s
         args.pop_front();
         auto fn = dynamic_cast<Function*>(fnExpr.get());
         if (fn) {
-          ValidateArgs(evaluator, args, error);
+          bool result = ValidateArgs(evaluator, args, error);
+          args.push_front(std::move(fnExpr));
+          return result;
         }
         else
           throw std::exception("first argument in sexp must be a function");

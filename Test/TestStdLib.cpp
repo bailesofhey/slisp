@@ -332,10 +332,10 @@ TEST_F(StdLibAssignmentTest, TestUnSet) {
   ASSERT_NO_FATAL_FAILURE(TestSetFunctions());
 }
 
-TEST_F(StdLibAssignmentTest, DISABLED_TestSetWithOp) {
+TEST_F(StdLibAssignmentTest, TestSetWithOp) {
   ASSERT_TRUE(RunSuccess("a = 42", "42"));
-  ASSERT_TRUE(RunSuccess("++ a", "43"));
-  ASSERT_TRUE(RunSuccess("-- a", "42"));
+  //ASSERT_TRUE(RunSuccess("++ a", "43"));
+  //ASSERT_TRUE(RunSuccess("-- a", "42"));
   ASSERT_TRUE(RunSuccess("a += 10", "52"));
   ASSERT_TRUE(RunSuccess("a -= 10", "42"));
   ASSERT_TRUE(RunSuccess("a *= 10", "420"));

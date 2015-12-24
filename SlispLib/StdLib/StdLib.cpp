@@ -37,7 +37,7 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("infix-unregister", &StdLib::InfixUnregister, FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::NoArgs() });
 
   // Assignment Operators
-  FuncDef setDef { FuncDef::Args({&Symbol::TypeInstance, &Literal::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) };
+  FuncDef setDef { FuncDef::Args({&Symbol::TypeInstance, &Sexp::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) };
   symbols.PutSymbolFunction("set", &StdLib::Set, setDef.Clone()); 
   symbols.PutSymbolFunction("=", &StdLib::Set, setDef.Clone()); 
   symbols.PutSymbolFunction("+=", &StdLib::Set, setDef.Clone()); 
@@ -308,25 +308,50 @@ bool StdLib::Help(EvaluationContext &ctx) {
 }
 
 bool StdLib::Set(EvaluationContext &ctx) {
-  ExpressionPtr sym = std::move(ctx.Args.front());
-  ctx.Args.pop_front();
-    
-  ExpressionPtr value = std::move(ctx.Args.front());
+  ExpressionPtr symToSetExpr = std::move(ctx.Args.front());
   ctx.Args.pop_front();
 
-  std::string symName = "";
-  auto symE = static_cast<Symbol*>(sym.get());
-  symName = symE->Value;
+  auto symToSet = static_cast<Symbol*>(symToSetExpr.get());
+  std::string symToSetName = symToSet->Value;
 
-  ExpressionPtr temp;
-  auto &currStackFrame = ctx.Interp.GetCurrentStackFrame();
-  if (currStackFrame.GetLocalSymbols().GetSymbol(symName, temp))
-    currStackFrame.PutLocalSymbol(symName, value->Clone());
-  else
-    currStackFrame.PutDynamicSymbol(symName, value->Clone());
+  if (auto *thisSexp = dynamic_cast<Sexp*>(ctx.Expr.get())) {
+    if (auto *thisFn = dynamic_cast<Function*>(thisSexp->Args.front().get())) {
+      if (thisFn->Symbol) {
+        if (auto *thisFnSym = dynamic_cast<Symbol*>(thisFn->Symbol.get())) {
+          std::string setOp = thisFnSym->Value;
+          if (setOp.length() > 1 && setOp.back() == '=') {
+            std::string op = setOp.substr(0, setOp.length() - 1);
+            ExpressionPtr opExpr { new Sexp() };
+            Sexp &opSexp = static_cast<Sexp&>(*opExpr);
+            opSexp.Args.push_back(ExpressionPtr { new Symbol(op) });
+            opSexp.Args.push_back(symToSetExpr->Clone());
+            ArgListHelper::CopyTo(ctx.Args, opSexp.Args);
 
-  ctx.Expr = std::move(value);
-  return true;
+            ctx.Args.pop_front();
+            ctx.Args.push_front(std::move(opExpr));
+          }
+
+
+          ExpressionPtr value = std::move(ctx.Args.front());
+          ctx.Args.pop_front();
+          if (ctx.Interp.EvaluatePartial(value)) {
+            auto &currStackFrame = ctx.Interp.GetCurrentStackFrame();
+            ExpressionPtr temp;
+            if (currStackFrame.GetLocalSymbols().GetSymbol(symToSetName, temp))
+              currStackFrame.PutLocalSymbol(symToSetName, value->Clone());
+            else
+              currStackFrame.PutDynamicSymbol(symToSetName, value->Clone());
+
+            ctx.Expr = std::move(value);
+            return true;
+          }
+          else
+            return ctx.Interp.PushError(EvalError { setOp, "Failed to evaluate" });
+        }
+      }
+    }
+  }
+  return ctx.Interp.PushError(EvalError { "set", "Internal error reading sexp" });    
 }
 
 bool StdLib::UnSet(EvaluationContext &ctx) {
