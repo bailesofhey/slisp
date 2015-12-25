@@ -37,22 +37,24 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("infix-unregister", &StdLib::InfixUnregister, FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::NoArgs() });
 
   // Assignment Operators
-  FuncDef setDef { FuncDef::Args({&Symbol::TypeInstance, &Sexp::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) };
+
+  FuncDef setDef { FuncDef::Args({&Symbol::TypeInstance, &Literal::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) };  
   symbols.PutSymbolFunction("set", &StdLib::Set, setDef.Clone()); 
-  symbols.PutSymbolFunction("=", &StdLib::Set, setDef.Clone()); 
-  symbols.PutSymbolFunction("+=", &StdLib::Set, setDef.Clone()); 
-  symbols.PutSymbolFunction("-=", &StdLib::Set, setDef.Clone()); 
-  symbols.PutSymbolFunction("*=", &StdLib::Set, setDef.Clone()); 
-  symbols.PutSymbolFunction("/=", &StdLib::Set, setDef.Clone()); 
-  symbols.PutSymbolFunction("%=", &StdLib::Set, setDef.Clone()); 
+  symbols.PutSymbolFunction("=", &StdLib::Set,   setDef.Clone()); 
+  symbols.PutSymbolFunction("+=", &StdLib::Set,  setDef.Clone()); 
+  symbols.PutSymbolFunction("-=", &StdLib::Set,  setDef.Clone()); 
+  symbols.PutSymbolFunction("*=", &StdLib::Set,  setDef.Clone()); 
+  symbols.PutSymbolFunction("/=", &StdLib::Set,  setDef.Clone()); 
+  symbols.PutSymbolFunction("%=", &StdLib::Set,  setDef.Clone()); 
   symbols.PutSymbolFunction("<<=", &StdLib::Set, setDef.Clone()); 
   symbols.PutSymbolFunction(">>=", &StdLib::Set, setDef.Clone()); 
-  symbols.PutSymbolFunction("&=", &StdLib::Set, setDef.Clone()); 
-  symbols.PutSymbolFunction("^=", &StdLib::Set, setDef.Clone()); 
-  symbols.PutSymbolFunction("|=", &StdLib::Set, setDef.Clone()); 
-
-  symbols.PutSymbolFunction("++", &StdLib::Set, FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::NoArgs() }); 
-  symbols.PutSymbolFunction("--", &StdLib::Set, FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::NoArgs() }); 
+  symbols.PutSymbolFunction("&=", &StdLib::Set,  setDef.Clone()); 
+  symbols.PutSymbolFunction("^=", &StdLib::Set,  setDef.Clone()); 
+  symbols.PutSymbolFunction("|=", &StdLib::Set,  setDef.Clone()); 
+  
+  FuncDef incDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) };
+  symbols.PutSymbolFunction("++", &StdLib::Set, incDef.Clone()); 
+  symbols.PutSymbolFunction("--", &StdLib::Set, incDef.Clone()); 
 
   symbols.PutSymbolFunction("unset", &StdLib::UnSet, FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
 
@@ -322,44 +324,45 @@ void BuildOpSexp(EvaluationContext &ctx, const std::string &op, ExpressionPtr &s
 bool StdLib::Set(EvaluationContext &ctx) {
   ExpressionPtr symToSetExpr = std::move(ctx.Args.front());
   ctx.Args.pop_front();
+  if (auto *symToSet = dynamic_cast<Symbol*>(symToSetExpr.get())) {
+    std::string symToSetName = symToSet->Value;
+    if (auto *thisSexp = dynamic_cast<Sexp*>(ctx.Expr.get())) {
+      if (auto *thisFn = dynamic_cast<Function*>(thisSexp->Args.front().get())) {
+        if (thisFn->Symbol) {
+          if (auto *thisFnSym = dynamic_cast<Symbol*>(thisFn->Symbol.get())) {
+            std::string setOp = thisFnSym->Value;
+            if (setOp.length() > 1 && setOp.back() == '=') { 
+              std::string op = setOp.substr(0, setOp.length() - 1);
+              BuildOpSexp(ctx, op, symToSetExpr);
+            }
+            else if (setOp == "++")
+              BuildOpSexp(ctx, "inc", symToSetExpr);
+            else if (setOp == "--")
+              BuildOpSexp(ctx, "dec", symToSetExpr);
 
-  auto symToSet = static_cast<Symbol*>(symToSetExpr.get());
-  std::string symToSetName = symToSet->Value;
+            ExpressionPtr value = std::move(ctx.Args.front());
+            ctx.Args.pop_front();
+            if (ctx.Interp.EvaluatePartial(value)) {
+              auto &currStackFrame = ctx.Interp.GetCurrentStackFrame();
+              ExpressionPtr temp;
+              if (currStackFrame.GetLocalSymbols().GetSymbol(symToSetName, temp))
+                currStackFrame.PutLocalSymbol(symToSetName, value->Clone());
+              else
+                currStackFrame.PutDynamicSymbol(symToSetName, value->Clone());
 
-  if (auto *thisSexp = dynamic_cast<Sexp*>(ctx.Expr.get())) {
-    if (auto *thisFn = dynamic_cast<Function*>(thisSexp->Args.front().get())) {
-      if (thisFn->Symbol) {
-        if (auto *thisFnSym = dynamic_cast<Symbol*>(thisFn->Symbol.get())) {
-          std::string setOp = thisFnSym->Value;
-          if (setOp.length() > 1 && setOp.back() == '=') { 
-            std::string op = setOp.substr(0, setOp.length() - 1);
-            BuildOpSexp(ctx, op, symToSetExpr);
-          }
-          else if (setOp == "++")
-            BuildOpSexp(ctx, "inc", symToSetExpr);
-          else if (setOp == "--")
-            BuildOpSexp(ctx, "dec", symToSetExpr);
-
-          ExpressionPtr value = std::move(ctx.Args.front());
-          ctx.Args.pop_front();
-          if (ctx.Interp.EvaluatePartial(value)) {
-            auto &currStackFrame = ctx.Interp.GetCurrentStackFrame();
-            ExpressionPtr temp;
-            if (currStackFrame.GetLocalSymbols().GetSymbol(symToSetName, temp))
-              currStackFrame.PutLocalSymbol(symToSetName, value->Clone());
+              ctx.Expr = std::move(value);
+              return true;
+            }
             else
-              currStackFrame.PutDynamicSymbol(symToSetName, value->Clone());
-
-            ctx.Expr = std::move(value);
-            return true;
+              return ctx.Interp.PushError(EvalError { setOp, "Failed to evaluate" });
           }
-          else
-            return ctx.Interp.PushError(EvalError { setOp, "Failed to evaluate" });
         }
       }
     }
+    return ctx.Interp.PushError(EvalError { "set", "Internal error reading sexp" });    
   }
-  return ctx.Interp.PushError(EvalError { "set", "Internal error reading sexp" });    
+  else
+    return TypeError(ctx.Interp, "set", ExpressionPtr { new Symbol("") }, symToSetExpr);
 }
 
 bool StdLib::UnSet(EvaluationContext &ctx) {
