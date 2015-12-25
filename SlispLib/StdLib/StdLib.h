@@ -79,12 +79,12 @@ class StdLib: public Library {
 
     // Helpers
     static bool EvaluateListSexp(EvaluationContext &ctx); 
-    static bool PrintExpression(Interpreter &interpreter, ExpressionPtr &curr, std::ostream &out);
+    static bool PrintExpression(EvaluationContext &ctx, ExpressionPtr &curr, std::ostream &out);
 
     template<class T>
     static bool PrintLiteral(T *expr, std::ostream &out, char *wrapper = nullptr);
 
-    static bool PrintSexp(Interpreter &interpreter, Sexp &sexp, std::ostream &out);
+    static bool PrintSexp(EvaluationContext &ctx, Sexp &sexp, std::ostream &out);
     static bool PrintBool(bool expr, std::ostream &out);
     static bool InfixRegistrationFunction(EvaluationContext &ctx, const std::string &name, bool unregister);
 
@@ -95,9 +95,6 @@ class StdLib: public Library {
 
     static void RegisterBinaryFunction(SymbolTable &symbolTable, const std::string &name, SlipFunction fn);
     static void RegisterComparator(SymbolTable &symbolTable, const std::string& name, SlipFunction fn);
-    static bool UnknownSymbol(Interpreter &interpreter, const std::string &where, const std::string &symName);
-    static bool TypeError(Interpreter &interpreter, const std::string &where, const ExpressionPtr &expected, const ExpressionPtr &actual);
-    static bool TypeError(Interpreter &interpreter, const std::string &where, const std::string &expectedName, const ExpressionPtr &actual);
 
     template <class T, class F, class R>
     static bool PredicateHelper(EvaluationContext &ctx, const std::string &name, F fn, R defaultResult);
@@ -111,7 +108,7 @@ class StdLib: public Library {
 
     static ExpressionPtr GetNil();
 
-    static bool LambdaPrepareFormals(Interpreter &interpreter, ExpressionPtr &formalsExpr, ArgList &anonFuncArgs, int &nArgs);
+    static bool LambdaPrepareFormals(EvaluationContext &ctx, ExpressionPtr &formalsExpr, ArgList &anonFuncArgs, int &nArgs);
 
     static bool CheckDivideByZero(EvaluationContext &ctx, const std::string &name);
 };

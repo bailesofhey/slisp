@@ -35,10 +35,22 @@ class StackFrame {
 class EvaluationContext {
   public:
     Interpreter   &Interp;
+    Symbol        CurrentFunction;
     ExpressionPtr &Expr;
     ArgList       &Args;
 
-    explicit EvaluationContext(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args);
+    explicit EvaluationContext(Interpreter &interpreter, Symbol &currentFunction, ExpressionPtr &expr, ArgList &args);
+    bool Evaluate(ExpressionPtr &expr, int argNum);
+    bool Evaluate(ExpressionPtr &expr, const std::string &argName);
+    bool EvaluateNoError(ExpressionPtr &expr);
+
+    bool Error(const std::string &what);
+    bool EvaluateError(int argNum);
+    bool EvaluateError(const std::string &argName);
+    bool UnknownSymbolError(const std::string &symName);
+    bool TypeError(const TypeInfo &expected, const ExpressionPtr &actual);
+    bool TypeError(const std::string &expectedName, const ExpressionPtr &actual);
+    bool ArgumentExpectedError();
 };
 
 class Interpreter {

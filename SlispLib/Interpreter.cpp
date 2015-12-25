@@ -58,11 +58,52 @@ SymbolTable& StackFrame::GetLocalSymbols() {
 
 //=============================================================================
 
-EvaluationContext::EvaluationContext(Interpreter &interpreter, ExpressionPtr &expr, ArgList &args):
+EvaluationContext::EvaluationContext(Interpreter &interpreter, Symbol &currentFunction, ExpressionPtr &expr, ArgList &args):
   Interp(interpreter),
+  CurrentFunction(currentFunction),
   Expr(expr),
   Args(args)
 {
+}
+
+bool EvaluationContext::EvaluateNoError(ExpressionPtr &expr) {
+  return Interp.EvaluatePartial(expr);
+}
+
+bool EvaluationContext::Evaluate(ExpressionPtr &expr, int argNum) {
+  return EvaluateNoError(expr) ? true : EvaluateError(argNum);
+}
+
+bool EvaluationContext::Evaluate(ExpressionPtr &expr, const std::string &argName) {
+  return EvaluateNoError(expr) ? true : EvaluateError(argName);
+}
+
+bool EvaluationContext::Error(const std::string &what) {
+  return Interp.PushError(EvalError { CurrentFunction.Value, what });
+}
+
+bool EvaluationContext::EvaluateError(int argNum) {
+  return EvaluateError(std::to_string(argNum));
+}
+
+bool EvaluationContext::EvaluateError(const std::string &argName) {
+  return Error("Failed to evaluate arg: " + argName);
+}
+
+bool EvaluationContext::UnknownSymbolError(const std::string &symName) {
+  return Error("Unknown symbol: " + symName);
+}
+
+bool EvaluationContext::TypeError(const TypeInfo &expected, const ExpressionPtr &actual) {
+  return TypeError(expected.TypeName, actual);
+}
+
+bool EvaluationContext::TypeError(const std::string &expectedName, const ExpressionPtr &actual) {
+  return Error("Expecting: " + expectedName + ". Got: " + actual->Type().TypeName);
+}
+
+bool EvaluationContext::ArgumentExpectedError() {
+  return Error("Argument expected");
 }
 
 //=============================================================================
@@ -250,7 +291,12 @@ bool Interpreter::ReduceSexpFunction(ExpressionPtr &expr, Function &function) {
 }
 
 bool Interpreter::ReduceSexpCompiledFunction(ExpressionPtr &expr, CompiledFunction &function, ArgList &args) {
-  return function.Fn(EvaluationContext { *this, expr, args });
+  if (function.Symbol) {
+    if (auto *fnSym = dynamic_cast<Symbol*>(function.Symbol.get())) {
+      return function.Fn(EvaluationContext { *this, *fnSym, expr, args });
+    }
+  } 
+  return PushError(EvalError { ErrorWhere, "No current function" });
 }
 
 bool Interpreter::ReduceSexpInterpretedFunction(ExpressionPtr &expr, InterpretedFunction &function, ArgList &args) {
@@ -303,19 +349,9 @@ bool Interpreter::EvaluateArgs(ArgList &args) {
 }
 
 bool Interpreter::BuildListSexp(Sexp &wrappedSexp, ArgList &args) {
-  ExpressionPtr listSym;
-  if (GetCurrFrameSymbol(Settings.GetListSexp(), listSym)) { 
-    auto listFn = dynamic_cast<Function*>(listSym.get());
-    if (listFn) {
-      wrappedSexp.Args.push_front(listFn->Clone());
-      ArgListHelper::CopyTo(args, wrappedSexp.Args);
-      return true;
-    }
-    else
-      return PushError(EvalError { ErrorWhere, "list is not a function" });
-  }
-  else
-    return PushError(EvalError { ErrorWhere, "no list function found" });
+  wrappedSexp.Args.push_front(ExpressionPtr { new Symbol(Settings.GetListSexp()) });
+  ArgListHelper::CopyTo(args, wrappedSexp.Args);
+  return true;
 }
 
 bool Interpreter::ReduceSexpList(ExpressionPtr &expr, ArgList &args) {

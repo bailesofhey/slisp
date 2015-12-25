@@ -199,7 +199,7 @@ void StdLib::UnLoad(Interpreter &interpreter) {
 
 // Interpreter Functions
 
-bool StdLib::PrintExpression(Interpreter &interpreter, ExpressionPtr &curr, std::ostream &out) {
+bool StdLib::PrintExpression(EvaluationContext &ctx, ExpressionPtr &curr, std::ostream &out) {
   if (auto *currE = dynamic_cast<Bool*>(curr.get()))
     return PrintBool(currE->Value, out);
   else if (auto *currE = dynamic_cast<Number*>(curr.get()))
@@ -217,25 +217,25 @@ bool StdLib::PrintExpression(Interpreter &interpreter, ExpressionPtr &curr, std:
     return PrintLiteral(&temp, out);
   }
   else if (auto *currE = dynamic_cast<Quote*>(curr.get())) {
-    return PrintExpression(interpreter, currE->Value, out);
+    return PrintExpression(ctx, currE->Value, out);
   }
   else if (auto *currE = dynamic_cast<Sexp*>(curr.get()))
-    return PrintSexp(interpreter, *currE, out);
+    return PrintSexp(ctx, *currE, out);
   else
-    return interpreter.PushError(EvalError { "print", "Invalid expression type: " + curr->ToString() });
+    return ctx.Error("Invalid expression type: " + curr->ToString());
 }
 
 bool StdLib::EvaluateListSexp(EvaluationContext &ctx) {
   ExpressionPtr listExpr { new Sexp() };
   Sexp *sexp = static_cast<Sexp*>(listExpr.get());
   ArgListHelper::CopyTo(ctx.Args, sexp->Args);
-  if (ctx.Interp.EvaluatePartial(listExpr)) {
+  if (ctx.Evaluate(listExpr, "list")) {
     ctx.Args.clear();
     ctx.Args.push_back(std::move(listExpr));
     return Print(ctx);
   }
   else
-    return ctx.Interp.PushError(EvalError { "<default function>", "Failed to evaluate list" });
+    return false; 
 }
 
 bool StdLib::DefaultFunction(EvaluationContext &ctx) {
@@ -252,15 +252,15 @@ bool StdLib::Print(EvaluationContext &ctx) {
     std::stringstream out;
     curr = std::move(ctx.Args.front());
     ctx.Args.pop_front();
-    if (ctx.Interp.EvaluatePartial(curr)) {
-      bool result = PrintExpression(ctx.Interp, curr, out);
+    if (ctx.Evaluate(curr, argNum)) {
+      bool result = PrintExpression(ctx, curr, out);
       out << std::endl;
       if (!result)
         return false;
       cmdInterface.WriteOutputLine(out.str());
     }
     else
-      return ctx.Interp.PushError(EvalError { "print", "Failed to evaluate arg " + std::to_string(argNum) });
+      return false; 
     ++argNum;
   }
 
@@ -299,7 +299,7 @@ bool StdLib::Help(EvaluationContext &ctx) {
           functor(sym->Value, currValue);
         }
         else
-          return UnknownSymbol(ctx.Interp, "help", sym->Value);
+          return ctx.UnknownSymbolError(sym->Value);
       }
     }
   }
@@ -342,7 +342,7 @@ bool StdLib::Set(EvaluationContext &ctx) {
 
             ExpressionPtr value = std::move(ctx.Args.front());
             ctx.Args.pop_front();
-            if (ctx.Interp.EvaluatePartial(value)) {
+            if (ctx.Evaluate(value, "value")) {
               auto &currStackFrame = ctx.Interp.GetCurrentStackFrame();
               ExpressionPtr temp;
               if (currStackFrame.GetLocalSymbols().GetSymbol(symToSetName, temp))
@@ -354,15 +354,15 @@ bool StdLib::Set(EvaluationContext &ctx) {
               return true;
             }
             else
-              return ctx.Interp.PushError(EvalError { setOp, "Failed to evaluate" });
+              return false; 
           }
         }
       }
     }
-    return ctx.Interp.PushError(EvalError { "set", "Internal error reading sexp" });    
+    return ctx.Error("Internal error reading sexp");
   }
   else
-    return TypeError(ctx.Interp, "set", ExpressionPtr { new Symbol("") }, symToSetExpr);
+    return ctx.TypeError(Symbol::TypeInstance, symToSetExpr);
 }
 
 bool StdLib::UnSet(EvaluationContext &ctx) {
@@ -381,7 +381,7 @@ bool StdLib::UnSet(EvaluationContext &ctx) {
     return true;
   }
   else
-    return UnknownSymbol(ctx.Interp, "unset", symName);
+    return ctx.UnknownSymbolError(symName);
 }
 
 bool StdLib::InfixRegistrationFunction(EvaluationContext &ctx, const std::string &name, bool unregister) {
@@ -398,10 +398,10 @@ bool StdLib::InfixRegistrationFunction(EvaluationContext &ctx, const std::string
       return true;
     }
     else
-      return TypeError(ctx.Interp, name, "function", fnExpr);
+      return ctx.TypeError(Function::TypeInstance, fnExpr);
   }
   else
-    return ctx.Interp.PushError(EvalError { name, "Symbol not found" });
+    return ctx.UnknownSymbolError(sym.Value);
 }
 
 bool StdLib::InfixRegister(EvaluationContext &ctx) {
@@ -417,7 +417,7 @@ bool StdLib::InfixUnregister(EvaluationContext &ctx) {
 bool StdLib::Add(EvaluationContext &ctx) {
   auto currArg = ctx.Args.begin();
   if (currArg != ctx.Args.end()) {
-    if (ctx.Interp.EvaluatePartial(*currArg)) {
+    if (ctx.Evaluate(*currArg, 1)) {
       auto &type = (*currArg)->Type();
       if (TypeHelper::IsConvertableToNumber(type))
         return AddNum(ctx);
@@ -426,13 +426,13 @@ bool StdLib::Add(EvaluationContext &ctx) {
       else if (&type == &Quote::TypeInstance)
         return AddList(ctx);
       else
-        return TypeError(ctx.Interp, "+", "string, number or list", *currArg);
+        return ctx.TypeError("string/number/list", *currArg);
     }
     else
-      return ctx.Interp.PushError(EvalError { "+", "Failed to evaluate first arg" });
+      return false; 
   }
   else
-    return ctx.Interp.PushError(EvalError { "+", "Expected at least one argument" });
+    return ctx.ArgumentExpectedError();
 }
 
 // Number Functions
@@ -453,7 +453,7 @@ bool StdLib::UnaryNumberFn(EvaluationContext &ctx, const std::string &name, F fn
     ctx.Expr = ExpressionPtr { new Number { fn(num->Value) } };
     return true;
   }
-  return TypeError(ctx.Interp, name, "number", ctx.Args.front() );
+  return ctx.TypeError(Number::TypeInstance, ctx.Args.front());
 }
 
 bool StdLib::AddNum(EvaluationContext &ctx) {
@@ -479,10 +479,10 @@ bool StdLib::CheckDivideByZero(EvaluationContext &ctx, const std::string &name) 
       if (numExpr) {
         auto *num = dynamic_cast<Number*>(numExpr.get());
         if (num && num->Value == 0)
-          return ctx.Interp.PushError(EvalError { name, "Divide by zero" });
+          return ctx.Error("Divide by zero");
       }
       else
-        return TypeError(ctx.Interp, name, "number", arg);
+        return ctx.TypeError(Number::TypeInstance, arg);
     }
     ++argNum;
   }
@@ -541,7 +541,7 @@ bool StdLib::BitNot(EvaluationContext &ctx) {
       return true;
     }
   }
-  return TypeError(ctx.Interp, "~", "number", ctx.Args.front());
+  return ctx.TypeError(Number::TypeInstance, ctx.Args.front());
 }
 
 // String functions
@@ -553,7 +553,7 @@ bool StdLib::AddString(EvaluationContext &ctx) {
     if (str)
       ss << str->Value;
     else
-      return TypeError(ctx.Interp, "+", "string", ctx.Args.front());
+      return ctx.TypeError(String::TypeInstance, ctx.Args.front());
 
     ctx.Args.pop_front();
   }
@@ -581,10 +581,10 @@ bool StdLib::List(EvaluationContext &ctx) {
   while (!ctx.Args.empty()) {
     ExpressionPtr arg = std::move(ctx.Args.front());
     ctx.Args.pop_front();
-    if (ctx.Interp.EvaluatePartial(arg))
+    if (ctx.Evaluate(arg, argNum))
       list->Args.push_back(std::move(arg));
     else
-      return ctx.Interp.PushError(EvalError { "list", "failed to evaluate argument " + std::to_string(argNum) });
+      return false; 
     ++argNum;
   }
 
@@ -612,17 +612,14 @@ bool StdLib::Map(EvaluationContext &ctx) {
       auto evalSexp = static_cast<Sexp*>(evalExpr.get());
       evalSexp->Args.push_back(fn->Clone());
       evalSexp->Args.push_back(item->Clone());
-      if (!ctx.Interp.EvaluatePartial(evalExpr))
-        return ctx.Interp.PushError(EvalError { 
-          "map",
-          "Failed to call " +  fn->ToString() + " on item " + std::to_string(i)
-        });
+      if (!ctx.EvaluateNoError(evalExpr))
+        return ctx.Error("Failed to call " +  fn->ToString() + " on item " + std::to_string(i));
       resultList->Args.push_back(std::move(evalExpr));
       ++i;
     }
   }
   else 
-    return TypeError(ctx.Interp, "map", "list", quote->Value);
+    return ctx.TypeError("list", quote->Value);
 
   ctx.Expr = ExpressionPtr { new Quote { std::move(resultExpr) } };
   return true;
@@ -642,10 +639,10 @@ bool StdLib::AddList(EvaluationContext &ctx) {
         }
       }
       else
-        return TypeError(ctx.Interp, "+", "list", quote->Value);
+        return ctx.TypeError("list", quote->Value);
     }
     else
-      return TypeError(ctx.Interp, "+", "list", ctx.Args.front());
+      return ctx.TypeError("list", ctx.Args.front());
 
     ctx.Args.pop_front();
   }
@@ -668,7 +665,7 @@ bool StdLib::Head(EvaluationContext &ctx) {
     return true;
   }
   else
-    return TypeError(ctx.Interp, "head", "list", quote->Value);
+    return ctx.TypeError("list", quote->Value);
 }
 
 bool StdLib::Tail(EvaluationContext &ctx) {
@@ -691,7 +688,7 @@ bool StdLib::Tail(EvaluationContext &ctx) {
     return true;
   }
   else
-    return TypeError(ctx.Interp, "tail", "list", quote->Value);
+    return ctx.TypeError("list", quote->Value);
 }
 
 // Logical
@@ -701,7 +698,7 @@ bool StdLib::BinaryLogicalFunc(EvaluationContext &ctx, bool isAnd) {
   while (!ctx.Args.empty()) {
     ExpressionPtr currArg = std::move(ctx.Args.front());
     ctx.Args.pop_front();
-    if (ctx.Interp.EvaluatePartial(currArg)) {
+    if (ctx.Evaluate(currArg, argNum)) {
       Bool *argValue = dynamic_cast<Bool*>(currArg.get());
       if (argValue) {
         bool value = argValue->Value;
@@ -711,10 +708,10 @@ bool StdLib::BinaryLogicalFunc(EvaluationContext &ctx, bool isAnd) {
         }
       }
       else
-        return TypeError(ctx.Interp, isAnd ? "and" : "or", "bool", currArg);
+        return ctx.TypeError(Bool::TypeInstance, currArg);
     }
     else
-      return ctx.Interp.PushError(EvalError { isAnd ? "and" : "or", "Failed to evaluate arg " + std::to_string(argNum) });
+      return false; 
 
     ++argNum;
   }
@@ -734,20 +731,20 @@ bool StdLib::Not(EvaluationContext &ctx) {
   if (!ctx.Args.empty()) {
     ExpressionPtr arg = std::move(ctx.Args.front());
     ctx.Args.pop_front();
-    if (ctx.Interp.EvaluatePartial(arg)) {
+    if (ctx.Evaluate(arg, 1)) {
       Bool *boolArg = dynamic_cast<Bool*>(arg.get());
       if (boolArg) {
         ctx.Expr = ExpressionPtr { new Bool(!boolArg->Value) };
         return true;
       }
       else
-        return TypeError(ctx.Interp, "not", "bool", arg);
+        return ctx.TypeError(Bool::TypeInstance, arg);
     }
     else
-      return ctx.Interp.PushError(EvalError { "not", "Failed to evaluate arg 1" });
+      return false; 
   }
   else
-    return ctx.Interp.PushError(EvalError { "not", "Expected 1 arg" });
+    return ctx.ArgumentExpectedError();
 }
 
 // Comparison
@@ -789,21 +786,21 @@ bool ExpressionPredicateFn(EvaluationContext &ctx, const std::string &name, Expr
     ExpressionPtr firstArg = std::move(ctx.Args.front());
     ctx.Args.pop_front();
     ++argNum;
-    if (ctx.Interp.EvaluatePartial(firstArg)) {
+    if (ctx.Evaluate(firstArg, argNum)) {
       ExpressionPtr prevArg = std::move(firstArg);
       bool result = false;
       while (!ctx.Args.empty()) {
         ExpressionPtr currArg = std::move(ctx.Args.front());
         ctx.Args.pop_front();
         ++argNum;
-        if (ctx.Interp.EvaluatePartial(currArg)) {
+        if (ctx.Evaluate(currArg, argNum)) {
           if (!fn(*prevArg, *currArg)) {
             ctx.Expr = ExpressionPtr { new Bool(false) };
             return true;
           }
         }
         else
-          return ctx.Interp.PushError(EvalError { name, "Failed to evaluate arg number " + std::to_string(argNum) });
+          return false; 
 
         prevArg = std::move(currArg);
       }
@@ -811,10 +808,10 @@ bool ExpressionPredicateFn(EvaluationContext &ctx, const std::string &name, Expr
       return true;
     }
     else
-      return ctx.Interp.PushError(EvalError { name, "Failed to evaluate arg number " + std::to_string(argNum) });
+      return false; 
   }
   else
-    return ctx.Interp.PushError(EvalError { name, "Expected at least one arg" });
+    return ctx.ArgumentExpectedError();
 }
 
 bool StdLib::Eq(EvaluationContext &ctx) {
@@ -858,12 +855,12 @@ bool StdLib::Unquote(EvaluationContext &ctx) {
   else
     toEvaluate = std::move(quoteExpr);
 
-  if (ctx.Interp.EvaluatePartial(toEvaluate)) {
+  if (ctx.Evaluate(toEvaluate, "expression")) {
     ctx.Expr = std::move(toEvaluate);
     return true;
   }
   else
-    return ctx.Interp.PushError(EvalError { "unquote", "Failed to evaluate expression" });
+    return false; 
 }
 
 bool StdLib::If(EvaluationContext &ctx) {
@@ -878,12 +875,12 @@ bool StdLib::If(EvaluationContext &ctx) {
 
   auto cond = static_cast<Bool*>(condExpr.get());
   ExpressionPtr *branchExpr = cond->Value ? &trueExpr : &falseExpr;
-  if (ctx.Interp.EvaluatePartial(*branchExpr)) {
+  if (ctx.Evaluate(*branchExpr, "branch")) {
     ctx.Expr = std::move(*branchExpr);
     return true;
   }
   else
-    return ctx.Interp.PushError(EvalError { "if", "Failed to evaluate branch" } );
+    return false; 
 }
 
 // Go through all the code and harden, perform additional argument checking
@@ -895,7 +892,7 @@ bool StdLib::Let(EvaluationContext &ctx) {
 
   auto vars = dynamic_cast<Sexp*>(varsExpr.get());
   if (!vars)
-    return TypeError(ctx.Interp, "let", "sexp", varsExpr);
+    return ctx.TypeError(Sexp::TypeInstance, varsExpr);
 
   for (auto &varExpr : vars->Args) {
     auto var = dynamic_cast<Sexp*>(varExpr.get());
@@ -910,26 +907,23 @@ bool StdLib::Let(EvaluationContext &ctx) {
 
         auto varName = dynamic_cast<Symbol*>(varNameExpr.get());
         if (varName) {
-          if (ctx.Interp.EvaluatePartial(varValueExpr)) {
+          if (ctx.Evaluate(varValueExpr, varName->Value)) {
             if (!scope.IsScopedSymbol(varName->Value))
               scope.PutSymbol(varName->Value, varValueExpr);
             else
-              return ctx.Interp.PushError(EvalError { "let", "Duplicate binding for " + varName->Value });
+              return ctx.Error("Duplicate binding for " + varName->Value);
           }
           else
-            return ctx.Interp.PushError(EvalError { "let", "Failed to evaluate value for " + varName->Value } );
+            return false; 
         }
         else
-          return TypeError(ctx.Interp, "let", "symbol", varNameExpr);
+          return ctx.TypeError(Symbol::TypeInstance, varNameExpr);
       }
       else
-        return ctx.Interp.PushError(EvalError {
-          "let",
-          "Expected 2 args: (name1 value1). Got " + std::to_string(nVarArgs) + " args"
-        });
+        return ctx.Error("Expected 2 args: (name1 value1). Got " + std::to_string(nVarArgs) + " args");
     }
     else
-      return TypeError(ctx.Interp, "let", "(name1 value1)", varExpr);
+      return ctx.TypeError("(name1 value1)", varExpr);
   }
 
   return Begin(ctx);
@@ -941,8 +935,8 @@ bool StdLib::Begin(EvaluationContext &ctx) {
     currCodeExpr = std::move(ctx.Args.front());
     ctx.Args.pop_front();
 
-    if (!ctx.Interp.EvaluatePartial(currCodeExpr))
-      return ctx.Interp.PushError(EvalError { "let", "Failed to evaluate let body" });
+    if (!ctx.Evaluate(currCodeExpr, "body"))
+      return false;
   }
 
   ctx.Expr = std::move(currCodeExpr);
@@ -958,7 +952,7 @@ bool StdLib::Lambda(EvaluationContext &ctx) {
   
   ArgList anonFuncArgs;
   int nArgs = 0;
-  if (LambdaPrepareFormals(ctx.Interp, formalsExpr, anonFuncArgs, nArgs)) {
+  if (LambdaPrepareFormals(ctx, formalsExpr, anonFuncArgs, nArgs)) {
     ExpressionPtr func {
       new InterpretedFunction {
         FuncDef {
@@ -981,7 +975,7 @@ bool StdLib::Lambda(EvaluationContext &ctx) {
     return false;
 }
 
-bool StdLib::LambdaPrepareFormals(Interpreter &interpreter, ExpressionPtr &formalsExpr, ArgList &anonFuncArgs, int &nArgs) {
+bool StdLib::LambdaPrepareFormals(EvaluationContext &ctx, ExpressionPtr &formalsExpr, ArgList &anonFuncArgs, int &nArgs) {
   auto formalsList = dynamic_cast<Sexp*>(formalsExpr.get());
   if (formalsList) {
     for (auto &formal : formalsList->Args) {
@@ -990,12 +984,12 @@ bool StdLib::LambdaPrepareFormals(Interpreter &interpreter, ExpressionPtr &forma
         anonFuncArgs.push_back(formalSym->Clone());
       }
       else
-        return TypeError(interpreter, "lambda", "Symbol", formal);
+        return ctx.TypeError(Symbol::TypeInstance, formal);
       ++nArgs;
     }
   }
   else
-    return TypeError(interpreter, "lambda", "formals list", formalsExpr);
+    return ctx.TypeError("formals list", formalsExpr);
   
   return true;
 }
@@ -1012,21 +1006,18 @@ bool StdLib::Def(EvaluationContext &ctx) {
   lambda->Args.push_back(std::move(ctx.Args.front()));
   ctx.Args.pop_front();
 
-  if (ctx.Interp.EvaluatePartial(lambdaExpr)) {
+  if (ctx.Evaluate(lambdaExpr, "lambdaExpr")) {
     ExpressionPtr setExpr { new Sexp {} };
     auto set = static_cast<Sexp*>(setExpr.get());
     set->Args.push_back(ExpressionPtr { new Symbol { "set" } });
     set->Args.push_back(std::move(symbolExpr));
     set->Args.push_back(std::move(lambdaExpr)); 
-    if (ctx.Interp.EvaluatePartial(setExpr)) {
+    if (ctx.Evaluate(setExpr, "setExpr")) {
       ctx.Expr = std::move(setExpr);
       return true;
     }
-    else
-      return ctx.Interp.PushError(EvalError { "def", "evaluating set expression failed" });
   }
-  else
-    return ctx.Interp.PushError(EvalError { "def", "evaluating lambda expression failed" });
+  return false; 
 }
 
 bool StdLib::Apply(EvaluationContext &ctx) {
@@ -1038,7 +1029,7 @@ bool StdLib::Apply(EvaluationContext &ctx) {
   ExpressionPtr appArgsExpr { std::move(ctx.Args.front()) };
   ctx.Args.pop_front();
 
-  if (ctx.Interp.EvaluatePartial(appArgsExpr)) {
+  if (ctx.Evaluate(appArgsExpr, "argsList")) {
     ExpressionPtr newArgs;
     if (auto quote = dynamic_cast<Quote*>(appArgsExpr.get())) {
       newArgs = std::move(quote->Value);
@@ -1053,18 +1044,18 @@ bool StdLib::Apply(EvaluationContext &ctx) {
         appArgsSexp->Args.pop_front();
       }
 
-      if (ctx.Interp.EvaluatePartial(applicationExpr)) {
+      if (ctx.Evaluate(applicationExpr, "functionApplication")) {
         ctx.Expr = std::move(applicationExpr);
         return true;
       }
       else
-        return ctx.Interp.PushError(EvalError { "apply", "failed to evaluate function application" });
+        return false; 
     }
     else
-      return TypeError(ctx.Interp, "apply", "list", newArgs);
+      return ctx.TypeError("list", newArgs);
   }
   else
-    return ctx.Interp.PushError(EvalError { "apply", "failed to evaluate argument list" });
+    return false; 
 }
 
 // Helpers
@@ -1078,13 +1069,13 @@ template<class T> bool StdLib::PrintLiteral(T *expr, std::ostream &out, char *wr
   return true;
 }
 
-bool StdLib::PrintSexp(Interpreter &interpreter, Sexp &sexp, std::ostream &out) {
+bool StdLib::PrintSexp(EvaluationContext &ctx, Sexp &sexp, std::ostream &out) {
   out << "(";
   bool first = true;
   for (auto &arg : sexp.Args) {
     if (!first)
       out << " ";
-    bool result = PrintExpression(interpreter, arg, out);
+    bool result = PrintExpression(ctx, arg, out);
     if (!result)
       return false;
     first = false;
@@ -1119,7 +1110,7 @@ static bool StdLib::BinaryFunction(EvaluationContext &ctx, F fn, const std::stri
       }
     }
     if (!ok)
-      return TypeError(ctx.Interp, name, "number", ctx.Args.front());
+      return ctx.TypeError(Number::TypeInstance, ctx.Args.front());
 
     first = false;
     ctx.Args.pop_front();
@@ -1133,7 +1124,7 @@ template <class B, class N, class S>
 bool StdLib::BinaryPredicate(EvaluationContext &ctx, const std::string &name, B bFn, N nFn, S sFn) {
   auto currArg = ctx.Args.begin();
   if (currArg != ctx.Args.end()) {
-    if (ctx.Interp.EvaluatePartial(*currArg)) {
+    if (ctx.Evaluate(*currArg, 1)) {
       auto &type = (*currArg)->Type();
 
       Bool defaultValue { true };
@@ -1144,13 +1135,13 @@ bool StdLib::BinaryPredicate(EvaluationContext &ctx, const std::string &name, B 
       else if (sFn && (&type == &String::TypeInstance))
         return PredicateHelper<String>(ctx, name, sFn, defaultValue);
       else
-        return TypeError(ctx.Interp, name, "literal", *currArg);
+        return ctx.TypeError(Literal::TypeInstance, *currArg);
     }
     else
-      return ctx.Interp.PushError(EvalError { name, "Failed to evaluate arg 1" });
+      return false; 
   }
   else
-    return ctx.Interp.PushError(EvalError { name, "Expected at least one argument" });
+    return ctx.ArgumentExpectedError();
 }
 
 template <class T, class F, class R>
@@ -1162,26 +1153,26 @@ bool StdLib::PredicateHelper(EvaluationContext &ctx, const std::string &name, F 
   if (last) {
     int argNum = 1;
     while (!ctx.Args.empty()) {
-      if (ctx.Interp.EvaluatePartial(ctx.Args.front())) {
+      if (ctx.Evaluate(ctx.Args.front(), argNum)) {
         auto curr = dynamic_cast<T*>(ctx.Args.front().get());
         if (curr) {
           R tmp { fn(result, *last, *curr) };
           result = tmp;
         }
         else
-          return TypeError(ctx.Interp, name, T::TypeInstance.TypeName, ctx.Args.front());
+          return ctx.TypeError(T::TypeInstance, ctx.Args.front());
 
         *last = *curr;
         ctx.Args.pop_front();
       }
       else
-        return ctx.Interp.PushError(EvalError { name, "Failed to evaluate arg " + std::to_string(argNum) });
+        return false; 
 
       ++argNum;
     }
   }
   else
-    return TypeError(ctx.Interp, name, T::TypeInstance.TypeName, firstArg);
+    return ctx.TypeError(T::TypeInstance, firstArg);
 
   ctx.Expr = ExpressionPtr { result.Clone() };
   return true;
@@ -1193,21 +1184,6 @@ void StdLib::RegisterBinaryFunction(SymbolTable &symbolTable, const std::string&
 
 void StdLib::RegisterComparator(SymbolTable &symbolTable, const std::string& name, SlipFunction fn) {
   symbolTable.PutSymbolFunction(name, fn, FuncDef { FuncDef::AtleastOneArg(), FuncDef::OneArg(Bool::TypeInstance) });
-}
-
-bool StdLib::UnknownSymbol(Interpreter &interpreter, const std::string &where, const std::string &symName) {
-  return interpreter.PushError(EvalError { "unset", "Unknown symbol: " + symName });
-}
-
-bool StdLib::TypeError(Interpreter &interpreter, const std::string &where, const ExpressionPtr &expected, const ExpressionPtr &actual) {
-  return TypeError(interpreter, where, expected->Type().TypeName, actual);
-}
-
-bool StdLib::TypeError(Interpreter &interpreter, const std::string &where, const std::string &expectedName, const ExpressionPtr &actual) {
-  return interpreter.PushError(EvalError {
-    where,
-    expectedName + " expected. Got " + actual->Type().TypeName
-  });
 }
 
 ExpressionPtr StdLib::GetNil() {

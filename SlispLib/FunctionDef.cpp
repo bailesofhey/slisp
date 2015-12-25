@@ -322,9 +322,14 @@ Function::Function():
 }
 
 Function::Function(FuncDef &&def):
+  Function(std::move(def), ExpressionPtr {})
+{
+}
+
+Function::Function(FuncDef &&def, ExpressionPtr &sym):
   Literal { TypeInstance },
   Def { std::move(def) },
-  Symbol { }
+  Symbol { std::move(sym) }
 {
 }
 
@@ -346,15 +351,21 @@ bool Function::operator==(const Function &rhs) const {
 
 const TypeInfo CompiledFunction::TypeInstance("compiledfunction");
 
-CompiledFunction::CompiledFunction(FuncDef &&def, SlipFunction fn):
-  Function { std::move(def) },
-  Fn { fn }
-{
-}
-
 CompiledFunction::CompiledFunction():
   Function {},
   Fn { nullptr }
+{
+}
+
+CompiledFunction::CompiledFunction(const CompiledFunction &rhs):
+  Function(rhs),
+  Fn { rhs.Fn }
+{
+}
+
+CompiledFunction::CompiledFunction(FuncDef &&def, SlipFunction fn):
+  Function { std::move(def) },
+  Fn { fn }
 {
 }
 

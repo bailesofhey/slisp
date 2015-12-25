@@ -106,7 +106,8 @@ struct Function: public Literal {
 
   explicit Function();
   explicit Function(FuncDef &&func);
-  Function(const Function &rhs);
+  explicit Function(FuncDef &&func, ExpressionPtr &sym);
+  explicit Function(const Function &rhs);
   bool operator==(const Function &rhs) const;
 };
 using FunctionPtr = std::unique_ptr<Function>;
@@ -117,6 +118,7 @@ struct CompiledFunction: public Function {
   SlipFunction Fn;
 
   explicit CompiledFunction();
+  explicit CompiledFunction(const CompiledFunction &rhs);
   explicit CompiledFunction(FuncDef &&def, SlipFunction fn);
   virtual ExpressionPtr Clone() const override;
   virtual const std::string ToString() const override;
