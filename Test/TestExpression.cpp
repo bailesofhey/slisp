@@ -12,7 +12,6 @@ void RunExpressionTest(E &defaultValue, E &emptyValue, E &otherValue) {
   ASSERT_GE(otherValue, emptyValue);
 
   ASSERT_FALSE(otherValue.ToString().empty());
-  ASSERT_FALSE(emptyValue.ToString().empty());
   ASSERT_NE(otherValue.ToString(), emptyValue.ToString());
 
   ExpressionPtr defaultCopy = defaultValue.Clone(),

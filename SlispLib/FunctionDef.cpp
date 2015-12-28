@@ -342,6 +342,15 @@ Function::Function(const Function &rhs):
     Symbol = rhs.Symbol->Clone();
 }
 
+void Function::Print(std::ostream &out) const {
+  out << "<Function";
+  if (Symbol) {
+    if (auto *sym = dynamic_cast<::Symbol*>(Symbol.get()))
+      out << ":" << *sym;
+  }
+  out << ">";
+}
+
 bool Function::operator==(const Function &rhs) const {
   return Def == rhs.Def &&
          (Symbol && rhs.Symbol && *Symbol == *rhs.Symbol);
@@ -373,10 +382,6 @@ ExpressionPtr CompiledFunction::Clone() const {
   return ExpressionPtr { new CompiledFunction(*this) };
 }
 
-const std::string CompiledFunction::ToString() const {
-  return "CompiledFunction { }";
-}
-
 bool CompiledFunction::operator==(const Expression &rhs) const {
   if (auto *fn = dynamic_cast<const CompiledFunction*>(&rhs))
     return *this == *fn;
@@ -405,6 +410,19 @@ void CompiledFunction::Swap(CompiledFunction &rhs) {
 
 const TypeInfo InterpretedFunction::TypeInstance("interpretedfunction");
 
+InterpretedFunction::InterpretedFunction(const InterpretedFunction &rhs):
+  Function(rhs),
+  Code { ExpressionPtr { } },
+  Args { },
+  Closure { }
+{
+  ArgListHelper::CopyTo(rhs.Args, Args);
+  if (rhs.Code.Value)
+    Code.Value = std::move(rhs.Code.Value->Clone());
+  for (auto &kv : rhs.Closure) 
+    Closure.emplace(kv.first, kv.second->Clone());
+}
+
 InterpretedFunction::InterpretedFunction(FuncDef &&def, ExpressionPtr &&code, ArgList &&args):
   Function { std::move(def) },
   Code { std::move(code) },
@@ -414,20 +432,7 @@ InterpretedFunction::InterpretedFunction(FuncDef &&def, ExpressionPtr &&code, Ar
 }
 
 ExpressionPtr InterpretedFunction::Clone() const {
-  ArgList argsCopy;
-  for (auto &arg : Args) {
-    argsCopy.push_back(arg->Clone());
-  }
-  ExpressionPtr copy { new InterpretedFunction { FuncDef { this->Def }, Code.Value->Clone(), std::move(argsCopy) } };
-  auto interpFunc = static_cast<InterpretedFunction*>(copy.get());
-  for (auto &kv : Closure) {
-    interpFunc->Closure.emplace(kv.first, kv.second->Clone());
-  }
-  return copy;
-}
-
-const std::string InterpretedFunction::ToString() const {
-  return "InterpretedFunction { }";
+  return ExpressionPtr { new InterpretedFunction(*this) };
 }
 
 bool InterpretedFunction::operator==(const Expression &rhs) const {

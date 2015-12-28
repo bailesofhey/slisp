@@ -199,32 +199,6 @@ void StdLib::UnLoad(Interpreter &interpreter) {
 
 // Interpreter Functions
 
-bool StdLib::PrintExpression(EvaluationContext &ctx, ExpressionPtr &curr, std::ostream &out) {
-  if (auto *currE = dynamic_cast<Bool*>(curr.get()))
-    return PrintBool(currE->Value, out);
-  else if (auto *currE = dynamic_cast<Number*>(curr.get()))
-    return PrintLiteral(currE, out);
-  else if (auto *currE = dynamic_cast<String*>(curr.get())) {
-    char wrapper = '"';
-    return PrintLiteral(currE, out, &wrapper);
-  }
-  else if (auto *currE = dynamic_cast<Symbol*>(curr.get())) {
-    String temp { currE->Value };
-    return PrintLiteral(&temp, out);
-  }
-  else if (auto *currE = dynamic_cast<Function*>(curr.get())) {
-    String temp { "<Function>" };
-    return PrintLiteral(&temp, out);
-  }
-  else if (auto *currE = dynamic_cast<Quote*>(curr.get())) {
-    return PrintExpression(ctx, currE->Value, out);
-  }
-  else if (auto *currE = dynamic_cast<Sexp*>(curr.get()))
-    return PrintSexp(ctx, *currE, out);
-  else
-    return ctx.Error("Invalid expression type: " + curr->ToString());
-}
-
 bool StdLib::EvaluateListSexp(EvaluationContext &ctx) {
   ExpressionPtr listExpr { new Sexp() };
   Sexp *sexp = static_cast<Sexp*>(listExpr.get());
@@ -253,10 +227,7 @@ bool StdLib::Print(EvaluationContext &ctx) {
     curr = std::move(ctx.Args.front());
     ctx.Args.pop_front();
     if (ctx.Evaluate(curr, argNum)) {
-      bool result = PrintExpression(ctx, curr, out);
-      out << std::endl;
-      if (!result)
-        return false;
+      out << *curr << std::endl;
       cmdInterface.WriteOutputLine(out.str());
     }
     else
@@ -1059,38 +1030,6 @@ bool StdLib::Apply(EvaluationContext &ctx) {
 }
 
 // Helpers
-
-template<class T> bool StdLib::PrintLiteral(T *expr, std::ostream &out, char *wrapper) {
-  if (wrapper)
-    out << *wrapper;
-  out << expr->Value;
-  if (wrapper)
-    out << *wrapper;
-  return true;
-}
-
-bool StdLib::PrintSexp(EvaluationContext &ctx, Sexp &sexp, std::ostream &out) {
-  out << "(";
-  bool first = true;
-  for (auto &arg : sexp.Args) {
-    if (!first)
-      out << " ";
-    bool result = PrintExpression(ctx, arg, out);
-    if (!result)
-      return false;
-    first = false;
-  }
-  out << ")";
-  return true;
-}
-
-bool StdLib::PrintBool(bool expr, std::ostream &out) {
-  if (expr)
-    out << "true";
-  else
-    out << "false";
-  return true;
-}
 
 template<class F>
 static bool StdLib::BinaryFunction(EvaluationContext &ctx, F fn, const std::string &name) {

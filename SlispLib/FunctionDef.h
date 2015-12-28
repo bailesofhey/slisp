@@ -108,6 +108,7 @@ struct Function: public Literal {
   explicit Function(FuncDef &&func);
   explicit Function(FuncDef &&func, ExpressionPtr &sym);
   explicit Function(const Function &rhs);
+  virtual void Print(std::ostream &out) const override;
   bool operator==(const Function &rhs) const;
 };
 using FunctionPtr = std::unique_ptr<Function>;
@@ -121,7 +122,6 @@ struct CompiledFunction: public Function {
   explicit CompiledFunction(const CompiledFunction &rhs);
   explicit CompiledFunction(FuncDef &&def, SlipFunction fn);
   virtual ExpressionPtr Clone() const override;
-  virtual const std::string ToString() const override;
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const CompiledFunction &rhs) const;
   bool operator!=(const CompiledFunction &rhs) const;
@@ -137,8 +137,8 @@ struct InterpretedFunction: public Function {
   SymbolTableType Closure;
 
   explicit InterpretedFunction(FuncDef &&def, ExpressionPtr &&code, ArgList &&args);
+  explicit InterpretedFunction(const InterpretedFunction &rhs);
   virtual ExpressionPtr Clone() const override;
-  virtual const std::string ToString() const override;
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const InterpretedFunction &rhs) const;
   bool operator!=(const InterpretedFunction &rhs) const;

@@ -1,6 +1,8 @@
 #include <string>
 #include <cinttypes>
 #include <memory>
+#include <sstream>
+#include <iostream>
 
 #include "Expression.h"
 
@@ -36,6 +38,17 @@ bool Expression::AreEqual(const ExpressionPtr &lhs, const ExpressionPtr &rhs) {
     return static_cast<bool>(lhs) == static_cast<bool>(rhs);
 }
 
+const std::string Expression::ToString() const {
+  std::stringstream ss;
+  ss << *this;
+  return ss.str();
+}
+
+std::ostream& operator<<(std::ostream &out, const Expression &expr) {
+  expr.Print(out);
+  return out;
+};
+
 //=============================================================================
 
 const TypeInfo Void::TypeInstance { "" };
@@ -68,10 +81,6 @@ ExpressionPtr Bool::Clone() const {
   return ExpressionPtr { new Bool(*this) };
 }
 
-const std::string Bool::ToString() const {
-  return "Bool { " + std::to_string(Value) + " }";
-}
-
 bool Bool::operator==(const Expression &rhs) const {
   return &rhs.Type() == &Bool::TypeInstance
       && dynamic_cast<const Bool&>(rhs) == *this;
@@ -102,8 +111,11 @@ void Bool::Swap(Bool &rhs) {
   Value = rhs.Value;
 }
 
-std::ostream& operator<<(std::ostream& os, const Bool& value) {
-  return os << value.ToString();
+void Bool::Print(std::ostream &out) const {
+  if (Value)
+    out << "true";
+  else
+    out << "false";
 }
 //=============================================================================
 
@@ -122,10 +134,6 @@ Number::Number(int64_t value):
 
 ExpressionPtr Number::Clone() const {
   return ExpressionPtr { new Number(*this) };
-}
-
-const std::string Number::ToString() const {
-  return "Number { " + std::to_string(Value) + " }";
 }
 
 bool Number::operator==(const Expression &rhs) const {
@@ -158,8 +166,8 @@ void Number::Swap(Number &rhs) {
   Value = rhs.Value;
 }
 
-std::ostream& operator<<(std::ostream& os, const Number& value) {
-  return os << value.ToString();
+void Number::Print(std::ostream &out) const {
+  out << Value;
 }
 //=============================================================================
 
@@ -178,10 +186,6 @@ String::String(const std::string &value):
 
 ExpressionPtr String::Clone() const {
   return ExpressionPtr { new String(*this) };
-}
-
-const std::string String::ToString() const {
-  return "String { \"" + Value + "\" }";
 }
 
 bool String::operator==(const Expression &rhs) const {
@@ -214,8 +218,8 @@ void String::Swap(String &rhs) {
   Value = rhs.Value;
 }
 
-std::ostream& operator<<(std::ostream& os, const String& value) {
-  return os << value.ToString();
+void String::Print(std::ostream &out) const {
+  out << "\"" << Value << "\"";
 }
 
 //=============================================================================
@@ -232,10 +236,6 @@ ExpressionPtr Quote::Clone() const {
   return ExpressionPtr { new Quote(std::move(Value->Clone())) };
 }
 
-const std::string Quote::ToString() const {
-  return "Quote { " + Value->ToString() + " }";
-}
-
 bool Quote::operator==(const Expression &rhs) const {
   return &rhs.Type() == &Quote::TypeInstance
       && dynamic_cast<const Quote&>(rhs) == *this;
@@ -249,8 +249,8 @@ bool Quote::operator!=(const Quote &rhs) const {
   return !(rhs == *this);
 }
 
-std::ostream& operator<<(std::ostream& os, const Quote& value) {
-  return os << value.ToString();
+void Quote::Print(std::ostream &out) const {
+  out << *Value;
 }
 
 //=============================================================================
@@ -265,10 +265,6 @@ Symbol::Symbol(const std::string &value):
 
 ExpressionPtr Symbol::Clone() const {
   return ExpressionPtr { new Symbol(*this) };
-}
-
-const std::string Symbol::ToString() const {
-  return "Symbol { " + Value + " }";
 }
 
 bool Symbol::operator==(const Expression &rhs) const {
@@ -301,8 +297,8 @@ void Symbol::Swap(Symbol &rhs) {
   Value = rhs.Value;
 }
 
-std::ostream& operator<<(std::ostream& os, const Symbol& value) {
-  return os << value.ToString();
+void Symbol::Print(std::ostream &out) const {
+  out << Value;
 }
 
 //=============================================================================
@@ -362,10 +358,6 @@ ExpressionPtr Sexp::Clone() const {
   return copy;
 }
 
-const std::string Sexp::ToString() const {
-  return "Sexp { }";
-}
-
 bool Sexp::operator==(const Expression &rhs) const {
   return &rhs.Type() == &Sexp::TypeInstance
       && dynamic_cast<const Sexp&>(rhs) == *this;
@@ -379,6 +371,16 @@ bool Sexp::operator!=(const Sexp &rhs) const {
   return !(rhs == *this);
 }
 
-std::ostream& operator<<(std::ostream& os, const Sexp& value) {
-  return os << value.ToString();
+void Sexp::Print(std::ostream &out) const {
+  out << "(";
+  auto argBegin = begin(Args);
+  auto argEnd = end(Args);
+  auto argCurr = argBegin;
+  while (argCurr != argEnd) {
+    if (argCurr != argBegin)
+      out << " ";
+    out << **argCurr;
+    ++argCurr;
+  }
+  out << ")";
 }

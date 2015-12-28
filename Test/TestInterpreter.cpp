@@ -612,14 +612,14 @@ TEST_F(EvaluationTest, TestSexpDefaultFunction) {
     ExpressionPtr { new Symbol(settings.GetDefaultSexp()) },
     falseValue->Clone()
   })}));
-  ASSERT_TRUE(CommandInterface.Output.find("0") != std::string::npos);
+  ASSERT_TRUE(CommandInterface.Output.find("false") != std::string::npos);
   ASSERT_EQ(*falseValue, *EvaluationTest::LastArgs.front());
 
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
     ExpressionPtr { new Symbol(settings.GetDefaultSexp()) },
     trueValue->Clone()
   })}));
-  ASSERT_TRUE(CommandInterface.Output.find("1") != std::string::npos);
+  ASSERT_TRUE(CommandInterface.Output.find("true") != std::string::npos);
   ASSERT_EQ(*trueValue, *EvaluationTest::LastArgs.front());
 }
 

@@ -79,13 +79,7 @@ class StdLib: public Library {
 
     // Helpers
     static bool EvaluateListSexp(EvaluationContext &ctx); 
-    static bool PrintExpression(EvaluationContext &ctx, ExpressionPtr &curr, std::ostream &out);
 
-    template<class T>
-    static bool PrintLiteral(T *expr, std::ostream &out, char *wrapper = nullptr);
-
-    static bool PrintSexp(EvaluationContext &ctx, Sexp &sexp, std::ostream &out);
-    static bool PrintBool(bool expr, std::ostream &out);
     static bool InfixRegistrationFunction(EvaluationContext &ctx, const std::string &name, bool unregister);
 
     template<class F>

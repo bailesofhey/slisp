@@ -70,13 +70,13 @@ TEST_F(StdLibDefaultFunctionTest, TestImplicitSexp) {
 TEST_F(StdLibDefaultFunctionTest, TestInfix) {
   // Explicit sexp
   ASSERT_TRUE(RunSuccess("(2)", "(2)"));
-  ASSERT_TRUE(RunSuccess("(2 +)", "(2 <Function>)"));
+  ASSERT_TRUE(RunSuccess("(2 +)", "(2 <Function:+>)"));
 
   ASSERT_TRUE(RunSuccess("(2 + 4)", "6"));
   ASSERT_TRUE(RunSuccess("(2 + 4 + 8)", "14"));
   ASSERT_TRUE(RunSuccess("(2 + 4 * 8)", "34"));
   ASSERT_TRUE(RunSuccess("(2 - 4 * 8)", "-30"));
-  ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "(2 <Function> 4 <Function> 8)"));
+  ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "(2 <Function:help> 4 <Function:help> 8)"));
 
   ASSERT_TRUE(RunSuccess("(a = 3)", "3"));
   ASSERT_TRUE(RunSuccess("(unset a)", "3"));
@@ -98,13 +98,13 @@ TEST_F(StdLibDefaultFunctionTest, TestInfix) {
 
   // Implicit sexp
   ASSERT_TRUE(RunSuccess("2", "2"));
-  ASSERT_TRUE(RunSuccess("2 +", "(2 <Function>)"));
+  ASSERT_TRUE(RunSuccess("2 +", "(2 <Function:+>)"));
 
   ASSERT_TRUE(RunSuccess("2 + 4", "6"));
   ASSERT_TRUE(RunSuccess("2 + 4 + 8", "14"));
 
   ASSERT_TRUE(RunSuccess("2 + 4 * 8", "34"));
-  ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "(2 <Function> 4 <Function> 8)"));
+  ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "(2 <Function:help> 4 <Function:help> 8)"));
 
   ASSERT_TRUE(RunSuccess("a = 3", "3"));
   ASSERT_TRUE(RunSuccess("unset a", "3"));
@@ -130,17 +130,17 @@ TEST_F(StdLibDefaultFunctionTest, TestInfix_InterpretedFunction) {
   ASSERT_TRUE(RunSuccess("def myFuncWithNoArgs () 10", "Function"));
 
   ASSERT_TRUE(RunSuccess("2 + 4", "6"));
-  ASSERT_TRUE(RunSuccess("2 myAdd 4", "(2 <Function> 4)"));
+  ASSERT_TRUE(RunSuccess("2 myAdd 4", "(2 <Function:myAdd> 4)"));
   ASSERT_TRUE(RunSuccess("infix-register myAdd", "()"));
   ASSERT_TRUE(RunSuccess("2 myAdd 4", "6"));
   ASSERT_TRUE(RunSuccess("2 myAdd (myFuncWithNoArgs)", "12"));
 
   ASSERT_TRUE(RunSuccess("infix-unregister myAdd", "()"));
-  ASSERT_TRUE(RunSuccess("2 myAdd 4", "(2 <Function> 4)"));
-  ASSERT_TRUE(RunSuccess("2 myAdd (myFuncWithNoArgs)", "(2 <Function> 10)"));
+  ASSERT_TRUE(RunSuccess("2 myAdd 4", "(2 <Function:myAdd> 4)"));
+  ASSERT_TRUE(RunSuccess("2 myAdd (myFuncWithNoArgs)", "(2 <Function:myAdd> 10)"));
   ASSERT_TRUE(RunSuccess("2 + 4", "6"));
   ASSERT_TRUE(RunSuccess("infix-unregister +", "()"));
-  ASSERT_TRUE(RunSuccess("2 + 4", "(2 <Function> 4)"));
+  ASSERT_TRUE(RunSuccess("2 + 4", "(2 <Function:+> 4)"));
 }
 
 TEST_F(StdLibDefaultFunctionTest, TestInfix_Multiline) {
@@ -335,7 +335,7 @@ TEST_F(StdLibAssignmentTest, TestUnSet) {
 
 TEST_F(StdLibAssignmentTest, TestSetWithOpSingleArg) {
   ASSERT_TRUE(RunSuccess("a = 42", "42"));
-  ASSERT_TRUE(RunSuccess("a +=", "(42 <Function>)"));
+  ASSERT_TRUE(RunSuccess("a +=", "(42 <Function:+=>)"));
   ASSERT_TRUE(RunFail("a += \"foo\""));
   ASSERT_TRUE(RunSuccess("a += 10", "52"));
   ASSERT_TRUE(RunSuccess("a -= 10", "42"));

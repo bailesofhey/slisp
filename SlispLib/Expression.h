@@ -29,11 +29,13 @@ struct Expression {
   explicit Expression(const TypeInfo& typeInfo);
   virtual ~Expression();
   virtual ExpressionPtr Clone() const = 0;
-  virtual const std::string ToString() const = 0;
+  virtual void Print(std::ostream& out) const = 0;
+  const std::string ToString() const;
   virtual bool operator==(const Expression &rhs) const = 0;
   bool operator!=(const Expression &rhs) const;
   const TypeInfo& Type() const;
 
+  friend std::ostream& operator<<(std::ostream &out, const Expression &expr);
   static bool AreEqual(const ExpressionPtr &lhs, const ExpressionPtr &rhs);
 };
 
@@ -55,7 +57,7 @@ struct Bool: public Literal {
   explicit Bool();
   explicit Bool(bool value);
   virtual ExpressionPtr Clone() const override;
-  virtual const std::string ToString() const override;
+  virtual void Print(std::ostream& out) const override;
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Bool &rhs) const;
   bool operator!=(const Bool &rhs) const;
@@ -64,7 +66,6 @@ struct Bool: public Literal {
   Bool& operator=(Bool rhs);
   void Swap(Bool &rhs);
 };
-std::ostream& operator<<(std::ostream& os, const Bool& value);
 
 struct Number: public Literal {
   static const TypeInfo TypeInstance; 
@@ -74,7 +75,7 @@ struct Number: public Literal {
   explicit Number();
   explicit Number(int64_t value);
   virtual ExpressionPtr Clone() const override;
-  virtual const std::string ToString() const override;
+  virtual void Print(std::ostream& out) const override;
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Number &rhs) const;
   bool operator!=(const Number &rhs) const;
@@ -83,7 +84,6 @@ struct Number: public Literal {
   Number& operator=(Number rhs);
   void Swap(Number &rhs);
 };
-std::ostream& operator<<(std::ostream& os, const Number& value);
 
 struct String: public Literal {
   static const TypeInfo TypeInstance;
@@ -93,7 +93,7 @@ struct String: public Literal {
   explicit String();
   explicit String(const std::string& value);
   virtual ExpressionPtr Clone() const override;
-  virtual const std::string ToString() const override;
+  virtual void Print(std::ostream& out) const;
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const String &rhs) const;
   bool operator!=(const String &rhs) const;
@@ -102,7 +102,6 @@ struct String: public Literal {
   String& operator=(String rhs);
   void Swap(String &rhs);
 };
-std::ostream& operator<<(std::ostream& os, const String& value);
 
 struct Quote: public Literal {
   static const TypeInfo TypeInstance;
@@ -111,12 +110,11 @@ struct Quote: public Literal {
 
   explicit Quote(ExpressionPtr &&expr);
   virtual ExpressionPtr Clone() const override;
-  virtual const std::string ToString() const override;
+  virtual void Print(std::ostream& out) const override;
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Quote &rhs) const;
   bool operator!=(const Quote &rhs) const;
 };
-std::ostream& operator<<(std::ostream& os, const Quote& value);
 
 struct Symbol: public Expression {
   static const TypeInfo TypeInstance;
@@ -125,7 +123,7 @@ struct Symbol: public Expression {
 
   explicit Symbol(const std::string& value);
   virtual ExpressionPtr Clone() const override;
-  virtual const std::string ToString() const override;
+  virtual void Print(std::ostream& out) const override;
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Symbol& rhs) const;
   bool operator!=(const Symbol& rhs) const;
@@ -134,7 +132,6 @@ struct Symbol: public Expression {
   Symbol& operator=(Symbol rhs);
   void Swap(Symbol &rhs);
 };
-std::ostream& operator<<(std::ostream& os, const Quote& value);
 
 using ArgList = std::list<ExpressionPtr>;
 
@@ -152,10 +149,9 @@ struct Sexp: public Expression {
   explicit Sexp();
   explicit Sexp(ArgList &&args);
   explicit Sexp(std::initializer_list<ExpressionPtr> &&args);
+  virtual void Print(std::ostream& out) const override;
   virtual ExpressionPtr Clone() const override;
-  virtual const std::string ToString() const override;
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Sexp &rhs) const;
   bool operator!=(const Sexp &rhs) const;
 };
-std::ostream& operator<<(std::ostream& os, const Sexp& value);
