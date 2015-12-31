@@ -73,6 +73,21 @@ TEST_F(ParserTest, TestSingleUnknown) {
   ASSERT_NOPARSE({ Token(TokenTypes::UNKNOWN, "foo") });
 }
 
+TEST_F(ParserTest, TestSingleHexNumber) {
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0x0") }, { new Number(0) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0x9") }, { new Number(9) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0xa") }, { new Number(10) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0x10") }, { new Number(16) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0x103") }, { new Number(259) });
+}
+
+TEST_F(ParserTest, TestSingleBinaryNumber) {
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0b0") }, { new Number(0) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0b1") }, { new Number(1) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0b10") }, { new Number(2) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0b1101") }, { new Number(13) });
+}
+
 TEST_F(ParserTest, TestSingleNumber) {
   ASSERT_PARSE({ Token(TokenTypes::NUMBER, "42") }, { new Number(42) });
   ASSERT_PARSE({ Token(TokenTypes::NUMBER, "042") }, { new Number(42) });

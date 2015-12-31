@@ -22,7 +22,7 @@ ITokenizer& Tokenizer::operator++() {
         TokenizeNumber(currChar);
       else if (SymbolPredicate(currChar))
         TokenizeSymbol(currChar);
-      else if (currChar == '"') 
+      else if (currChar == '"')
         TokenizeString(currChar);
       else if (currChar == '(')
         TokenizeParenOpen(currChar);
@@ -51,8 +51,46 @@ void Tokenizer::SkipWhitespace(char &currChar) {
   while (!Stream.eof() && std::isspace(currChar));
 }
 
+int Tokenizer::GetNumberBase(const std::string &str) {
+  if (str.length() > 2) {
+    if (str[0] == '0') {
+      if (str[1] == 'x')
+        return 16;
+      else if (str[1] == 'b')
+        return 2;
+    }
+  }
+  return 10;
+}
+
+int isBinaryDigit(int c) {
+  return c == '0' || c == '1';
+}
+
+bool isNumber(int c) {
+  return std::isxdigit(c) || c == 'x' || c == 'b';
+}
+
 void Tokenizer::TokenizeNumber(char &currChar) {
-  TokenizeSequence(TokenTypes::NUMBER, currChar, std::isdigit);
+  TokenizeSequence(TokenTypes::NUMBER, currChar, isNumber);
+
+  int base = GetNumberBase(CurrToken.Value);
+  auto curr = std::begin(CurrToken.Value);
+  auto end = std::end(CurrToken.Value);
+  auto pred = std::isdigit;
+  if (base != 10) {
+    curr += 2;
+    pred = base == 16 ? std::isxdigit : isBinaryDigit;
+  }
+  while (curr != end) {
+    if (!pred(*curr))
+      break;
+    *curr = std::tolower(*curr);
+    ++curr;
+  }
+
+  if (curr != end) 
+    CurrToken.Type = TokenTypes::UNKNOWN;
 }
 
 void Tokenizer::TokenizeSymbol(char &currChar) {

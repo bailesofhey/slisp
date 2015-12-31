@@ -217,7 +217,11 @@ bool Parser::ParseToken(Sexp &root) {
 bool Parser::ParseNumber(Sexp &root) {
   auto &val = (*Tokenizer_).Value;
   if (!val.empty()) {
-    root.Args.push_back(ExpressionPtr { new Number { std::atoll(val.c_str()) } });
+    auto numStart = val.c_str();
+    int base = Tokenizer::GetNumberBase(val);
+    if (base != 10)
+      numStart += 2;
+    root.Args.push_back(ExpressionPtr { new Number { std::stoll(numStart, nullptr, base) } });
     return true;
   }
   else {

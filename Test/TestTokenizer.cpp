@@ -68,6 +68,12 @@ TEST(Tokenizer, TestNumber) {
     { "1234567890", { Token(TokenTypes::NUMBER, "1234567890") } },
     { "-42", { Token(TokenTypes::NUMBER, "-42") } },
 
+    { "0x0", { Token(TokenTypes::NUMBER, "0x0") } },
+    { "0x9", { Token(TokenTypes::NUMBER, "0x9") } },
+    { "0xa", { Token(TokenTypes::NUMBER, "0xa") } },
+    { "0xA", { Token(TokenTypes::NUMBER, "0xa") } },
+    { "0x0123456789ABCDEF", { Token(TokenTypes::NUMBER, "0x0123456789abcdef") } },
+
     { "   123   ", { Token(TokenTypes::NUMBER, "123") } },
     { " 1 23  345 ", { Token(TokenTypes::NUMBER, "1"), Token(TokenTypes::NUMBER, "23"), Token(TokenTypes::NUMBER, "345") } },
   });
@@ -76,6 +82,7 @@ TEST(Tokenizer, TestNumber) {
 TEST(Tokenizer, TestSymbol) {
   RunTests({
     { "a", { Token(TokenTypes::SYMBOL, "a") } },
+    { "x", { Token(TokenTypes::SYMBOL, "x") } },
     { "A", { Token(TokenTypes::SYMBOL, "A") } },
     { "abcdefghijklmnopqrstuvwxyz", { Token(TokenTypes::SYMBOL, "abcdefghijklmnopqrstuvwxyz") } },
     
@@ -170,6 +177,16 @@ TEST(Tokenizer, TestUnknown) {
   RunTests({
     { "0a", { Token(TokenTypes::UNKNOWN, "0a") } },
     { "3*", { Token(TokenTypes::UNKNOWN, "3*") } },
+
+    { "0x", { Token(TokenTypes::UNKNOWN, "0x") } },
+    { "3x", { Token(TokenTypes::UNKNOWN, "3x") } },
+    { "0xabcdefg", { Token(TokenTypes::UNKNOWN, "0xabcdefg") } },
+    { "0xfex", { Token(TokenTypes::UNKNOWN, "0xfex") } },
+    { "12f", { Token(TokenTypes::UNKNOWN, "12f") } },
+    { "1230x123", { Token(TokenTypes::UNKNOWN, "1230x123") } },
+
+    { "0b", { Token(TokenTypes::UNKNOWN, "0b") } },
+    { "0b11012", { Token(TokenTypes::UNKNOWN, "0b11012") } },
   });
 }
 

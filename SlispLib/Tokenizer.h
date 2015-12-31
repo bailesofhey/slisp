@@ -20,19 +20,21 @@ class Tokenizer: public ITokenizer {
     virtual ITokenizer& operator++() override;
     virtual Token& operator*() override;
 
-    private:
-      void SkipWhitespace(char &currChar);
-      void TokenizeNumber(char &currChar);
-      void TokenizeSymbol(char &currChar);
-      void TokenizeString(char &currChar);
-      void TokenizeParenOpen(char &currChar);
-      void TokenizeParenClose(char &currChar);
-      void TokenizeUnknown(char &currChar);
-      void TokenizeNone();
-      template <class F> void TokenizeSequence(TokenTypes tokenType, char &currChar, F pred);
-      template <class F, class G> void TokenizeSequence(TokenTypes tokenType, char &currChar, F pred, G postSeqFn);
+    static int GetNumberBase(const std::string &str);
 
-      Token CurrToken;
-      std::stringstream Stream;
-      static bool SymbolPredicate(char c);
+  private:
+    void SkipWhitespace(char &currChar);
+    void TokenizeNumber(char &currChar);
+    void TokenizeSymbol(char &currChar);
+    void TokenizeString(char &currChar);
+    void TokenizeParenOpen(char &currChar);
+    void TokenizeParenClose(char &currChar);
+    void TokenizeUnknown(char &currChar);
+    void TokenizeNone();
+    template <class F> void TokenizeSequence(TokenTypes tokenType, char &currChar, F pred);
+    template <class F, class G> void TokenizeSequence(TokenTypes tokenType, char &currChar, F pred, G postSeqFn);
+
+    Token CurrToken;
+    std::stringstream Stream;
+    static bool SymbolPredicate(char c);
 };
