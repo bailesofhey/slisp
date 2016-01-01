@@ -387,28 +387,28 @@ class StdLibNumericalTest: public StdLibTest {
   }
 };
 
-TEST_F(StdLibNumericalTest, TestInc) {
-  ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("inc"));
-  ASSERT_TRUE(RunFail("(inc \"foo\")"));
-  ASSERT_TRUE(RunSuccess("(inc -2)", "-1"));
-  ASSERT_TRUE(RunSuccess("(inc -1)", "0"));
-  ASSERT_TRUE(RunSuccess("(inc 0)", "1"));
-  ASSERT_TRUE(RunSuccess("(inc 41)", "42"));
+TEST_F(StdLibNumericalTest, TestIncr) {
+  ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("incr"));
+  ASSERT_TRUE(RunFail("(incr \"foo\")"));
+  ASSERT_TRUE(RunSuccess("(incr -2)", "-1"));
+  ASSERT_TRUE(RunSuccess("(incr -1)", "0"));
+  ASSERT_TRUE(RunSuccess("(incr 0)", "1"));
+  ASSERT_TRUE(RunSuccess("(incr 41)", "42"));
 
   std::stringstream temp;
-  temp << "(inc " << MaxValue << ")";
+  temp << "(incr " << MaxValue << ")";
   ASSERT_TRUE(RunSuccess(temp.str(), std::to_string(MinValue)));
 }
 
-TEST_F(StdLibNumericalTest, TestDec) {
-  ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("dec"));
-  ASSERT_TRUE(RunSuccess("(dec -1)", "-2"));
-  ASSERT_TRUE(RunSuccess("(dec 0)", "-1"));
-  ASSERT_TRUE(RunSuccess("(dec 1)", "0"));
-  ASSERT_TRUE(RunSuccess("(dec 42)", "41"));
+TEST_F(StdLibNumericalTest, TestDecr) {
+  ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("decr"));
+  ASSERT_TRUE(RunSuccess("(decr -1)", "-2"));
+  ASSERT_TRUE(RunSuccess("(decr 0)", "-1"));
+  ASSERT_TRUE(RunSuccess("(decr 1)", "0"));
+  ASSERT_TRUE(RunSuccess("(decr 42)", "41"));
 
   std::stringstream temp;
-  temp << "(dec " << MinValue << ")";
+  temp << "(decr " << MinValue << ")";
   ASSERT_TRUE(RunSuccess(temp.str(), std::to_string(MaxValue)));
 }
 
@@ -465,6 +465,24 @@ TEST_F(StdLibNumericalTest, TestMod) {
   ASSERT_TRUE(RunSuccess("(% -1 3)", "-1"));
   ASSERT_TRUE(RunSuccess("(% 1 -3)", "1"));
   ASSERT_TRUE(RunSuccess("(% -1 -3)", "1"));
+}
+
+TEST_F(StdLibNumericalTest, TestHex) {
+  ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("hex"));
+  ASSERT_TRUE(RunSuccess("(hex 0)", "\"0x0\""));
+  ASSERT_TRUE(RunSuccess("(hex 254)", "\"0xfe\""));
+}
+
+TEST_F(StdLibNumericalTest, TestBin) {
+  ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("bin"));
+  ASSERT_TRUE(RunSuccess("(bin 0)", "\"0b0\""));
+  ASSERT_TRUE(RunSuccess("(bin 13)", "\"0b1101\""));
+}
+
+TEST_F(StdLibNumericalTest, TestDec) {
+  ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("dec"));
+  ASSERT_TRUE(RunSuccess("(dec 0)", "\"0\""));
+  ASSERT_TRUE(RunSuccess("(dec 72)", "\"72\""));
 }
 
 class StdLibBitwiseTest: public StdLibNumericalTest {
@@ -622,9 +640,9 @@ TEST_F(StdLibListTest, TestMap) {
   ASSERT_TRUE(RunFail("(map + 3)"));
   ASSERT_TRUE(RunFail("(map a 3)"));
   ASSERT_TRUE(RunFail("(map inc 3)"));
-  ASSERT_TRUE(RunSuccess("(map inc ())", "()"));
-  ASSERT_TRUE(RunSuccess("(map inc (1))", "(2)"));
-  ASSERT_TRUE(RunSuccess("(map inc (1 2 3))", "(2 3 4)"));
+  ASSERT_TRUE(RunSuccess("(map incr ())", "()"));
+  ASSERT_TRUE(RunSuccess("(map incr (1))", "(2)"));
+  ASSERT_TRUE(RunSuccess("(map incr (1 2 3))", "(2 3 4)"));
   ASSERT_TRUE(RunFail("(map (fn (x) a) (1 2 3))"));
   ASSERT_TRUE(RunFail("(map (fn 3) (1 2 3))"));
   ASSERT_TRUE(RunFail("(map (fn () 42) (1 2 3))"));

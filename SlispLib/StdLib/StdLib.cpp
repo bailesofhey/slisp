@@ -1,6 +1,7 @@
 #include <iostream>
 #include <memory>
 #include <sstream>
+#include <algorithm>
 
 #include "StdLib.h"
 #include "../Interpreter.h"
@@ -52,9 +53,9 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("^=", &StdLib::Set,  setDef.Clone()); 
   symbols.PutSymbolFunction("|=", &StdLib::Set,  setDef.Clone()); 
   
-  FuncDef incDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) };
-  symbols.PutSymbolFunction("++", &StdLib::Set, incDef.Clone()); 
-  symbols.PutSymbolFunction("--", &StdLib::Set, incDef.Clone()); 
+  FuncDef incrDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) };
+  symbols.PutSymbolFunction("++", &StdLib::Set, incrDef.Clone()); 
+  symbols.PutSymbolFunction("--", &StdLib::Set, incrDef.Clone()); 
 
   symbols.PutSymbolFunction("unset", &StdLib::UnSet, FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
 
@@ -64,12 +65,17 @@ void StdLib::Load(Interpreter &interpreter) {
 
   // Numerical
 
-  symbols.PutSymbolFunction("inc", &StdLib::Inc, FuncDef { FuncDef::OneArg(Number::TypeInstance), FuncDef::OneArg(Number::TypeInstance) });
-  symbols.PutSymbolFunction("dec", &StdLib::Dec, FuncDef { FuncDef::OneArg(Number::TypeInstance), FuncDef::OneArg(Number::TypeInstance) });
+  symbols.PutSymbolFunction("incr", &StdLib::Incr, FuncDef { FuncDef::OneArg(Number::TypeInstance), FuncDef::OneArg(Number::TypeInstance) });
+  symbols.PutSymbolFunction("decr", &StdLib::Decr, FuncDef { FuncDef::OneArg(Number::TypeInstance), FuncDef::OneArg(Number::TypeInstance) });
   RegisterBinaryFunction(symbols, "-", &StdLib::Sub);
   RegisterBinaryFunction(symbols, "*", &StdLib::Mult);
   RegisterBinaryFunction(symbols, "/", &StdLib::Div);
   RegisterBinaryFunction(symbols, "%", &StdLib::Mod);
+
+  FuncDef baseFn { FuncDef::OneArg(Number::TypeInstance), FuncDef::OneArg(String::TypeInstance) };
+  symbols.PutSymbolFunction("hex", StdLib::Hex, baseFn.Clone());
+  symbols.PutSymbolFunction("bin", StdLib::Bin, baseFn.Clone());
+  symbols.PutSymbolFunction("dec", StdLib::Dec, baseFn.Clone());
 
   // Bitwise
 
@@ -307,9 +313,9 @@ bool StdLib::Set(EvaluationContext &ctx) {
               BuildOpSexp(ctx, op, symToSetExpr);
             }
             else if (setOp == "++")
-              BuildOpSexp(ctx, "inc", symToSetExpr);
+              BuildOpSexp(ctx, "incr", symToSetExpr);
             else if (setOp == "--")
-              BuildOpSexp(ctx, "dec", symToSetExpr);
+              BuildOpSexp(ctx, "decr", symToSetExpr);
 
             ExpressionPtr value = std::move(ctx.Args.front());
             ctx.Args.pop_front();
@@ -408,12 +414,12 @@ bool StdLib::Add(EvaluationContext &ctx) {
 
 // Number Functions
 
-bool StdLib::Inc(EvaluationContext &ctx) {
-  return UnaryNumberFn(ctx, "inc", [](int64_t num) { return num + 1; });
+bool StdLib::Incr(EvaluationContext &ctx) {
+  return UnaryNumberFn(ctx, "incr", [](int64_t num) { return num + 1; });
 }
 
-bool StdLib::Dec(EvaluationContext &ctx) {
-  return UnaryNumberFn(ctx, "dec", [](int64_t num) { return num - 1; });
+bool StdLib::Decr(EvaluationContext &ctx) {
+  return UnaryNumberFn(ctx, "decr", [](int64_t num) { return num - 1; });
 }
 
 template <class F>
@@ -474,6 +480,45 @@ bool StdLib::Mod(EvaluationContext &ctx) {
     return BinaryFunction(ctx, fn, "%");
   }
   return false;
+}
+
+bool StdLib::Hex(EvaluationContext &ctx) {
+  std::stringstream ss;
+  ss << "0x" << std::hex << *ctx.Args.front();
+  ctx.Expr = ExpressionPtr { new String(ss.str()) };
+  return true;
+}
+
+bool StdLib::Bin(EvaluationContext &ctx) {
+  std::stringstream ss;
+  if (auto *num = dynamic_cast<Number*>(ctx.Args.front().get())) {
+    int64_t value = num->Value;
+    if (value) {
+      while (value) {
+        if (value % 2)
+          ss << "1";
+        else
+          ss << "0";
+        value >>= 1;
+      }
+    }
+    else
+      ss << "0";
+  }
+  ss << "b0";
+
+  std::string s = ss.str();
+  std::reverse(begin(s), end(s));
+
+  ctx.Expr = ExpressionPtr { new String(s) };
+  return true;
+}
+
+bool StdLib::Dec(EvaluationContext &ctx) {
+  std::stringstream ss;
+  ss << *ctx.Args.front();
+  ctx.Expr = ExpressionPtr { new String(ss.str()) };
+  return true;
 }
 
 // Bitwise Functions

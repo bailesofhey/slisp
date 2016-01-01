@@ -28,12 +28,15 @@ class StdLib: public Library {
 
     // Numerical
     static bool AddNum(EvaluationContext &ctx);
-    static bool Inc(EvaluationContext &ctx);
-    static bool Dec(EvaluationContext &ctx);
+    static bool Incr(EvaluationContext &ctx);
+    static bool Decr(EvaluationContext &ctx);
     static bool Sub(EvaluationContext &ctx);
     static bool Mult(EvaluationContext &ctx);
     static bool Div(EvaluationContext &ctx);
     static bool Mod(EvaluationContext &ctx);
+    static bool Hex(EvaluationContext &ctx);
+    static bool Bin(EvaluationContext &ctx);
+    static bool Dec(EvaluationContext &ctx);
 
     // Bitwise
     static bool LeftShift(EvaluationContext &ctx);
