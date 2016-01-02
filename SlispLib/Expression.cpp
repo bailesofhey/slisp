@@ -119,54 +119,54 @@ void Bool::Print(std::ostream &out) const {
 }
 //=============================================================================
 
-const TypeInfo Number::TypeInstance("number");
+const TypeInfo Int::TypeInstance("int");
 
-Number::Number():
-  Number { 0 }
+Int::Int():
+  Int { 0 }
 {
 }
 
-Number::Number(int64_t value):
+Int::Int(int64_t value):
   Literal { TypeInstance },
   Value { value }
 {
 }
 
-ExpressionPtr Number::Clone() const {
-  return ExpressionPtr { new Number(*this) };
+ExpressionPtr Int::Clone() const {
+  return ExpressionPtr { new Int(*this) };
 }
 
-bool Number::operator==(const Expression &rhs) const {
-  return &rhs.Type() == &Number::TypeInstance
-      && dynamic_cast<const Number&>(rhs) == *this;
+bool Int::operator==(const Expression &rhs) const {
+  return &rhs.Type() == &Int::TypeInstance
+      && dynamic_cast<const Int&>(rhs) == *this;
 }
 
-bool Number::operator==(const Number &rhs) const {
+bool Int::operator==(const Int &rhs) const {
   return Value == rhs.Value;
 }
 
-bool Number::operator!=(const Number &rhs) const {
+bool Int::operator!=(const Int &rhs) const {
   return !(*this == rhs);
 }
 
-bool Number::operator<(const Number &rhs) const {
+bool Int::operator<(const Int &rhs) const {
   return Value < rhs.Value;
 }
 
-bool Number::operator>=(const Number &rhs) const {
+bool Int::operator>=(const Int &rhs) const {
   return !(*this < rhs);
 }
 
-Number& Number::operator=(Number rhs) {
+Int& Int::operator=(Int rhs) {
   Swap(rhs);
   return *this;
 }
 
-void Number::Swap(Number &rhs) {
+void Int::Swap(Int &rhs) {
   Value = rhs.Value;
 }
 
-void Number::Print(std::ostream &out) const {
+void Int::Print(std::ostream &out) const {
   out << Value;
 }
 //=============================================================================

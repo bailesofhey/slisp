@@ -102,7 +102,7 @@ class Interpreter {
     bool GetCurrFrameSymbol(const std::string &symbolName, ExpressionPtr &value);
     void RegisterReducers();
     bool ReduceBool(ExpressionPtr &expr);
-    bool ReduceNumber(ExpressionPtr &expr);
+    bool ReduceInt(ExpressionPtr &expr);
     bool ReduceString(ExpressionPtr &expr);
     bool ReduceSymbol(ExpressionPtr &expr);
     bool ReduceFunction(ExpressionPtr &expr);

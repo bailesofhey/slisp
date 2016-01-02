@@ -20,7 +20,7 @@ ITokenizer& Tokenizer::operator++() {
     SkipWhitespace(currChar);
     if (!Stream.eof() && currChar != '\0') {
       if (std::isdigit(currChar))
-        TokenizeNumber(currChar);
+        TokenizeInt(currChar);
       else if (SymbolPredicate(currChar))
         TokenizeSymbol(currChar);
       else if (currChar == '"')
@@ -60,7 +60,7 @@ bool isNumber(int c) {
   return std::isxdigit(c) || c == 'x' || c == 'b';
 }
 
-void Tokenizer::TokenizeNumber(char &currChar) {
+void Tokenizer::TokenizeInt(char &currChar) {
   TokenizeSequence(TokenTypes::NUMBER, currChar, isNumber);
 
   int base = NumConverter::GetNumberBase(CurrToken.Value);

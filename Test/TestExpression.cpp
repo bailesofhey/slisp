@@ -38,8 +38,8 @@ TEST(Expression, TestBool) {
   RunExpressionTest(Bool(), Bool(false), Bool(true));
 }
 
-TEST(Expression, TestNumber) {
-  RunExpressionTest(Number(), Number(0), Number(5));
+TEST(Expression, TestInt) {
+  RunExpressionTest(Int(), Int(0), Int(5));
 }
 
 TEST(Expression, TestString) {
@@ -51,7 +51,7 @@ TEST(Expression, TestSymbol) {
 }
 
 TEST(Expression, TestQuote) {
-  Quote qThree { ExpressionPtr { new Number(3) } };
+  Quote qThree { ExpressionPtr { new Int(3) } };
   Quote qFoo { ExpressionPtr { new String("Foo") } };
   ASSERT_FALSE(qThree.ToString().empty());
   ASSERT_NE(qThree.ToString(), qFoo.ToString());
@@ -62,17 +62,17 @@ TEST(Expression, TestQuote) {
   ASSERT_EQ(qThree.ToString(), threeCopy->ToString());
   ASSERT_EQ(qThree, *threeCopy);
 
-  threeCopy->Value = ExpressionPtr { new Number(33) };
+  threeCopy->Value = ExpressionPtr { new Int(33) };
   ASSERT_NE(qThree, *threeCopy);
-  threeCopy->Value = ExpressionPtr { new Number(3) };
+  threeCopy->Value = ExpressionPtr { new Int(3) };
   ASSERT_EQ(qThree, *threeCopy);
 }
 
 TEST(Expression, TestSexp) {
   Sexp s;
   s.Args.push_back(ExpressionPtr { new Symbol("+") });
-  s.Args.push_back(ExpressionPtr { new Number(3) });
-  s.Args.push_back(ExpressionPtr { new Number(4) });
+  s.Args.push_back(ExpressionPtr { new Int(3) });
+  s.Args.push_back(ExpressionPtr { new Int(4) });
 
   ExpressionPtr sCopyExpr { s.Clone() };
   Sexp *sCopy = static_cast<Sexp*>(sCopyExpr.get());
@@ -90,13 +90,13 @@ TEST(Expression, TestSexp) {
   sCopy->Args.pop_front();
 
   auto argSym = dynamic_cast<Symbol*>(arg1.get());
-  auto argNum1 = dynamic_cast<Number*>(arg2.get());
-  auto argNum2 = dynamic_cast<Number*>(arg3.get());
+  auto argNum1 = dynamic_cast<Int*>(arg2.get());
+  auto argNum2 = dynamic_cast<Int*>(arg3.get());
   ASSERT_TRUE(argSym != nullptr);
   ASSERT_TRUE(argNum1 != nullptr);
   ASSERT_TRUE(argNum2 != nullptr);
 
   ASSERT_EQ(Symbol("+"), *argSym);
-  ASSERT_EQ(Number(3), *argNum1);
-  ASSERT_EQ(Number(4), *argNum2);
+  ASSERT_EQ(Int(3), *argNum1);
+  ASSERT_EQ(Int(4), *argNum2);
 }

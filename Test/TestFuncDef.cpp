@@ -3,7 +3,7 @@
 
 ExpressionPtr PrimitiveExpressions[] {
   ExpressionPtr { new Bool() },
-  ExpressionPtr { new Number() },
+  ExpressionPtr { new Int() },
   ExpressionPtr { new String() },
   ExpressionPtr { new Symbol("+") },
 };

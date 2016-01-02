@@ -150,7 +150,7 @@ class TypeHelper {
     static bool IsAtom(const TypeInfo &type);
     static bool IsLiteral(const TypeInfo &type);
     static bool IsFunction(const TypeInfo &type);
-    static bool IsConvertableToNumber(const TypeInfo &type);
-    static ExpressionPtr GetNumber(ExpressionPtr &expr);
+    static bool IsConvertableToInt(const TypeInfo &type);
+    static ExpressionPtr GetInt(ExpressionPtr &expr);
     static ExpressionPtr GetBool(ExpressionPtr &expr);
 };

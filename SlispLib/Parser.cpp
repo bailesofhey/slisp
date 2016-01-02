@@ -196,7 +196,7 @@ bool Parser::ParseToken(Sexp &root) {
 
   auto &tokenType = (*Tokenizer_).Type;
   if (tokenType == TokenTypes::NUMBER)
-    return ParseNumber(root);
+    return ParseInt(root);
   else if (tokenType == TokenTypes::STRING)
     return ParseString(root);
   else if (tokenType == TokenTypes::SYMBOL)
@@ -215,11 +215,11 @@ bool Parser::ParseToken(Sexp &root) {
   }
 }
 
-bool Parser::ParseNumber(Sexp &root) {
+bool Parser::ParseInt(Sexp &root) {
   auto &val = (*Tokenizer_).Value;
   if (!val.empty()) {
-    ExpressionPtr numExpr { new Number() };
-    auto &num = static_cast<Number&>(*numExpr);
+    ExpressionPtr numExpr { new Int() };
+    auto &num = static_cast<Int&>(*numExpr);
     NumConverter::Convert(val, num.Value);
     root.Args.push_back(std::move(numExpr));
     return true;

@@ -29,8 +29,8 @@ void SymbolTable::PutSymbolString(const std::string &symbolName, const std::stri
   PutSymbol(symbolName, ExpressionPtr { new String { value } });
 }
 
-void SymbolTable::PutSymbolNumber(const std::string &symbolName, int64_t value) {
-  PutSymbol(symbolName, ExpressionPtr { new Number { value } });
+void SymbolTable::PutSymbolInt(const std::string &symbolName, int64_t value) {
+  PutSymbol(symbolName, ExpressionPtr { new Int { value } });
 }
 
 void SymbolTable::PutSymbolQuote(const std::string &symbolName, ExpressionPtr &&value) {

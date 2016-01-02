@@ -187,7 +187,7 @@ bool Interpreter::GetCurrFrameSymbol(const std::string &symbolName, ExpressionPt
 }
 
 void Interpreter::RegisterReducers() {
-  TypeReducers[&Number::TypeInstance]   = std::bind(&Interpreter::ReduceNumber,    this, _1);
+  TypeReducers[&Int::TypeInstance]      = std::bind(&Interpreter::ReduceInt,       this, _1);
   TypeReducers[&String::TypeInstance]   = std::bind(&Interpreter::ReduceString,    this, _1);
   TypeReducers[&Bool::TypeInstance]     = std::bind(&Interpreter::ReduceBool,      this, _1);
   TypeReducers[&Symbol::TypeInstance]   = std::bind(&Interpreter::ReduceSymbol,    this, _1);
@@ -200,7 +200,7 @@ bool Interpreter::ReduceBool(ExpressionPtr &expr) {
   return true;
 }
 
-bool Interpreter::ReduceNumber(ExpressionPtr &expr) {
+bool Interpreter::ReduceInt(ExpressionPtr &expr) {
   return true;
 }
 

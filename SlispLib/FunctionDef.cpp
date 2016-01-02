@@ -460,8 +460,8 @@ bool TypeHelper::TypeMatches(const TypeInfo &expected, const TypeInfo &actual) {
     return IsLiteral(actual);
   else if (&expected == &Sexp::TypeInstance)
     return true;
-  else if (&expected == &Number::TypeInstance)
-    return IsConvertableToNumber(actual);
+  else if (&expected == &Int::TypeInstance)
+    return IsConvertableToInt(actual);
   else
     return &expected == &actual;
 }
@@ -475,7 +475,7 @@ bool TypeHelper::IsFunction(const TypeInfo &type) {
 
 bool TypeHelper::IsAtom(const TypeInfo &type) {
   return &type == &Bool::TypeInstance
-      || &type == &Number::TypeInstance 
+      || &type == &Int::TypeInstance 
       || &type == &String::TypeInstance
       || IsFunction(type)
       ;
@@ -489,14 +489,14 @@ bool TypeHelper::IsLiteral(const TypeInfo &type) {
 }
 
 // implicit conversion from bool to number - a good thing?
-bool TypeHelper::IsConvertableToNumber(const TypeInfo &type) {
+bool TypeHelper::IsConvertableToInt(const TypeInfo &type) {
   //return &type == &Number::TypeInstance
   //    || &type == &Bool::TypeInstance
   //    ;
-  return &type == &Number::TypeInstance;
+  return &type == &Int::TypeInstance;
 }
 
-ExpressionPtr TypeHelper::GetNumber(ExpressionPtr &expr) {
+ExpressionPtr TypeHelper::GetInt(ExpressionPtr &expr) {
   //if (expr) {
   //  if (&expr->Type() == &Number::TypeInstance)
   //    return expr->Clone();
@@ -506,7 +506,7 @@ ExpressionPtr TypeHelper::GetNumber(ExpressionPtr &expr) {
   //return ExpressionPtr {};
 
   if (expr) {
-    if (&expr->Type() == &Number::TypeInstance)
+    if (&expr->Type() == &Int::TypeInstance)
       return expr->Clone();
   }
   return ExpressionPtr {};

@@ -59,7 +59,7 @@ TEST(Tokenizer, TestNone) {
   });
 }
 
-TEST(Tokenizer, TestNumber) {
+TEST(Tokenizer, TestInt) {
   RunTests({
     { "0", { Token(TokenTypes::NUMBER, "0") } },
     { "000", { Token(TokenTypes::NUMBER, "000") } },

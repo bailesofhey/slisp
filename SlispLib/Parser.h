@@ -31,7 +31,7 @@ class Parser {
 
     void Reset();
     bool ParseToken(Sexp &root);
-    bool ParseNumber(Sexp &root);
+    bool ParseInt(Sexp &root);
     bool ParseString(Sexp &root);
     bool ParseSymbol(Sexp &root);
     bool ParseParenOpen(Sexp &root);

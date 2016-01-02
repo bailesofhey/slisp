@@ -357,8 +357,8 @@ TEST_F(StdLibAssignmentTest, TestSetWithOpIncrementDecrement) {
 
 class StdLibNumericalTest: public StdLibTest {
   protected:
-    decltype(Number::Value) MinValue,
-                            MaxValue;
+    decltype(Int::Value) MinValue,
+                         MaxValue;
    explicit StdLibNumericalTest():
     MinValue(std::numeric_limits<decltype(MinValue)>::min()),
     MaxValue(std::numeric_limits<decltype(MaxValue)>::max())

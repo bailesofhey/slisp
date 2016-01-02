@@ -67,22 +67,22 @@ struct Bool: public Literal {
   void Swap(Bool &rhs);
 };
 
-struct Number: public Literal {
+struct Int: public Literal {
   static const TypeInfo TypeInstance; 
   
   int64_t Value;
 
-  explicit Number();
-  explicit Number(int64_t value);
+  explicit Int();
+  explicit Int(int64_t value);
   virtual ExpressionPtr Clone() const override;
   virtual void Print(std::ostream& out) const override;
   virtual bool operator==(const Expression &rhs) const override;
-  bool operator==(const Number &rhs) const;
-  bool operator!=(const Number &rhs) const;
-  bool operator<(const Number &rhs) const;
-  bool operator>=(const Number &rhs) const;
-  Number& operator=(Number rhs);
-  void Swap(Number &rhs);
+  bool operator==(const Int &rhs) const;
+  bool operator!=(const Int &rhs) const;
+  bool operator<(const Int &rhs) const;
+  bool operator>=(const Int &rhs) const;
+  Int& operator=(Int rhs);
+  void Swap(Int &rhs);
 };
 
 struct String: public Literal {

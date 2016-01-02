@@ -20,7 +20,7 @@ class SymbolTable {
   public:
     void PutSymbol(const std::string &symbolName, ExpressionPtr &value);
     void PutSymbolBool(const std::string &symbolName, bool value);
-    void PutSymbolNumber(const std::string &symbolName, int64_t value);
+    void PutSymbolInt(const std::string &symbolName, int64_t value);
     void PutSymbolString(const std::string &symbolName, const std::string &value);
     void PutSymbolFunction(const std::string &symbolName, Function &&func);
     void PutSymbolFunction(const std::string &symbolName, SlipFunction fn, FuncDef &&def);

@@ -22,7 +22,7 @@ class Tokenizer: public ITokenizer {
 
   private:
     void SkipWhitespace(char &currChar);
-    void TokenizeNumber(char &currChar);
+    void TokenizeInt(char &currChar);
     void TokenizeSymbol(char &currChar);
     void TokenizeString(char &currChar);
     void TokenizeParenOpen(char &currChar);
