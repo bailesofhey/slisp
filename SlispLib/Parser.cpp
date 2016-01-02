@@ -196,7 +196,7 @@ bool Parser::ParseToken(Sexp &root) {
 
   auto &tokenType = (*Tokenizer_).Type;
   if (tokenType == TokenTypes::NUMBER)
-    return ParseInt(root);
+    return ParseNumber(root);
   else if (tokenType == TokenTypes::STRING)
     return ParseString(root);
   else if (tokenType == TokenTypes::SYMBOL)
@@ -205,7 +205,7 @@ bool Parser::ParseToken(Sexp &root) {
     return ParseParenOpen(root);
   else if (tokenType == TokenTypes::PARENCLOSE)
     return ParseParenClose(root);
-  else if (tokenType == TokenTypes::UNKNOWN)
+  else if (tokenType == TokenTypes::UNKNOWN) 
     return ParseUnknown(root);
   else if (tokenType == TokenTypes::NONE)
     return ParseNone(root);
@@ -215,14 +215,30 @@ bool Parser::ParseToken(Sexp &root) {
   }
 }
 
-bool Parser::ParseInt(Sexp &root) {
-  auto &val = (*Tokenizer_).Value;
-  if (!val.empty()) {
-    ExpressionPtr numExpr { new Int() };
-    auto &num = static_cast<Int&>(*numExpr);
-    NumConverter::Convert(val, num.Value);
+template <class N>
+bool ParseNum(const std::string &val, ExpressionPtr &numExpr, Sexp &root, std::string &error) {
+  auto &num = static_cast<N&>(*numExpr);
+  if (NumConverter::Convert(val, num.Value)) {
     root.Args.push_back(std::move(numExpr));
     return true;
+  }
+  else {
+    error = "Value could not be converted to " + N::TypeInstance.TypeName;
+    return false;
+  }
+}
+
+bool Parser::ParseNumber(Sexp &root) {
+  auto &val = (*Tokenizer_).Value;
+  if (!val.empty()) {
+    if (NumConverter::IsFloat(val)) {
+      ExpressionPtr numExpr { new Float() };
+      return ParseNum<Float>(val, numExpr, root, Error_);
+    }
+    else {
+      ExpressionPtr numExpr { new Int() };
+      return ParseNum<Int>(val, numExpr, root, Error_);
+    }
   }
   else {
     Error_ = "Number has no value";

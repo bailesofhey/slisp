@@ -106,6 +106,19 @@ TEST_F(ParserTest, TestSingleInt) {
   ASSERT_PARSE({ Token(TokenTypes::NUMBER, std::to_string(maxValue)) }, { new Int(maxValue) });
 }
 
+TEST_F(ParserTest, TestSingleFloat) {
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0.0") }, { new Float(0.0) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "3.14") }, { new Float(3.14) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "3.14159265359") }, { new Float(3.14159265359) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "-3.14") }, { new Float(-3.14) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "3.14e1") }, { new Float(3.14e1) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "3.14e23") }, { new Float(3.14e23) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "-3.14e23") }, { new Float(-3.14e23) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "-3.14e-23") }, { new Float(-3.14e-23) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "3e2") }, { new Float(3e2) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "3e-2") }, { new Float(3e-2) });
+}
+
 TEST_F(ParserTest, TestSingleSymbol) {
   ASSERT_PARSE({ Token(TokenTypes::SYMBOL, "a") }, { new Symbol("a") });
   ASSERT_PARSE({ Token(TokenTypes::SYMBOL, "1") }, { new Symbol("1") });

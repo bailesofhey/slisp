@@ -59,7 +59,7 @@ TEST(Tokenizer, TestNone) {
   });
 }
 
-TEST(Tokenizer, TestInt) {
+TEST(Tokenizer, TestNumber) {
   RunTests({
     { "0", { Token(TokenTypes::NUMBER, "0") } },
     { "000", { Token(TokenTypes::NUMBER, "000") } },
@@ -73,6 +73,17 @@ TEST(Tokenizer, TestInt) {
     { "0xa", { Token(TokenTypes::NUMBER, "0xa") } },
     { "0xA", { Token(TokenTypes::NUMBER, "0xa") } },
     { "0x0123456789ABCDEF", { Token(TokenTypes::NUMBER, "0x0123456789abcdef") } },
+
+    { "0.0", { Token(TokenTypes::NUMBER, "0.0") } },
+    { "3.14", { Token(TokenTypes::NUMBER, "3.14") } },
+    { "3.14159265359", { Token(TokenTypes::NUMBER, "3.14159265359") } },
+    { "-3.14", { Token(TokenTypes::NUMBER, "-3.14") } },
+    { "3.14e1", { Token(TokenTypes::NUMBER, "3.14e1") } },
+    { "3.14e23", { Token(TokenTypes::NUMBER, "3.14e23") } },
+    { "-3.14e23", { Token(TokenTypes::NUMBER, "-3.14e23") } },
+    { "-3.14e-23", { Token(TokenTypes::NUMBER, "-3.14e-23") } },
+    { "3e2", { Token(TokenTypes::NUMBER, "3e2") } },
+    { "3e-2", { Token(TokenTypes::NUMBER, "3e-2") } },
 
     { "   123   ", { Token(TokenTypes::NUMBER, "123") } },
     { " 1 23  345 ", { Token(TokenTypes::NUMBER, "1"), Token(TokenTypes::NUMBER, "23"), Token(TokenTypes::NUMBER, "345") } },

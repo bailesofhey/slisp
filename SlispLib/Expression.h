@@ -85,6 +85,24 @@ struct Int: public Literal {
   void Swap(Int &rhs);
 };
 
+struct Float: public Literal {
+  static const TypeInfo TypeInstance;
+
+  double Value; 
+
+  explicit Float();
+  explicit Float(double value);
+  virtual ExpressionPtr Clone() const override;
+  virtual void Print(std::ostream& out) const override;
+  virtual bool operator==(const Expression &rhs) const override;
+  bool operator==(const Float &rhs) const;
+  bool operator!=(const Float &rhs) const;
+  bool operator<(const Float &rhs) const;
+  bool operator>=(const Float &rhs) const;
+  Float& operator=(Float rhs);
+  void Swap(Float &rhs);
+};
+
 struct String: public Literal {
   static const TypeInfo TypeInstance;
   

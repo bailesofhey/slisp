@@ -20,7 +20,7 @@ ITokenizer& Tokenizer::operator++() {
     SkipWhitespace(currChar);
     if (!Stream.eof() && currChar != '\0') {
       if (std::isdigit(currChar))
-        TokenizeInt(currChar);
+        TokenizeNumber(currChar);
       else if (SymbolPredicate(currChar))
         TokenizeSymbol(currChar);
       else if (currChar == '"')
@@ -52,25 +52,32 @@ void Tokenizer::SkipWhitespace(char &currChar) {
   while (!Stream.eof() && std::isspace(currChar));
 }
 
-int isBinaryDigit(int c) {
+int IsBinaryDigit(int c) {
   return c == '0' || c == '1';
 }
 
-bool isNumber(int c) {
-  return std::isxdigit(c) || c == 'x' || c == 'b';
+int IsFloatDigit(int c) {
+  return std::isdigit(c) || c == '.' || c == 'e' || c == '-';
 }
 
-void Tokenizer::TokenizeInt(char &currChar) {
-  TokenizeSequence(TokenTypes::NUMBER, currChar, isNumber);
+bool IsNumber(int c) {
+  return std::isxdigit(c) || c == 'x' || c == 'b' || c == 'e' || c == '.' || c == '-';
+}
 
+void Tokenizer::TokenizeNumber(char &currChar) {
+  TokenizeSequence(TokenTypes::NUMBER, currChar, IsNumber);
   int base = NumConverter::GetNumberBase(CurrToken.Value);
   auto curr = std::begin(CurrToken.Value);
   auto end = std::end(CurrToken.Value);
   auto pred = std::isdigit;
   if (base != 10) {
     curr += 2;
-    pred = base == 16 ? std::isxdigit : isBinaryDigit;
+    pred = base == 16 ? std::isxdigit : IsBinaryDigit;
   }
+  else if (NumConverter::IsFloat(CurrToken.Value)) {
+    pred = IsFloatDigit; 
+  }
+
   while (curr != end) {
     if (!pred(*curr))
       break;
@@ -87,8 +94,10 @@ void Tokenizer::TokenizeSymbol(char &currChar) {
 
   size_t len = CurrToken.Value.length();
   if (len > 1 && CurrToken.Value[0] == '-') {
-    for (size_t i = 1; i < len; ++i) {
-      if (!std::isdigit(CurrToken.Value[i]))
+    if (!std::isdigit(CurrToken.Value[1]))
+      return;
+    for (size_t i = 2; i < len; ++i) {
+      if (!IsFloatDigit(CurrToken.Value[i]))
         return;
     }
     CurrToken.Type = TokenTypes::NUMBER;

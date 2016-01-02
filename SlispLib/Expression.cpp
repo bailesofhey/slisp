@@ -117,6 +117,7 @@ void Bool::Print(std::ostream &out) const {
   else
     out << "false";
 }
+
 //=============================================================================
 
 const TypeInfo Int::TypeInstance("int");
@@ -169,6 +170,60 @@ void Int::Swap(Int &rhs) {
 void Int::Print(std::ostream &out) const {
   out << Value;
 }
+
+//=============================================================================
+
+const TypeInfo Float::TypeInstance("float");
+
+Float::Float():
+  Float { 0 }
+{
+}
+
+Float::Float(double value):
+  Literal { TypeInstance },
+  Value { value }
+{
+}
+
+ExpressionPtr Float::Clone() const {
+  return ExpressionPtr { new Float(*this) };
+}
+
+bool Float::operator==(const Expression &rhs) const {
+  return &rhs.Type() == &Float::TypeInstance
+      && dynamic_cast<const Float&>(rhs) == *this;
+}
+
+bool Float::operator==(const Float &rhs) const {
+  return Value == rhs.Value;
+}
+
+bool Float::operator!=(const Float &rhs) const {
+  return !(*this == rhs);
+}
+
+bool Float::operator<(const Float &rhs) const {
+  return Value < rhs.Value;
+}
+
+bool Float::operator>=(const Float &rhs) const {
+  return !(*this < rhs);
+}
+
+Float& Float::operator=(Float rhs) {
+  Swap(rhs);
+  return *this;
+}
+
+void Float::Swap(Float &rhs) {
+  Value = rhs.Value;
+}
+
+void Float::Print(std::ostream &out) const {
+  out << Value;
+}
+
 //=============================================================================
 
 const TypeInfo String::TypeInstance("string");

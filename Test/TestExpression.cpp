@@ -42,6 +42,10 @@ TEST(Expression, TestInt) {
   RunExpressionTest(Int(), Int(0), Int(5));
 }
 
+TEST(Expression, TestFloat) {
+  RunExpressionTest(Float(), Float(0.0), Float(3.14));
+}
+
 TEST(Expression, TestString) {
   RunExpressionTest(String(), String(""), String("Foo"));
 }
@@ -73,6 +77,7 @@ TEST(Expression, TestSexp) {
   s.Args.push_back(ExpressionPtr { new Symbol("+") });
   s.Args.push_back(ExpressionPtr { new Int(3) });
   s.Args.push_back(ExpressionPtr { new Int(4) });
+  s.Args.push_back(ExpressionPtr { new Float(3.14) });
 
   ExpressionPtr sCopyExpr { s.Clone() };
   Sexp *sCopy = static_cast<Sexp*>(sCopyExpr.get());
@@ -88,15 +93,20 @@ TEST(Expression, TestSexp) {
   sCopy->Args.pop_front();
   ExpressionPtr arg3 = std::move(sCopy->Args.front());
   sCopy->Args.pop_front();
+  ExpressionPtr arg4 = std::move(sCopy->Args.front());
+  sCopy->Args.pop_front();
 
   auto argSym = dynamic_cast<Symbol*>(arg1.get());
-  auto argNum1 = dynamic_cast<Int*>(arg2.get());
-  auto argNum2 = dynamic_cast<Int*>(arg3.get());
+  auto argInt1 = dynamic_cast<Int*>(arg2.get());
+  auto argInt2 = dynamic_cast<Int*>(arg3.get());
+  auto argFloat = dynamic_cast<Float*>(arg4.get());
   ASSERT_TRUE(argSym != nullptr);
-  ASSERT_TRUE(argNum1 != nullptr);
-  ASSERT_TRUE(argNum2 != nullptr);
+  ASSERT_TRUE(argInt1 != nullptr);
+  ASSERT_TRUE(argInt2 != nullptr);
+  ASSERT_TRUE(argFloat != nullptr);
 
   ASSERT_EQ(Symbol("+"), *argSym);
-  ASSERT_EQ(Int(3), *argNum1);
-  ASSERT_EQ(Int(4), *argNum2);
+  ASSERT_EQ(Int(3), *argInt1);
+  ASSERT_EQ(Int(4), *argInt2);
+  ASSERT_EQ(Float(3.14), *argFloat);
 }
