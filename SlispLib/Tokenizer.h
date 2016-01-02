@@ -20,8 +20,6 @@ class Tokenizer: public ITokenizer {
     virtual ITokenizer& operator++() override;
     virtual Token& operator*() override;
 
-    static int GetNumberBase(const std::string &str);
-
   private:
     void SkipWhitespace(char &currChar);
     void TokenizeNumber(char &currChar);

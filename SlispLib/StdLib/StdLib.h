@@ -80,6 +80,11 @@ class StdLib: public Library {
     static bool Def(EvaluationContext &ctx);
     static bool Apply(EvaluationContext &ctx);
 
+    // Conversion operators
+    static bool BoolFunc(EvaluationContext &ctx);
+    static bool IntFunc(EvaluationContext &ctx);
+    static bool StrFunc(EvaluationContext &ctx);
+
     // Helpers
     static bool EvaluateListSexp(EvaluationContext &ctx); 
 

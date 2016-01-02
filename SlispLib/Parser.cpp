@@ -2,6 +2,7 @@
 #include <memory>
 #include <algorithm>
 
+#include "NumConverter.h"
 #include "Tokenizer.h"
 #include "Parser.h"
 #include "FunctionDef.h"
@@ -217,11 +218,10 @@ bool Parser::ParseToken(Sexp &root) {
 bool Parser::ParseNumber(Sexp &root) {
   auto &val = (*Tokenizer_).Value;
   if (!val.empty()) {
-    auto numStart = val.c_str();
-    int base = Tokenizer::GetNumberBase(val);
-    if (base != 10)
-      numStart += 2;
-    root.Args.push_back(ExpressionPtr { new Number { std::stoll(numStart, nullptr, base) } });
+    ExpressionPtr numExpr { new Number() };
+    auto &num = static_cast<Number&>(*numExpr);
+    NumConverter::Convert(val, num.Value);
+    root.Args.push_back(std::move(numExpr));
     return true;
   }
   else {

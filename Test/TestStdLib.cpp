@@ -1116,3 +1116,63 @@ TEST_F(StdLibBranchTest, TestApply) {
   ASSERT_TRUE(RunSuccess("(apply (fn (a b) (+ a b)) (1 2))", "3"));
   ASSERT_TRUE(RunFail("(apply (fn (a b) (+ a b)) (1 2 3))"));
 }
+
+class StdLibOperatorsTest: public StdLibTest {
+};
+
+TEST_F(StdLibOperatorsTest, TestBool) {
+  ASSERT_TRUE(RunFail("(bool)"));
+  ASSERT_TRUE(RunFail("(bool 3 4)"));
+
+  ASSERT_TRUE(RunSuccess("(bool true)", "true"));
+  ASSERT_TRUE(RunSuccess("(bool false)", "false"));
+
+  ASSERT_TRUE(RunSuccess("(bool 0)", "false"));
+  ASSERT_TRUE(RunSuccess("(bool 1)", "true"));
+  ASSERT_TRUE(RunSuccess("(bool 3)", "true"));
+
+  ASSERT_TRUE(RunSuccess("(bool \"\")", "false"));
+  ASSERT_TRUE(RunSuccess("(bool \"foo\")", "true"));
+  ASSERT_TRUE(RunSuccess("(bool \"0\")", "true"));
+  ASSERT_TRUE(RunSuccess("(bool \"42\")", "true"));
+}
+
+TEST_F(StdLibOperatorsTest, TestInt) {
+  ASSERT_TRUE(RunFail("(int)"));
+  ASSERT_TRUE(RunFail("(int 3 4)"));
+
+  ASSERT_TRUE(RunSuccess("(int true)", "1"));
+  ASSERT_TRUE(RunSuccess("(int false)", "0"));
+
+  ASSERT_TRUE(RunSuccess("(int 0)", "0"));
+  ASSERT_TRUE(RunSuccess("(int 1)", "1"));
+  ASSERT_TRUE(RunSuccess("(int 3)", "3"));
+
+  ASSERT_TRUE(RunSuccess("(int \"\")", "0"));
+  ASSERT_TRUE(RunSuccess("(int \"foo\")", "0"));
+  ASSERT_TRUE(RunSuccess("(int \"0\")", "0"));
+  ASSERT_TRUE(RunSuccess("(int \"42\")", "42"));
+
+  ASSERT_TRUE(RunSuccess("(int \"-42\")", "-42"));
+  ASSERT_TRUE(RunSuccess("(int \"0xfe\")", "254"));
+}
+
+TEST_F(StdLibOperatorsTest, TestStr) {
+  ASSERT_TRUE(RunFail("(str)"));
+  ASSERT_TRUE(RunFail("(str 3 4)"));
+
+  ASSERT_TRUE(RunSuccess("(str true)", "\"true\""));
+  ASSERT_TRUE(RunSuccess("(str false)", "\"false\""));
+
+  ASSERT_TRUE(RunSuccess("(str 0)", "\"0\""));
+  ASSERT_TRUE(RunSuccess("(str 1)", "\"1\""));
+  ASSERT_TRUE(RunSuccess("(str 3)", "\"3\""));
+
+  ASSERT_TRUE(RunSuccess("(str \"\")", "\"\""));
+  ASSERT_TRUE(RunSuccess("(str \"foo\")", "\"foo\""));
+  ASSERT_TRUE(RunSuccess("(str \"0\")", "\"0\""));
+  ASSERT_TRUE(RunSuccess("(str \"42\")", "\"42\""));
+
+  ASSERT_TRUE(RunSuccess("(str \"-42\")", "\"-42\""));
+  ASSERT_TRUE(RunSuccess("(str \"0xfe\")", "\"0xfe\""));
+}

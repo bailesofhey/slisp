@@ -86,6 +86,7 @@
     <ClCompile Include="Interpreter.cpp" />
     <ClCompile Include="InterpreterUtils.cpp" />
     <ClCompile Include="Library.cpp" />
+    <ClCompile Include="NumConverter.cpp" />
     <ClCompile Include="Parser.cpp" />
     <ClCompile Include="StdLib\StdLib.cpp" />
     <ClCompile Include="Token.cpp" />
@@ -99,6 +100,7 @@
     <ClInclude Include="Interpreter.h" />
     <ClInclude Include="InterpreterUtils.h" />
     <ClInclude Include="Library.h" />
+    <ClInclude Include="NumConverter.h" />
     <ClInclude Include="Parser.h" />
     <ClInclude Include="StdLib\StdLib.h" />
     <ClInclude Include="Token.h" />

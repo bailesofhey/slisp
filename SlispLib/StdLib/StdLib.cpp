@@ -6,6 +6,8 @@
 #include "StdLib.h"
 #include "../Interpreter.h"
 
+#include "../NumConverter.h"
+
 //=============================================================================
 
 void StdLib::Load(Interpreter &interpreter) {
@@ -147,6 +149,12 @@ void StdLib::Load(Interpreter &interpreter) {
     FuncDef::OneArg(Function::TypeInstance)
   });
   symbols.PutSymbolFunction("apply", &StdLib::Apply, FuncDef { FuncDef::Args({ &Function::TypeInstance, &Sexp::TypeInstance }), FuncDef::OneArg(Literal::TypeInstance) });
+
+  // Conversion operators
+
+  symbols.PutSymbolFunction("bool", &StdLib::BoolFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
+  symbols.PutSymbolFunction("int", &StdLib::IntFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Number::TypeInstance) });
+  symbols.PutSymbolFunction("str", &StdLib::StrFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(String::TypeInstance) });
 
   // Register infix operators by precedence (using C++ rules, where appropriate)
   settings.RegisterInfixSymbol("++");
@@ -1072,6 +1080,65 @@ bool StdLib::Apply(EvaluationContext &ctx) {
   }
   else
     return false; 
+}
+// Conversion operators
+
+bool StdLib::BoolFunc(EvaluationContext &ctx) {
+  bool value = false;
+  if (auto &expr = ctx.Args.front()) {
+    if (ctx.Evaluate(expr, "1")) {
+      if (auto *boolValue = dynamic_cast<Bool*>(expr.get()))
+        value = boolValue->Value;
+      else if (auto *intValue = dynamic_cast<Number*>(expr.get()))
+        value = intValue->Value != 0;
+      else if (auto *strValue = dynamic_cast<String*>(expr.get()))
+        value = strValue->Value != "";
+      ctx.Expr = ExpressionPtr { new Bool(value) };
+      return true;
+    }
+    else
+      return false;
+  }
+  return false;
+}
+
+bool StdLib::IntFunc(EvaluationContext &ctx) {
+  int64_t value = 0;
+  if (auto &expr = ctx.Args.front()) {
+    if (ctx.Evaluate(expr, "1")) {
+      if (auto *boolValue = dynamic_cast<Bool*>(expr.get()))
+        value = boolValue->Value;
+      else if (auto *intValue = dynamic_cast<Number*>(expr.get()))
+        value = intValue->Value;
+      else if (auto *strValue = dynamic_cast<String*>(expr.get())) {
+        if (!strValue->Value.empty()) {
+          try {
+            NumConverter::Convert(strValue->Value, value);
+          }
+          catch (...) {
+          }
+        }
+      }
+      ctx.Expr = ExpressionPtr { new Number(value) };
+      return true;
+    }
+    else
+      return false;
+  }
+  return false;
+}
+
+bool StdLib::StrFunc(EvaluationContext &ctx) {
+  std::string value = "";
+  if (auto &expr = ctx.Args.front()) {
+    if (ctx.Evaluate(expr, "1")) {
+      ctx.Expr = ExpressionPtr { new String(expr->ToString()) };
+      return true;
+    }
+    else
+      return false;
+  }
+  return false;
 }
 
 // Helpers
