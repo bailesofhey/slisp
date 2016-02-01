@@ -162,6 +162,10 @@ TEST_F(ParserTest, TestMultiples) {
     { new Int(42), new Int(43) }
   );
   ASSERT_PARSE(
+    { Token(TokenTypes::NUMBER, "3.14"), Token(TokenTypes::NUMBER, "1.5")},
+    { new Float(3.14), new Float(1.5) }
+  );
+  ASSERT_PARSE(
     { Token(TokenTypes::SYMBOL, "foo"), Token(TokenTypes::SYMBOL, "bar") },
     { new Symbol("foo"), new Symbol("bar") }
   );
@@ -172,12 +176,12 @@ TEST_F(ParserTest, TestMultiples) {
 
   ASSERT_PARSE(
     { 
-      Token(TokenTypes::NUMBER, "42"), Token(TokenTypes::SYMBOL, "foo"), Token(TokenTypes::STRING, "hello"),
-      Token(TokenTypes::NUMBER, "43"), Token(TokenTypes::SYMBOL, "bar"), Token(TokenTypes::STRING, "world!")
+      Token(TokenTypes::NUMBER, "42"), Token(TokenTypes::NUMBER, "3.14"), Token(TokenTypes::SYMBOL, "foo"), Token(TokenTypes::STRING, "hello"),
+      Token(TokenTypes::NUMBER, "43"), Token(TokenTypes::NUMBER, "1.5"), Token(TokenTypes::SYMBOL, "bar"), Token(TokenTypes::STRING, "world!")
     },
     {
-      new Int(42), new Symbol("foo"), new String("hello"),
-      new Int(43), new Symbol("bar"), new String("world!") 
+      new Int(42), new Float(3.14), new Symbol("foo"), new String("hello"),
+      new Int(43), new Float(1.5), new Symbol("bar"), new String("world!") 
     }
   );
 }
@@ -216,6 +220,10 @@ TEST_F(ParserTest, TestImplicitInfix_Set) {
     { new Sexp({ ExpressionPtr { new Symbol("=") }, ExpressionPtr { new Symbol("x") }, ExpressionPtr { new Int(42) }})}
   );
   ASSERT_PARSE(
+    { Token(TokenTypes::SYMBOL, "x"), Token(TokenTypes::SYMBOL, "="), Token(TokenTypes::NUMBER, "3.14") },
+    { new Sexp({ ExpressionPtr { new Symbol("=") }, ExpressionPtr { new Symbol("x") }, ExpressionPtr { new Float(3.14) }})}
+  );
+  ASSERT_PARSE(
     { Token(TokenTypes::SYMBOL, "x"), Token(TokenTypes::SYMBOL, "="), Token(TokenTypes::STRING, "foo") },
     { new Sexp({ ExpressionPtr { new Symbol("=") }, ExpressionPtr { new Symbol("x") }, ExpressionPtr { new String("foo") }})}
   );
@@ -242,6 +250,10 @@ TEST_F(ParserTest, TestImplicitInfix_Add) {
     { new Sexp({ ExpressionPtr { new Symbol("+") }, ExpressionPtr { new Symbol("x") }, ExpressionPtr { new Int(42) }})}
   );
   ASSERT_PARSE(
+    { Token(TokenTypes::SYMBOL, "x"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::NUMBER, "3.14") },
+    { new Sexp({ ExpressionPtr { new Symbol("+") }, ExpressionPtr { new Symbol("x") }, ExpressionPtr { new Float(3.14) }})}
+  );
+  ASSERT_PARSE(
     { Token(TokenTypes::SYMBOL, "x"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::STRING, "foo") },
     { new Sexp({ ExpressionPtr { new Symbol("+") }, ExpressionPtr { new Symbol("x") }, ExpressionPtr { new String("foo") }})}
   );
@@ -251,6 +263,10 @@ TEST_F(ParserTest, TestImplicitInfix_Add) {
     { new Sexp({ ExpressionPtr { new Symbol("+") }, ExpressionPtr { new Int(8) }, ExpressionPtr { new Int(42) }})}
   );
   ASSERT_PARSE(
+    { Token(TokenTypes::NUMBER, "3.14"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::NUMBER, "1.5") },
+    { new Sexp({ ExpressionPtr { new Symbol("+") }, ExpressionPtr { new Float(3.14) }, ExpressionPtr { new Float(1.5) }})}
+  );
+  ASSERT_PARSE(
     { Token(TokenTypes::STRING, "foo"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::STRING, "bar") },
     { new Sexp({ ExpressionPtr { new Symbol("+") }, ExpressionPtr { new String("foo") }, ExpressionPtr { new String("bar") }})}
   );
@@ -258,6 +274,10 @@ TEST_F(ParserTest, TestImplicitInfix_Add) {
   ASSERT_PARSE(
     { Token(TokenTypes::NUMBER, "8"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::NUMBER, "42"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::NUMBER, "5") },
     { new Sexp({ ExpressionPtr { new Symbol("+") }, ExpressionPtr { new Int(8) }, ExpressionPtr { new Int(42) }, ExpressionPtr { new Int(5) }})}
+  );
+  ASSERT_PARSE(
+    { Token(TokenTypes::NUMBER, "3.14"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::NUMBER, "1.5"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::NUMBER, "2.345") },
+    { new Sexp({ ExpressionPtr { new Symbol("+") }, ExpressionPtr { new Float(3.14) }, ExpressionPtr { new Float(1.5) }, ExpressionPtr { new Float(2.345) }})}
   );
   ASSERT_PARSE(
     { Token(TokenTypes::STRING, "foo"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::STRING, "bar"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::STRING, "baz") },

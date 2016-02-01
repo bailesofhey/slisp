@@ -33,6 +33,10 @@ void SymbolTable::PutSymbolInt(const std::string &symbolName, int64_t value) {
   PutSymbol(symbolName, ExpressionPtr { new Int { value } });
 }
 
+void SymbolTable::PutSymbolFloat(const std::string &symbolName, double value) {
+  PutSymbol(symbolName, ExpressionPtr { new Float { value } });
+}
+
 void SymbolTable::PutSymbolQuote(const std::string &symbolName, ExpressionPtr &&value) {
   PutSymbol(symbolName, ExpressionPtr { new Quote { std::move(value) } });
 }

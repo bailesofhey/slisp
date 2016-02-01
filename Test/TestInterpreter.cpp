@@ -38,6 +38,12 @@ TEST(SymbolTable, TestPutSymbolInt) {
   }, ExpressionPtr { new Int(2) }, ExpressionPtr { new Int(6) });
 }
 
+TEST(SymbolTable, TestPutSymbolFloat) {
+  TestPutSymbolFn([](SymbolTable &table, const std::string &name, ExpressionPtr &val) {
+    table.PutSymbolFloat(name, dynamic_cast<Float&>(*val).Value);
+  }, ExpressionPtr { new Float(3.14) }, ExpressionPtr { new Float(1.5) });
+}
+
 TEST(SymbolTable, TestPutSymbolString) {
   TestPutSymbolFn([](SymbolTable &table, const std::string &name, ExpressionPtr &val) {
     table.PutSymbolString(name, dynamic_cast<String&>(*val).Value);
@@ -80,53 +86,65 @@ TEST(SymbolTable, TestPutSymbol_Empty) {
 
 TEST(SymbolTable, TestPutSymbol) {
   SymbolTable table;
-  ExpressionPtr b, n, s;
+  ExpressionPtr b, i, f, s;
   table.PutSymbol("b", ExpressionPtr { new Bool(true) });
-  table.PutSymbol("n", ExpressionPtr { new Int(42) });
+  table.PutSymbol("i", ExpressionPtr { new Int(42) });
+  table.PutSymbol("f", ExpressionPtr { new Float(3.14) });
   table.PutSymbol("s", ExpressionPtr { new String("foo") });
   ASSERT_TRUE(table.GetSymbol("b", b));
-  ASSERT_TRUE(table.GetSymbol("n", n));
+  ASSERT_TRUE(table.GetSymbol("i", i));
+  ASSERT_TRUE(table.GetSymbol("f", f));
   ASSERT_TRUE(table.GetSymbol("s", s));
   ASSERT_EQ(true, dynamic_cast<Bool&>(*b).Value);
-  ASSERT_EQ(42, dynamic_cast<Int&>(*n).Value);
+  ASSERT_EQ(42, dynamic_cast<Int&>(*i).Value);
+  ASSERT_EQ(3.14, dynamic_cast<Float&>(*f).Value);
   ASSERT_EQ("foo", dynamic_cast<String&>(*s).Value);
-  ASSERT_EQ(3, table.GetCount());
+  ASSERT_EQ(4, table.GetCount());
   
   //Overwrite tests
   table.PutSymbol("b", ExpressionPtr { new Bool(false) });
-  table.PutSymbol("n", ExpressionPtr { new Int(123) });
+  table.PutSymbol("i", ExpressionPtr { new Int(123) });
+  table.PutSymbol("f", ExpressionPtr { new Float(1.23) });
   table.PutSymbol("s", ExpressionPtr { new String("hello, world!") });
   ASSERT_TRUE(table.GetSymbol("b", b));
-  ASSERT_TRUE(table.GetSymbol("n", n));
+  ASSERT_TRUE(table.GetSymbol("i", i));
+  ASSERT_TRUE(table.GetSymbol("f", f));
   ASSERT_TRUE(table.GetSymbol("s", s));
   ASSERT_EQ(false, dynamic_cast<Bool&>(*b).Value);
-  ASSERT_EQ(123, dynamic_cast<Int&>(*n).Value);
+  ASSERT_EQ(123, dynamic_cast<Int&>(*i).Value);
+  ASSERT_EQ(1.23, dynamic_cast<Float&>(*f).Value);
   ASSERT_EQ("hello, world!", dynamic_cast<String&>(*s).Value);
-  ASSERT_EQ(3, table.GetCount());
+  ASSERT_EQ(4, table.GetCount());
 
   //Overwrite with empty
   table.PutSymbol("b", ExpressionPtr { });
-  table.PutSymbol("n", ExpressionPtr { });
+  table.PutSymbol("i", ExpressionPtr { });
+  table.PutSymbol("f", ExpressionPtr { });
   table.PutSymbol("s", ExpressionPtr { });
   ASSERT_TRUE(table.GetSymbol("b", b));
-  ASSERT_TRUE(table.GetSymbol("n", n));
+  ASSERT_TRUE(table.GetSymbol("i", i));
+  ASSERT_TRUE(table.GetSymbol("f", f));
   ASSERT_TRUE(table.GetSymbol("s", s));
   ASSERT_FALSE(b);
-  ASSERT_FALSE(n);
+  ASSERT_FALSE(i);
+  ASSERT_FALSE(f);
   ASSERT_FALSE(s);
-  ASSERT_EQ(3, table.GetCount());
+  ASSERT_EQ(4, table.GetCount());
 
   //Overwrite to original
   table.PutSymbol("b", ExpressionPtr { new Bool(true) });
-  table.PutSymbol("n", ExpressionPtr { new Int(42) });
+  table.PutSymbol("i", ExpressionPtr { new Int(42) });
+  table.PutSymbol("f", ExpressionPtr { new Float(3.14) });
   table.PutSymbol("s", ExpressionPtr { new String("foo") });
   ASSERT_TRUE(table.GetSymbol("b", b));
-  ASSERT_TRUE(table.GetSymbol("n", n));
+  ASSERT_TRUE(table.GetSymbol("i", i));
+  ASSERT_TRUE(table.GetSymbol("f", f));
   ASSERT_TRUE(table.GetSymbol("s", s));
   ASSERT_EQ(true, dynamic_cast<Bool&>(*b).Value);
-  ASSERT_EQ(42, dynamic_cast<Int&>(*n).Value);
+  ASSERT_EQ(42, dynamic_cast<Int&>(*i).Value);
+  ASSERT_EQ(3.14, dynamic_cast<Float&>(*f).Value);
   ASSERT_EQ("foo", dynamic_cast<String&>(*s).Value);
-  ASSERT_EQ(3, table.GetCount());
+  ASSERT_EQ(4, table.GetCount());
 }
 
 TEST(SymbolTable, TestDeleteSymbol) {
@@ -565,6 +583,7 @@ int EvaluationTest::MyListLastArgCount;
 TEST_F(EvaluationTest, TestLiteral) {
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Bool(true) }));
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Int(42) }));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Float(3.14) }));
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new String("hello, world!") }));
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Quote(ExpressionPtr { new Bool(true) })}));
 
@@ -591,15 +610,17 @@ TEST_F(EvaluationTest, TestSymbol) {
 
   auto &currStackFrame = Interpreter_.GetCurrentStackFrame();
   currStackFrame.PutLocalSymbol("b", ExpressionPtr { new Bool(true) });
-  currStackFrame.PutLocalSymbol("n", ExpressionPtr { new Int(42) });
+  currStackFrame.PutLocalSymbol("i", ExpressionPtr { new Int(42) });
+  currStackFrame.PutLocalSymbol("f", ExpressionPtr { new Float(3.14) });
   currStackFrame.PutLocalSymbol("s", ExpressionPtr { new String("foo") });
-  currStackFrame.PutLocalSymbol("f", ExpressionPtr { new CompiledFunction() });
+  currStackFrame.PutLocalSymbol("fn", ExpressionPtr { new CompiledFunction() });
   currStackFrame.PutLocalSymbol("q", ExpressionPtr { new Quote(ExpressionPtr { new Bool(true) })});
 
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Symbol("b") }));
-  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Symbol("n") }));
-  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Symbol("s") }));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Symbol("i") }));
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Symbol("f") }));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Symbol("s") }));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Symbol("fn") }));
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Symbol("q") }));
   ASSERT_EQ(Interpreter_.GetErrors().size(), 0);
 }
@@ -716,14 +737,16 @@ TEST_F(EvaluationTest, TestSexpList) {
   ASSERT_EQ(0, MyListLastArgCount);
 
   ExpressionPtr boolValue { new Bool(true) },
-                numValue { new Int(42) },
+                intValue { new Int(42) },
+                floatValue { new Float(3.14) },
                 strValue { new String("foo") },
                 symValue { new Symbol("myCompiledFunc") };
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
     boolValue->Clone(),
-    numValue->Clone(),
+    intValue->Clone(),
+    floatValue->Clone(),
     strValue->Clone(),
     symValue->Clone()
   }) }));
-  ASSERT_EQ(4, MyListLastArgCount);
+  ASSERT_EQ(5, MyListLastArgCount);
 }

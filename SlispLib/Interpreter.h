@@ -103,6 +103,7 @@ class Interpreter {
     void RegisterReducers();
     bool ReduceBool(ExpressionPtr &expr);
     bool ReduceInt(ExpressionPtr &expr);
+    bool ReduceFloat(ExpressionPtr &expr);
     bool ReduceString(ExpressionPtr &expr);
     bool ReduceSymbol(ExpressionPtr &expr);
     bool ReduceFunction(ExpressionPtr &expr);

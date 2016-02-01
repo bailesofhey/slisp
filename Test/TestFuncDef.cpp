@@ -4,6 +4,7 @@
 ExpressionPtr PrimitiveExpressions[] {
   ExpressionPtr { new Bool() },
   ExpressionPtr { new Int() },
+  ExpressionPtr { new Float() },
   ExpressionPtr { new String() },
   ExpressionPtr { new Symbol("+") },
 };
