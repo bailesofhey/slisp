@@ -34,10 +34,10 @@ TEST(TestController, TestRunFile) {
   std::stringstream out;
   Controller controller;
   controller.SetOutput(out);
-  controller.RunFile("Files\\TestRunFile1.slisp");
+  controller.RunFile("..\\..\\Test\\Files\\TestRunFile1.slisp");
   ASSERT_NE(out.str().find("5"), std::string::npos);
 
-  controller.RunFile("Files\\TestRunFile2.slisp");
+  controller.RunFile("..\\..\\Test\\Files\\TestRunFile2.slisp");
   ASSERT_NE(out.str().find("10"), std::string::npos);
 }
 

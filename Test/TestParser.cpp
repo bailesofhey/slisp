@@ -106,6 +106,7 @@ TEST_F(ParserTest, TestSingleInt) {
   ASSERT_PARSE({ Token(TokenTypes::NUMBER, std::to_string(maxValue)) }, { new Int(maxValue) });
 }
 
+// Automatically promote to float if overflow?
 TEST_F(ParserTest, TestSingleFloat) {
   ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0.0") }, { new Float(0.0) });
   ASSERT_PARSE({ Token(TokenTypes::NUMBER, "3.14") }, { new Float(3.14) });
@@ -117,6 +118,17 @@ TEST_F(ParserTest, TestSingleFloat) {
   ASSERT_PARSE({ Token(TokenTypes::NUMBER, "-3.14e-23") }, { new Float(-3.14e-23) });
   ASSERT_PARSE({ Token(TokenTypes::NUMBER, "3e2") }, { new Float(3e2) });
   ASSERT_PARSE({ Token(TokenTypes::NUMBER, "3e-2") }, { new Float(3e-2) });
+  
+  auto minValue = std::numeric_limits<decltype(Float::Value)>::min(),
+       maxValue = std::numeric_limits<decltype(Float::Value)>::max();
+  std::stringstream ss;
+  ss << std::setprecision(17)
+     << minValue;
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, ss.str()) }, { new Float(minValue) });
+  ss.clear();
+  ss.str("");
+  ss << maxValue;
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, ss.str()) }, { new Float(maxValue) });
 }
 
 TEST_F(ParserTest, TestSingleSymbol) {
