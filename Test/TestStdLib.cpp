@@ -45,14 +45,16 @@ TEST_F(StdLibDefaultFunctionTest, TestLiterals) {
   ASSERT_TRUE(RunFail("a"));
   ASSERT_TRUE(RunSuccess("", ""));
   ASSERT_TRUE(RunSuccess("42", "42"));
+  ASSERT_TRUE(RunSuccess("3.14", "3.14"));
   ASSERT_TRUE(RunSuccess("\"foo\"", "\"foo\""));
   ASSERT_TRUE(RunSuccess("+", "Function"));
   ASSERT_TRUE(RunSuccess("true", "true"));
   ASSERT_TRUE(RunSuccess("false", "false"));
   ASSERT_TRUE(RunSuccess("nil", "()"));
 
-  const char *args = "42 \"foo\" + (1 2 3)";
+  const char *args = "42 3.14 \"foo\" + (1 2 3)";
   ASSERT_TRUE(RunSuccess(args, "42"));
+  ASSERT_TRUE(RunSuccess(args, "3.14"));
   ASSERT_TRUE(RunSuccess(args, "\"foo\""));
   ASSERT_TRUE(RunSuccess(args, "Function"));
   ASSERT_TRUE(RunSuccess(args, "1"));
@@ -251,6 +253,7 @@ void StdLibAssignmentTest::TestSetFunctions() {
   ASSERT_TRUE(RunSuccess("(set d true)", "true"));
   ASSERT_TRUE(RunSuccess("(set e (1 2 3))", "(1 2 3)"));
   ASSERT_TRUE(RunSuccess("(set f (quote (+ 2 3)))", "(+ 2 3)"));
+  ASSERT_TRUE(RunSuccess("(set g 3.14)", "3.14"));
 
   ASSERT_TRUE(RunSuccess("a", "42"));
   ASSERT_TRUE(RunSuccess("b", "\"foo\""));
@@ -258,6 +261,7 @@ void StdLibAssignmentTest::TestSetFunctions() {
   ASSERT_TRUE(RunSuccess("d", "true"));
   ASSERT_TRUE(RunSuccess("e", "(1 2 3)"));
   ASSERT_TRUE(RunSuccess("f", "(+ 2 3)"));
+  ASSERT_TRUE(RunSuccess("g", "3.14"));
 
   ASSERT_TRUE(RunSuccess("(unset a)", "42"));
   ASSERT_TRUE(RunSuccess("(unset b)", "\"foo\""));
@@ -265,6 +269,7 @@ void StdLibAssignmentTest::TestSetFunctions() {
   ASSERT_TRUE(RunSuccess("(unset d)", "true"));
   ASSERT_TRUE(RunSuccess("(unset e)", "(1 2 3)"));
   ASSERT_TRUE(RunSuccess("(unset f)", "(+ 2 3)"));
+  ASSERT_TRUE(RunSuccess("(unset g)", "3.14"));
 
   ASSERT_TRUE(RunFail("a"));
   ASSERT_TRUE(RunFail("b"));
@@ -272,6 +277,7 @@ void StdLibAssignmentTest::TestSetFunctions() {
   ASSERT_TRUE(RunFail("d"));
   ASSERT_TRUE(RunFail("e"));
   ASSERT_TRUE(RunFail("f"));
+  ASSERT_TRUE(RunFail("g"));
 
   ASSERT_TRUE(RunFail("(unset a)"));
   ASSERT_TRUE(RunFail("(unset b)"));
@@ -279,6 +285,7 @@ void StdLibAssignmentTest::TestSetFunctions() {
   ASSERT_TRUE(RunFail("(unset d)"));
   ASSERT_TRUE(RunFail("(unset e)"));
   ASSERT_TRUE(RunFail("(unset f)"));
+  ASSERT_TRUE(RunFail("(unset g)"));
 
   ASSERT_TRUE(RunFail("a"));
   ASSERT_TRUE(RunFail("b"));
@@ -286,6 +293,7 @@ void StdLibAssignmentTest::TestSetFunctions() {
   ASSERT_TRUE(RunFail("d"));
   ASSERT_TRUE(RunFail("e"));
   ASSERT_TRUE(RunFail("f"));
+  ASSERT_TRUE(RunFail("g"));
 
   ASSERT_TRUE(RunSuccess("(set a 42)", "42"));
   ASSERT_TRUE(RunSuccess("(set b \"foo\")", "\"foo\""));
@@ -293,20 +301,7 @@ void StdLibAssignmentTest::TestSetFunctions() {
   ASSERT_TRUE(RunSuccess("(set d true)", "true"));
   ASSERT_TRUE(RunSuccess("(set e (1 2 3))", "(1 2 3)"));
   ASSERT_TRUE(RunSuccess("(set f (quote (+ 2 3)))", "(+ 2 3)"));
-
-  ASSERT_TRUE(RunSuccess("(set f 42)", "42"));
-  ASSERT_TRUE(RunSuccess("(set e \"foo\")", "\"foo\""));
-  ASSERT_TRUE(RunSuccess("(set d +)", "Function"));
-  ASSERT_TRUE(RunSuccess("(set c true)", "true"));
-  ASSERT_TRUE(RunSuccess("(set b (1 2 3))", "(1 2 3)"));
-  ASSERT_TRUE(RunSuccess("(set a (quote (+ 2 3)))", "(+ 2 3)"));
-
-  ASSERT_TRUE(RunSuccess("f", "42"));
-  ASSERT_TRUE(RunSuccess("e", "\"foo\""));
-  ASSERT_TRUE(RunSuccess("d", "Function"));
-  ASSERT_TRUE(RunSuccess("c", "true"));
-  ASSERT_TRUE(RunSuccess("b", "(1 2 3)"));
-  ASSERT_TRUE(RunSuccess("a", "(+ 2 3)"));
+  ASSERT_TRUE(RunSuccess("(set g 3.14)", "3.14"));
 }
 
 TEST_F(StdLibAssignmentTest, TestSet) {
@@ -416,6 +411,7 @@ TEST_F(StdLibNumericalTest, TestAdd) {
   ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("+"));
   ASSERT_NO_FATAL_FAILURE(TestIdentity("+"));
   ASSERT_TRUE(RunSuccess("(+ 2 3)", "5"));
+  ASSERT_TRUE(RunSuccess("(+ 3.14 4.6)", "7.74"));
   ASSERT_TRUE(RunSuccess("(+ 1 2 3 4 5)", "15"));
 
   std::stringstream temp;
@@ -427,6 +423,7 @@ TEST_F(StdLibNumericalTest, TestSub) {
   ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("-"));
   ASSERT_NO_FATAL_FAILURE(TestIdentity("-"));
   ASSERT_TRUE(RunSuccess("(- 5 3)", "2"));
+  ASSERT_TRUE(RunSuccess("(- 3.14 4.0)", "-0.86"));
   ASSERT_TRUE(RunSuccess("(- 1 2 3 4 5)", "-13"));
 
   std::stringstream temp;
@@ -438,6 +435,7 @@ TEST_F(StdLibNumericalTest, TestMult) {
   ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("*"));
   ASSERT_NO_FATAL_FAILURE(TestIdentity("*"));
   ASSERT_TRUE(RunSuccess("(* 2 3)", "6"));
+  ASSERT_TRUE(RunSuccess("(* 3.14 2.0)", "6.28"));
   ASSERT_TRUE(RunSuccess("(* 1 2 3 4 5)", "120"));
 }
 
@@ -445,6 +443,7 @@ TEST_F(StdLibNumericalTest, TestDiv) {
   ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("/"));
   ASSERT_NO_FATAL_FAILURE(TestIdentity("/"));
   ASSERT_TRUE(RunSuccess("(/ 6 2)", "3"));
+  ASSERT_TRUE(RunSuccess("(/ 6.28 2.0)", "3.14"));
   ASSERT_TRUE(RunSuccess("(/ 120 5 4 3 2 1)", "1"));
   ASSERT_TRUE(RunSuccess("(/ 1 2)", "0"));
   ASSERT_TRUE(RunFail("(/ 1 0)"));
@@ -773,14 +772,17 @@ class StdLibComparisonTest: public StdLibTest {
       ASSERT_TRUE(RunFail(Prefix + ")"));
       ASSERT_TRUE(RunSuccess(Prefix + "true)", "true"));
       ASSERT_TRUE(RunSuccess(Prefix + "42)", "true"));
+      ASSERT_TRUE(RunSuccess(Prefix + "3.14)", "true"));
       ASSERT_TRUE(RunSuccess(Prefix + "\"foo\")", "true"));
   
       ASSERT_TRUE(RunSuccess(Prefix + "true false)", value2));
       ASSERT_TRUE(RunSuccess(Prefix + "42 5)", value2));
+      ASSERT_TRUE(RunSuccess(Prefix + "3.14 3.15)", value2));
       ASSERT_TRUE(RunSuccess(Prefix + "\"foo\" \"bar\")", value2));
 
       ASSERT_TRUE(RunSuccess(Prefix + "true true)", value1));
       ASSERT_TRUE(RunSuccess(Prefix + "42 42)", value1));
+      ASSERT_TRUE(RunSuccess(Prefix + "3.14 3.14)", value1));
       ASSERT_TRUE(RunSuccess(Prefix + "\"foo\" \"foo\")", value1));
 
       // Lists
@@ -823,6 +825,11 @@ class StdLibComparisonTest: public StdLibTest {
       ASSERT_TRUE(RunSuccess(Prefix + "2 1)", value2));
       ASSERT_TRUE(RunSuccess(Prefix + "1 2)", value1));
       ASSERT_TRUE(RunSuccess(Prefix + "5 4 3 2 1)", value2));
+
+      ASSERT_TRUE(RunSuccess(Prefix + "1.1 1.1)", value3));
+      ASSERT_TRUE(RunSuccess(Prefix + "2.2 1.1)", value2));
+      ASSERT_TRUE(RunSuccess(Prefix + "1.1 2.2)", value1));
+      ASSERT_TRUE(RunSuccess(Prefix + "5.5 4.4 3.3 2.2 1.1)", value2));
 
       ASSERT_TRUE(RunSuccess(Prefix + "\"apple\" \"apple\")", value3));
       ASSERT_TRUE(RunSuccess(Prefix + "\"apple\" \"banana\")", value1));
@@ -920,6 +927,11 @@ TEST_F(StdLibBranchTest, TestLet) {
   ASSERT_TRUE(RunSuccess("(let ((a 3) (b 2)) b)", "2"));
   ASSERT_TRUE(RunSuccess("(let ((a 3) (b 2)) (+ a b))", "5"));
 
+  // floats
+  ASSERT_TRUE(RunSuccess("(let ((p 3.14)) p)", "3.14"));
+  ASSERT_TRUE(RunSuccess("(let ((p 3.14) (q 2.7)) q p)", "3.14"));
+  ASSERT_TRUE(RunSuccess("(let ((p 3.14) (q 2.7)) p q)", "2.7"));
+
   // strings
   ASSERT_TRUE(RunSuccess("(let ((a \"foo\")) a)", "\"foo\""));
   ASSERT_TRUE(RunSuccess("(let ((a \"foo\") (b 3)) b a)", "\"foo\""));
@@ -980,6 +992,7 @@ void StdLibBranchTest::TestQuotes() {
   ASSERT_TRUE(RunFail("(quote)"));
   ASSERT_TRUE(RunFail("(quote 2 3)"));
   ASSERT_TRUE(RunSuccess("(quote 4)", "4"));
+  ASSERT_TRUE(RunSuccess("(quote 3.14)", "3.14"));
   ASSERT_TRUE(RunSuccess("(quote \"foo\")", "\"foo\""));
   ASSERT_TRUE(RunSuccess("(quote +)", "+"));
   ASSERT_TRUE(RunSuccess("(quote quote)", "quote"));
@@ -993,6 +1006,7 @@ void StdLibBranchTest::TestQuotes() {
   ASSERT_TRUE(RunFail("(unquote)"));
   ASSERT_TRUE(RunFail("(unquote 2 3)"));
   ASSERT_TRUE(RunSuccess("(unquote (quote 4))", "4"));
+  ASSERT_TRUE(RunSuccess("(unquote (quote 3.14))", "3.14"));
   ASSERT_TRUE(RunSuccess("(unquote (quote \"foo\"))", "\"foo\""));
   ASSERT_TRUE(RunSuccess("(unquote (quote +))", "Function"));
   ASSERT_TRUE(RunSuccess("(unquote (quote quote))", "Function"));
@@ -1043,6 +1057,7 @@ TEST_F(StdLibBranchTest, TestLambda) {
 
   ASSERT_TRUE(RunSuccess("(lambda () true)", "Function"));
   ASSERT_TRUE(RunSuccess("(lambda () 42)", "Function"));
+  ASSERT_TRUE(RunSuccess("(lambda () 3.14)", "Function"));
   ASSERT_TRUE(RunSuccess("(lambda () \"foo\")", "Function"));
   ASSERT_TRUE(RunSuccess("(lambda () x)", "Function"));
   ASSERT_TRUE(RunSuccess("(lambda () (1 2 3))", "Function"));
@@ -1050,6 +1065,7 @@ TEST_F(StdLibBranchTest, TestLambda) {
 
   ASSERT_TRUE(RunSuccess("(lambda (x) true)", "Function"));
   ASSERT_TRUE(RunSuccess("(lambda (x) 42)", "Function"));
+  ASSERT_TRUE(RunSuccess("(lambda (x) 3.14)", "Function"));
   ASSERT_TRUE(RunSuccess("(lambda (x) \"foo\")", "Function"));
   ASSERT_TRUE(RunSuccess("(lambda (x) x)", "Function"));
   ASSERT_TRUE(RunSuccess("(lambda (x) (1 2 3))", "Function"));
@@ -1057,6 +1073,7 @@ TEST_F(StdLibBranchTest, TestLambda) {
 
   ASSERT_TRUE(RunSuccess("(lambda (x y z) true)", "Function"));
   ASSERT_TRUE(RunSuccess("(lambda (x y z) 42)", "Function"));
+  ASSERT_TRUE(RunSuccess("(lambda (x y z) 3.14)", "Function"));
   ASSERT_TRUE(RunSuccess("(lambda (x y z) \"foo\")", "Function"));
   ASSERT_TRUE(RunSuccess("(lambda (x y z) x)", "Function"));
   ASSERT_TRUE(RunSuccess("(lambda (x y z) (1 2 3))", "Function"));
@@ -1081,6 +1098,7 @@ TEST_F(StdLibBranchTest, TestDef) {
   ASSERT_TRUE(RunFail("(def foo () )"));
   ASSERT_TRUE(RunSuccess("(def foo () true)", "Function"));
   ASSERT_TRUE(RunSuccess("(def foo () 42)", "Function"));
+  ASSERT_TRUE(RunSuccess("(def foo () 3.14)", "Function"));
   ASSERT_TRUE(RunSuccess("(def add (a b) (+ a b))", "Function"));
   ASSERT_TRUE(RunSuccess("add", "Function"));
   ASSERT_TRUE(RunFail("(add)"));
@@ -1130,11 +1148,13 @@ TEST_F(StdLibOperatorsTest, TestBool) {
   ASSERT_TRUE(RunSuccess("(bool 0)", "false"));
   ASSERT_TRUE(RunSuccess("(bool 1)", "true"));
   ASSERT_TRUE(RunSuccess("(bool 3)", "true"));
+  ASSERT_TRUE(RunSuccess("(bool 3.14)", "true"));
 
   ASSERT_TRUE(RunSuccess("(bool \"\")", "false"));
   ASSERT_TRUE(RunSuccess("(bool \"foo\")", "true"));
   ASSERT_TRUE(RunSuccess("(bool \"0\")", "true"));
   ASSERT_TRUE(RunSuccess("(bool \"42\")", "true"));
+  ASSERT_TRUE(RunSuccess("(bool \"3.14\")", "true"));
 }
 
 TEST_F(StdLibOperatorsTest, TestInt) {
@@ -1147,14 +1167,40 @@ TEST_F(StdLibOperatorsTest, TestInt) {
   ASSERT_TRUE(RunSuccess("(int 0)", "0"));
   ASSERT_TRUE(RunSuccess("(int 1)", "1"));
   ASSERT_TRUE(RunSuccess("(int 3)", "3"));
+  ASSERT_TRUE(RunSuccess("(int 3.14)", "3"));
 
   ASSERT_TRUE(RunSuccess("(int \"\")", "0"));
   ASSERT_TRUE(RunSuccess("(int \"foo\")", "0"));
   ASSERT_TRUE(RunSuccess("(int \"0\")", "0"));
   ASSERT_TRUE(RunSuccess("(int \"42\")", "42"));
+  ASSERT_TRUE(RunSuccess("(int \"3.14\")", "3"));
 
   ASSERT_TRUE(RunSuccess("(int \"-42\")", "-42"));
   ASSERT_TRUE(RunSuccess("(int \"0xfe\")", "254"));
+}
+
+TEST_F(StdLibOperatorsTest, TestFloat) {
+  ASSERT_TRUE(RunFail("(float)"));
+  ASSERT_TRUE(RunFail("(float 3.14 4.5)"));
+
+  ASSERT_TRUE(RunSuccess("(float true)", "1"));
+  ASSERT_TRUE(RunSuccess("(float false)", "0"));
+
+  ASSERT_TRUE(RunSuccess("(float 0)", "0"));
+  ASSERT_TRUE(RunSuccess("(float 1)", "1"));
+  ASSERT_TRUE(RunSuccess("(float 3)", "3"));
+
+  ASSERT_TRUE(RunSuccess("(float \"\")", "0"));
+  ASSERT_TRUE(RunSuccess("(float \"foo\")", "0"));
+  ASSERT_TRUE(RunSuccess("(float \"0\")", "0"));
+  ASSERT_TRUE(RunSuccess("(float \"42\")", "42"));
+
+  ASSERT_TRUE(RunSuccess("(float \"-42\")", "-42"));
+  ASSERT_TRUE(RunSuccess("(float \"0xfe\")", "254"));
+
+  // float specific
+  ASSERT_TRUE(RunSuccess("(float 3.14)", "3.14"));
+  ASSERT_TRUE(RunSuccess("(float \"3.14\")", "3.14"));
 }
 
 TEST_F(StdLibOperatorsTest, TestStr) {
@@ -1167,11 +1213,13 @@ TEST_F(StdLibOperatorsTest, TestStr) {
   ASSERT_TRUE(RunSuccess("(str 0)", "\"0\""));
   ASSERT_TRUE(RunSuccess("(str 1)", "\"1\""));
   ASSERT_TRUE(RunSuccess("(str 3)", "\"3\""));
+  ASSERT_TRUE(RunSuccess("(str 3.14)", "\"3.14\""));
 
   ASSERT_TRUE(RunSuccess("(str \"\")", "\"\""));
   ASSERT_TRUE(RunSuccess("(str \"foo\")", "\"foo\""));
   ASSERT_TRUE(RunSuccess("(str \"0\")", "\"0\""));
   ASSERT_TRUE(RunSuccess("(str \"42\")", "\"42\""));
+  ASSERT_TRUE(RunSuccess("(str \"3.14\")", "\"3.14\""));
 
   ASSERT_TRUE(RunSuccess("(str \"-42\")", "\"-42\""));
   ASSERT_TRUE(RunSuccess("(str \"0xfe\")", "\"0xfe\""));

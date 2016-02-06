@@ -25,18 +25,27 @@ class StdLib: public Library {
 
     // Generic
     static bool Add(EvaluationContext &ctx);
-
-    // Numerical
-    static bool AddNum(EvaluationContext &ctx);
-    static bool Incr(EvaluationContext &ctx);
-    static bool Decr(EvaluationContext &ctx);
     static bool Sub(EvaluationContext &ctx);
     static bool Mult(EvaluationContext &ctx);
     static bool Div(EvaluationContext &ctx);
+
+    // Int
+    static bool AddInt(EvaluationContext &ctx);
+    static bool Incr(EvaluationContext &ctx);
+    static bool Decr(EvaluationContext &ctx);
+    static bool SubInt(EvaluationContext &ctx);
+    static bool MultInt(EvaluationContext &ctx);
+    static bool DivInt(EvaluationContext &ctx);
     static bool Mod(EvaluationContext &ctx);
     static bool Hex(EvaluationContext &ctx);
     static bool Bin(EvaluationContext &ctx);
     static bool Dec(EvaluationContext &ctx);
+
+    // Float
+    static bool AddFloat(EvaluationContext &ctx);
+    static bool SubFloat(EvaluationContext &ctx);
+    static bool MultFloat(EvaluationContext &ctx);
+    static bool DivFloat(EvaluationContext &ctx);
 
     // Bitwise
     static bool LeftShift(EvaluationContext &ctx);
@@ -83,6 +92,7 @@ class StdLib: public Library {
     // Conversion operators
     static bool BoolFunc(EvaluationContext &ctx);
     static bool IntFunc(EvaluationContext &ctx);
+    static bool FloatFunc(EvaluationContext &ctx);
     static bool StrFunc(EvaluationContext &ctx);
 
     // Helpers
@@ -90,7 +100,7 @@ class StdLib: public Library {
 
     static bool InfixRegistrationFunction(EvaluationContext &ctx, const std::string &name, bool unregister);
 
-    template<class F>
+    template<class T, class F>
     static bool BinaryFunction(EvaluationContext &ctx, F fn, const std::string &name);
 
     static bool BinaryLogicalFunc(EvaluationContext &ctx, bool isAnd);
@@ -101,16 +111,20 @@ class StdLib: public Library {
     template <class T, class F, class R>
     static bool PredicateHelper(EvaluationContext &ctx, const std::string &name, F fn, R defaultResult);
 
-    template <class B, class N, class S>
-    static bool BinaryPredicate(EvaluationContext &ctx, const std::string &name, B bFn = nullptr, N nFn = nullptr, S sFn = nullptr);
+    template <class B, class I, class F, class S>
+    static bool BinaryPredicate(EvaluationContext &ctx, const std::string &name, B bFn = nullptr, I iFn = nullptr, F fFn = nullptr, S sFn = nullptr);
 
 
     template <class F>
     static bool UnaryNumberFn(EvaluationContext &ctx, const std::string &name, F fn);
 
+    template <class I, class F>
+    static bool GenericNumFunc(EvaluationContext &ctx, I iFn, F fFn);
+
     static ExpressionPtr GetNil();
 
     static bool LambdaPrepareFormals(EvaluationContext &ctx, ExpressionPtr &formalsExpr, ArgList &anonFuncArgs, int &nArgs);
 
+    template <class T>
     static bool CheckDivideByZero(EvaluationContext &ctx, const std::string &name);
 };

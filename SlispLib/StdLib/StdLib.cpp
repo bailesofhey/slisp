@@ -64,14 +64,14 @@ void StdLib::Load(Interpreter &interpreter) {
   // Generic
 
   symbols.PutSymbolFunction("+", &StdLib::Add, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction("-", &StdLib::Sub, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction("*", &StdLib::Mult, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction("/", &StdLib::Div, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
 
   // Numerical
 
   symbols.PutSymbolFunction("incr", &StdLib::Incr, FuncDef { FuncDef::OneArg(Int::TypeInstance), FuncDef::OneArg(Int::TypeInstance) });
   symbols.PutSymbolFunction("decr", &StdLib::Decr, FuncDef { FuncDef::OneArg(Int::TypeInstance), FuncDef::OneArg(Int::TypeInstance) });
-  RegisterBinaryFunction(symbols, "-", &StdLib::Sub);
-  RegisterBinaryFunction(symbols, "*", &StdLib::Mult);
-  RegisterBinaryFunction(symbols, "/", &StdLib::Div);
   RegisterBinaryFunction(symbols, "%", &StdLib::Mod);
 
   FuncDef baseFn { FuncDef::OneArg(Int::TypeInstance), FuncDef::OneArg(String::TypeInstance) };
@@ -154,6 +154,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction("bool", &StdLib::BoolFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
   symbols.PutSymbolFunction("int", &StdLib::IntFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Int::TypeInstance) });
+  symbols.PutSymbolFunction("float", &StdLib::FloatFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Int::TypeInstance) });
   symbols.PutSymbolFunction("str", &StdLib::StrFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(String::TypeInstance) });
 
   // Register infix operators by precedence (using C++ rules, where appropriate)
@@ -405,13 +406,47 @@ bool StdLib::Add(EvaluationContext &ctx) {
     if (ctx.Evaluate(*currArg, 1)) {
       auto &type = (*currArg)->Type();
       if (TypeHelper::IsConvertableToInt(type))
-        return AddNum(ctx);
+        return AddInt(ctx);
+      else if (&type == &Float::TypeInstance)
+        return AddFloat(ctx);
       else if (&type == &String::TypeInstance)
         return AddString(ctx);
       else if (&type == &Quote::TypeInstance)
         return AddList(ctx);
       else
-        return ctx.TypeError("string/int/list", *currArg);
+        return ctx.TypeError("string/int/float/list", *currArg);
+    }
+    else
+      return false; 
+  }
+  else
+    return ctx.ArgumentExpectedError();
+}
+
+bool StdLib::Sub(EvaluationContext &ctx) {
+  return GenericNumFunc(ctx, StdLib::SubInt, StdLib::SubFloat);
+}
+
+bool StdLib::Mult(EvaluationContext &ctx) {
+  return GenericNumFunc(ctx, StdLib::MultInt, StdLib::MultFloat);
+}
+
+bool StdLib::Div(EvaluationContext &ctx) {
+  return GenericNumFunc(ctx, StdLib::DivInt, StdLib::DivFloat);
+}
+
+template <class I, class F>
+bool StdLib::GenericNumFunc(EvaluationContext &ctx, I iFn, F fFn) {
+  auto currArg = ctx.Args.begin();
+  if (currArg != ctx.Args.end()) {
+    if (ctx.Evaluate(*currArg, 1)) {
+      auto &type = (*currArg)->Type();
+      if (TypeHelper::IsConvertableToInt(type))
+        return iFn(ctx);
+      else if (&type == &Float::TypeInstance)
+        return fFn(ctx);
+      else
+        return ctx.TypeError("int/float", *currArg);
     }
     else
       return false; 
@@ -441,51 +476,75 @@ bool StdLib::UnaryNumberFn(EvaluationContext &ctx, const std::string &name, F fn
   return ctx.TypeError(Int::TypeInstance, ctx.Args.front());
 }
 
-bool StdLib::AddNum(EvaluationContext &ctx) {
+bool StdLib::AddInt(EvaluationContext &ctx) {
   auto fn = [](int64_t a, int64_t b) { return a + b; };
-  return BinaryFunction(ctx, fn, "+");
+  return BinaryFunction<Int>(ctx, fn, "+");
 }
 
-bool StdLib::Sub(EvaluationContext &ctx) {
+bool StdLib::AddFloat(EvaluationContext &ctx) {
+  auto fn = [](double a, double b) { return a + b; };
+  return BinaryFunction<Float>(ctx, fn, "+");
+}
+
+bool StdLib::SubInt(EvaluationContext &ctx) {
   auto fn = [](int64_t a, int64_t b) { return a - b; };
-  return BinaryFunction(ctx, fn, "-");
+  return BinaryFunction<Int>(ctx, fn, "-");
 }
 
-bool StdLib::Mult(EvaluationContext &ctx) {
+bool StdLib::SubFloat(EvaluationContext &ctx) {
+  auto fn = [](double a, double b) { return a - b; };
+  return BinaryFunction<Float>(ctx, fn, "-");
+}
+
+bool StdLib::MultInt(EvaluationContext &ctx) {
   auto fn = [](int64_t a, int64_t b) { return a * b; };
-  return BinaryFunction(ctx, fn, "*");
+  return BinaryFunction<Int>(ctx, fn, "*");
 }
 
+bool StdLib::MultFloat(EvaluationContext &ctx) {
+  auto fn = [](double a, double b) { return a * b; };
+  return BinaryFunction<Float>(ctx, fn, "*");
+}
+
+template <class T>
 bool StdLib::CheckDivideByZero(EvaluationContext &ctx, const std::string &name) {
   int argNum = 0;
   for (auto &arg : ctx.Args) {
     if (argNum) {
-      ExpressionPtr numExpr = TypeHelper::GetInt(arg);
+      ExpressionPtr numExpr = arg->Clone();
       if (numExpr) {
-        auto *num = dynamic_cast<Int*>(numExpr.get());
+        auto *num = dynamic_cast<T*>(numExpr.get());
         if (num && num->Value == 0)
           return ctx.Error("Divide by zero");
       }
       else
-        return ctx.TypeError(Int::TypeInstance, arg);
+        return ctx.TypeError(T::TypeInstance, arg);
     }
     ++argNum;
   }
   return true;
 }
 
-bool StdLib::Div(EvaluationContext &ctx) {
-  if (CheckDivideByZero(ctx, "/")) {
+bool StdLib::DivInt(EvaluationContext &ctx) {
+  if (CheckDivideByZero<Int>(ctx, "/")) {
     auto fn = [](int64_t a, int64_t b) { return a / b; };
-    return BinaryFunction(ctx, fn, "/");
+    return BinaryFunction<Int>(ctx, fn, "/");
+  }
+  return false;
+}
+
+bool StdLib::DivFloat(EvaluationContext &ctx) {
+  if (CheckDivideByZero<Float>(ctx, "/")) {
+    auto fn = [](double a, double b) { return a / b; };
+    return BinaryFunction<Float>(ctx, fn, "/");
   }
   return false;
 }
 
 bool StdLib::Mod(EvaluationContext &ctx) {
-  if (CheckDivideByZero(ctx, "%")) {
+  if (CheckDivideByZero<Int>(ctx, "%")) {
     auto fn = [](int64_t a, int64_t b) { return a % b; };
-    return BinaryFunction(ctx, fn, "%");
+    return BinaryFunction<Int>(ctx, fn, "%");
   }
   return false;
 }
@@ -533,27 +592,27 @@ bool StdLib::Dec(EvaluationContext &ctx) {
 
 bool StdLib::LeftShift(EvaluationContext &ctx) {
   auto fn = [](int64_t a, int64_t b) { return a << b; };
-  return BinaryFunction(ctx, fn, "<<");
+  return BinaryFunction<Int>(ctx, fn, "<<");
 }
 
 bool StdLib::RightShift(EvaluationContext &ctx) {
   auto fn = [](int64_t a, int64_t b) { return a >> b; };
-  return BinaryFunction(ctx, fn, ">>");
+  return BinaryFunction<Int>(ctx, fn, ">>");
 }
 
 bool StdLib::BitAnd(EvaluationContext &ctx) {
   auto fn = [](int64_t a, int64_t b) { return a & b; };
-  return BinaryFunction(ctx, fn, "&");
+  return BinaryFunction<Int>(ctx, fn, "&");
 }
 
 bool StdLib::BitOr(EvaluationContext &ctx) {
   auto fn = [](int64_t a, int64_t b) { return a | b; };
-  return BinaryFunction(ctx, fn, "|");
+  return BinaryFunction<Int>(ctx, fn, "|");
 }
 
 bool StdLib::BitXor(EvaluationContext &ctx) {
   auto fn = [](int64_t a, int64_t b) { return a ^ b; };
-  return BinaryFunction(ctx, fn, "^");
+  return BinaryFunction<Int>(ctx, fn, "^");
 }
 
 bool StdLib::BitNot(EvaluationContext &ctx) {
@@ -847,19 +906,19 @@ bool StdLib::Ne(EvaluationContext &ctx) {
 }
 
 bool StdLib::Lt(EvaluationContext &ctx) {
-  return BinaryPredicate(ctx, "<", LtT<Bool>, LtT<Int>, LtT<String>);
+  return BinaryPredicate(ctx, "<", LtT<Bool>, LtT<Int>, LtT<Float>, LtT<String>);
 }
 
 bool StdLib::Gt(EvaluationContext &ctx) {
-  return BinaryPredicate(ctx, ">", GtT<Bool>, GtT<Int>, GtT<String>);
+  return BinaryPredicate(ctx, ">", GtT<Bool>, GtT<Int>, GtT<Float>, GtT<String>);
 }
 
 bool StdLib::Lte(EvaluationContext &ctx) {
-  return BinaryPredicate(ctx, "<=", LteT<Bool>, LteT<Int>, LteT<String>);
+  return BinaryPredicate(ctx, "<=", LteT<Bool>, LteT<Int>, LteT<Float>, LteT<String>);
 }
 
 bool StdLib::Gte(EvaluationContext &ctx) {
-  return BinaryPredicate(ctx, ">=", GteT<Bool>, GteT<Int>, GteT<String>);
+  return BinaryPredicate(ctx, ">=", GteT<Bool>, GteT<Int>, GteT<Float>, GteT<String>);
 }
 
 // Branching, scoping and evaluation
@@ -1086,11 +1145,13 @@ bool StdLib::Apply(EvaluationContext &ctx) {
 bool StdLib::BoolFunc(EvaluationContext &ctx) {
   bool value = false;
   if (auto &expr = ctx.Args.front()) {
-    if (ctx.Evaluate(expr, "1")) {
+    if (ctx.Evaluate(expr, 1)) {
       if (auto *boolValue = dynamic_cast<Bool*>(expr.get()))
         value = boolValue->Value;
       else if (auto *intValue = dynamic_cast<Int*>(expr.get()))
         value = intValue->Value != 0;
+      else if (auto *floatValue = dynamic_cast<Float*>(expr.get()))
+        value = floatValue->Value != 0.0;
       else if (auto *strValue = dynamic_cast<String*>(expr.get()))
         value = strValue->Value != "";
       ctx.Expr = ExpressionPtr { new Bool(value) };
@@ -1105,11 +1166,13 @@ bool StdLib::BoolFunc(EvaluationContext &ctx) {
 bool StdLib::IntFunc(EvaluationContext &ctx) {
   int64_t value = 0;
   if (auto &expr = ctx.Args.front()) {
-    if (ctx.Evaluate(expr, "1")) {
+    if (ctx.Evaluate(expr, 1)) {
       if (auto *boolValue = dynamic_cast<Bool*>(expr.get()))
         value = boolValue->Value;
       else if (auto *intValue = dynamic_cast<Int*>(expr.get()))
         value = intValue->Value;
+      else if (auto *floatValue = dynamic_cast<Float*>(expr.get()))
+        value = std::llround(floatValue->Value);
       else if (auto *strValue = dynamic_cast<String*>(expr.get())) {
         if (!strValue->Value.empty()) {
           try {
@@ -1128,10 +1191,38 @@ bool StdLib::IntFunc(EvaluationContext &ctx) {
   return false;
 }
 
+bool StdLib::FloatFunc(EvaluationContext &ctx) {
+  double value = 0;
+  if (auto &expr = ctx.Args.front()) {
+    if (ctx.Evaluate(expr, 1)) {
+      if (auto *boolValue = dynamic_cast<Bool*>(expr.get()))
+        value = boolValue->Value ? 1 : 0;
+      else if (auto *intValue = dynamic_cast<Int*>(expr.get()))
+        value = static_cast<double>(intValue->Value);
+      else if (auto *floatValue = dynamic_cast<Float*>(expr.get()))
+        value = floatValue->Value;
+      else if (auto *strValue = dynamic_cast<String*>(expr.get())) {
+        if (!strValue->Value.empty()) {
+          try {
+            NumConverter::Convert(strValue->Value, value);
+          }
+          catch (...) {
+          }
+        }
+      }
+      ctx.Expr = ExpressionPtr { new Float(value) };
+      return true;
+    }
+    else
+      return false;
+  }
+  return false;
+}
+
 bool StdLib::StrFunc(EvaluationContext &ctx) {
   std::string value = "";
   if (auto &expr = ctx.Args.front()) {
-    if (ctx.Evaluate(expr, "1")) {
+    if (ctx.Evaluate(expr, 1)) {
       ctx.Expr = ExpressionPtr { new String(expr->ToString()) };
       return true;
     }
@@ -1143,15 +1234,15 @@ bool StdLib::StrFunc(EvaluationContext &ctx) {
 
 // Helpers
 
-template<class F>
+template<class T, class F>
 static bool StdLib::BinaryFunction(EvaluationContext &ctx, F fn, const std::string &name) {
   bool first = true;
-  Int result { 0 };
+  T result { 0 };
   while (!ctx.Args.empty()) {
     bool ok = false;
-    ExpressionPtr numExpr = TypeHelper::GetInt(ctx.Args.front());
+    ExpressionPtr numExpr = ctx.Args.front()->Clone();
     if (numExpr) {
-      auto num = dynamic_cast<Int*>(numExpr.get());
+      auto num = dynamic_cast<T*>(numExpr.get());
       if (num) {
         if (first)
           result.Value = num->Value;
@@ -1161,18 +1252,18 @@ static bool StdLib::BinaryFunction(EvaluationContext &ctx, F fn, const std::stri
       }
     }
     if (!ok)
-      return ctx.TypeError(Int::TypeInstance, ctx.Args.front());
+      return ctx.TypeError(T::TypeInstance, ctx.Args.front());
 
     first = false;
     ctx.Args.pop_front();
   }
 
-  ctx.Expr = ExpressionPtr { new Int { result } };
+  ctx.Expr = ExpressionPtr { new T { result } };
   return true;
 }
 
-template <class B, class N, class S>
-bool StdLib::BinaryPredicate(EvaluationContext &ctx, const std::string &name, B bFn, N nFn, S sFn) {
+template <class B, class I, class F, class S>
+bool StdLib::BinaryPredicate(EvaluationContext &ctx, const std::string &name, B bFn, I iFn, F fFn, S sFn) {
   auto currArg = ctx.Args.begin();
   if (currArg != ctx.Args.end()) {
     if (ctx.Evaluate(*currArg, 1)) {
@@ -1181,8 +1272,10 @@ bool StdLib::BinaryPredicate(EvaluationContext &ctx, const std::string &name, B 
       Bool defaultValue { true };
       if (bFn && (&type == &Bool::TypeInstance))
         return PredicateHelper<Bool>(ctx, name, bFn, defaultValue);
-      else if (nFn && (&type == &Int::TypeInstance))
-        return PredicateHelper<Int>(ctx, name, nFn, defaultValue);
+      else if (iFn && (&type == &Int::TypeInstance))
+        return PredicateHelper<Int>(ctx, name, iFn, defaultValue);
+      else if (fFn && (&type == &Float::TypeInstance))
+        return PredicateHelper<Float>(ctx, name, fFn, defaultValue);
       else if (sFn && (&type == &String::TypeInstance))
         return PredicateHelper<String>(ctx, name, sFn, defaultValue);
       else
