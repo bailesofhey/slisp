@@ -76,6 +76,15 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("max", &StdLib::Max, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("min", &StdLib::Min, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
 
+  // Float
+
+  symbols.PutSymbolFunction("exp", &StdLib::Exp, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
+  symbols.PutSymbolFunction("log", &StdLib::Log, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
+  symbols.PutSymbolFunction("sqrt", &StdLib::Sqrt, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
+  symbols.PutSymbolFunction("ceil", &StdLib::Ceil, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
+  symbols.PutSymbolFunction("floor", &StdLib::Floor, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
+  symbols.PutSymbolFunction("round", &StdLib::Round, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
+
   // Numerical
 
   symbols.PutSymbolFunction("incr", &StdLib::Incr, FuncDef { FuncDef::OneArg(Int::TypeInstance), FuncDef::OneArg(Int::TypeInstance) });
@@ -622,6 +631,30 @@ bool StdLib::MinFloat(EvaluationContext &ctx) {
 
 bool StdLib::PowFloat(EvaluationContext &ctx) {
   return BinaryFunction<Float>(ctx, [](double a, double b) { return std::pow(a, b); });
+}
+
+bool StdLib::Exp(EvaluationContext &ctx) {
+  return UnaryFunction<Float>(ctx, [](double a) { return std::exp(a); });
+}
+
+bool StdLib::Log(EvaluationContext &ctx) {
+  return UnaryFunction<Float>(ctx, [](double a) { return std::log(a); });
+}
+
+bool StdLib::Sqrt(EvaluationContext &ctx) {
+  return UnaryFunction<Float>(ctx, [](double a) { return std::sqrt(a); });
+}
+
+bool StdLib::Ceil(EvaluationContext &ctx) {
+  return UnaryFunction<Float>(ctx, [](double a) { return std::ceil(a); });
+}
+
+bool StdLib::Floor(EvaluationContext &ctx) {
+  return UnaryFunction<Float>(ctx, [](double a) { return std::floor(a); });
+}
+
+bool StdLib::Round(EvaluationContext &ctx) {
+  return UnaryFunction<Float>(ctx, [](double a) { return std::round(a); });
 }
 
 // Bitwise Functions

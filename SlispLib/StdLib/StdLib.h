@@ -78,14 +78,14 @@ class StdLib: public Library {
 
     // Float - Exp and Logs
     static bool PowFloat(EvaluationContext &ctx);
-    //static bool Exp(EvaluationContext &ctx);
-    //static bool Log(EvaluationContext &ctx);
-    //static bool Sqrt(EvaluationContext &ctx);
+    static bool Exp(EvaluationContext &ctx);
+    static bool Log(EvaluationContext &ctx);
+    static bool Sqrt(EvaluationContext &ctx);
 
     // Float - Round
-    //static bool Ceil(EvaluationContext &ctx);
-    //static bool Floor(EvaluationContext &ctx);
-    //static bool Round(EvaluationContext &ctx);
+    static bool Ceil(EvaluationContext &ctx);
+    static bool Floor(EvaluationContext &ctx);
+    static bool Round(EvaluationContext &ctx);
 
     // Bitwise
     static bool LeftShift(EvaluationContext &ctx);

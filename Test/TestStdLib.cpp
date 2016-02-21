@@ -539,6 +539,32 @@ TEST_F(StdLibNumericalTest, TestPow) {
   ASSERT_TRUE(RunSuccess("(pow (64.0 / 81.0) (1.0 / 2.0))", ".888888888888888"));
 }
 
+TEST_F(StdLibNumericalTest, TestExp) {
+  ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("exp"));
+  ASSERT_TRUE(RunSuccess("(exp 2.0)", "7.38"));
+}
+
+TEST_F(StdLibNumericalTest, TestLog) {
+  ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("log"));
+  ASSERT_TRUE(RunSuccess("(log 2.0)", "0.69"));
+}
+
+TEST_F(StdLibNumericalTest, TestCeil) {
+  ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("ceil"));
+  ASSERT_TRUE(RunSuccess("(ceil 2.1)", "3"));
+}
+
+TEST_F(StdLibNumericalTest, TestFloor) {
+  ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("floor"));
+  ASSERT_TRUE(RunSuccess("(floor 2.9)", "2"));
+}
+
+TEST_F(StdLibNumericalTest, TestRound) {
+  ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("round"));
+  ASSERT_TRUE(RunSuccess("(round 2.5)", "3"));
+  ASSERT_TRUE(RunSuccess("(round 2.4)", "2"));
+}
+
 class StdLibBitwiseTest: public StdLibNumericalTest {
 };
 
