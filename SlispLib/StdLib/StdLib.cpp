@@ -23,6 +23,9 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolInt("system.versionNumber.major", major);
   symbols.PutSymbolInt("system.versionNumber.minor", minor);
 
+  symbols.PutSymbolFloat("PI", 3.14159265358979323846);
+  symbols.PutSymbolFloat("E", 2.71828182845904523536);
+
   // Default
 
   settings.PutDefaultFunction(CompiledFunction {
@@ -196,7 +199,7 @@ void StdLib::Load(Interpreter &interpreter) {
   settings.RegisterInfixSymbol("~");
 
   settings.RegisterInfixSymbol("*");
-  settings.RegisterInfixSymbol("/");
+  settings.RegisterInfixSymbol("**");
   settings.RegisterInfixSymbol("%");
 
   settings.RegisterInfixSymbol("+");
@@ -215,8 +218,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   settings.RegisterInfixSymbol("&");
 
-  settings.RegisterInfixSymbol("^");
-
+  settings.RegisterInfixSymbol("^"); 
   settings.RegisterInfixSymbol("|");
 
   settings.RegisterInfixSymbol("and");
