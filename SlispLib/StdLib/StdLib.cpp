@@ -2,6 +2,7 @@
 #include <memory>
 #include <sstream>
 #include <algorithm>
+#include <iomanip>
 
 #include "StdLib.h"
 #include "../Interpreter.h"
@@ -67,6 +68,13 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("-", &StdLib::Sub, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("*", &StdLib::Mult, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("/", &StdLib::Div, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+
+  FuncDef powDef { FuncDef::ManyArgs(Literal::TypeInstance, 2), FuncDef::OneArg(Literal::TypeInstance) };
+  symbols.PutSymbolFunction("pow", &StdLib::Pow, powDef.Clone());
+  symbols.PutSymbolFunction("**", &StdLib::Pow, powDef.Clone());
+  symbols.PutSymbolFunction("abs", &StdLib::Abs, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction("max", &StdLib::Max, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction("min", &StdLib::Min, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
 
   // Numerical
 
@@ -239,6 +247,7 @@ bool StdLib::Print(EvaluationContext &ctx) {
   int argNum = 1;
   while (!ctx.Args.empty()) {
     std::stringstream out;
+    out << std::setprecision(17);
     curr = std::move(ctx.Args.front());
     ctx.Args.pop_front();
     if (ctx.Evaluate(curr, argNum)) {
@@ -400,6 +409,26 @@ bool StdLib::InfixUnregister(EvaluationContext &ctx) {
 
 // Generic Functions
 
+template <class I, class F>
+bool StdLib::GenericNumFunc(EvaluationContext &ctx, I iFn, F fFn) {
+  auto currArg = ctx.Args.begin();
+  if (currArg != ctx.Args.end()) {
+    if (ctx.Evaluate(*currArg, 1)) {
+      auto &type = (*currArg)->Type();
+      if (TypeHelper::IsConvertableToInt(type))
+        return iFn(ctx);
+      else if (&type == &Float::TypeInstance)
+        return fFn(ctx);
+      else
+        return ctx.TypeError("int/float", *currArg);
+    }
+    else
+      return false; 
+  }
+  else
+    return ctx.ArgumentExpectedError();
+}
+
 bool StdLib::Add(EvaluationContext &ctx) {
   auto currArg = ctx.Args.begin();
   if (currArg != ctx.Args.end()) {
@@ -435,79 +464,46 @@ bool StdLib::Div(EvaluationContext &ctx) {
   return GenericNumFunc(ctx, StdLib::DivInt, StdLib::DivFloat);
 }
 
-template <class I, class F>
-bool StdLib::GenericNumFunc(EvaluationContext &ctx, I iFn, F fFn) {
-  auto currArg = ctx.Args.begin();
-  if (currArg != ctx.Args.end()) {
-    if (ctx.Evaluate(*currArg, 1)) {
-      auto &type = (*currArg)->Type();
-      if (TypeHelper::IsConvertableToInt(type))
-        return iFn(ctx);
-      else if (&type == &Float::TypeInstance)
-        return fFn(ctx);
-      else
-        return ctx.TypeError("int/float", *currArg);
-    }
-    else
-      return false; 
-  }
-  else
-    return ctx.ArgumentExpectedError();
+bool StdLib::Pow(EvaluationContext &ctx) {
+  return GenericNumFunc(ctx, StdLib::PowInt, StdLib::PowFloat);
+}
+
+bool StdLib::Abs(EvaluationContext &ctx) {
+  return GenericNumFunc(ctx, StdLib::AbsInt, StdLib::AbsFloat);
+}
+
+bool StdLib::Max(EvaluationContext &ctx) {
+  return GenericNumFunc(ctx, StdLib::MaxInt, StdLib::MaxFloat);
+}
+
+bool StdLib::Min(EvaluationContext &ctx) {
+  return GenericNumFunc(ctx, StdLib::MinInt, StdLib::MinFloat);
 }
 
 // Int Functions
 
 bool StdLib::Incr(EvaluationContext &ctx) {
-  return UnaryNumberFn(ctx, "incr", [](int64_t num) { return num + 1; });
+  return UnaryFunction<Int>(ctx, [](int64_t num) { return num + 1; });
 }
 
 bool StdLib::Decr(EvaluationContext &ctx) {
-  return UnaryNumberFn(ctx, "decr", [](int64_t num) { return num - 1; });
-}
-
-template <class F>
-bool StdLib::UnaryNumberFn(EvaluationContext &ctx, const std::string &name, F fn) {
-  ExpressionPtr numExpr { TypeHelper::GetInt(ctx.Args.front()) };
-  auto num = dynamic_cast<Int*>(numExpr.get());
-  if (num) {
-    ctx.Expr = ExpressionPtr { new Int { fn(num->Value) } };
-    return true;
-  }
-  return ctx.TypeError(Int::TypeInstance, ctx.Args.front());
+  return UnaryFunction<Int>(ctx, [](int64_t num) { return num - 1; });
 }
 
 bool StdLib::AddInt(EvaluationContext &ctx) {
-  auto fn = [](int64_t a, int64_t b) { return a + b; };
-  return BinaryFunction<Int>(ctx, fn, "+");
-}
-
-bool StdLib::AddFloat(EvaluationContext &ctx) {
-  auto fn = [](double a, double b) { return a + b; };
-  return BinaryFunction<Float>(ctx, fn, "+");
+  return BinaryFunction<Int>(ctx, [](int64_t a, int64_t b) { return a + b; });
 }
 
 bool StdLib::SubInt(EvaluationContext &ctx) {
-  auto fn = [](int64_t a, int64_t b) { return a - b; };
-  return BinaryFunction<Int>(ctx, fn, "-");
-}
-
-bool StdLib::SubFloat(EvaluationContext &ctx) {
-  auto fn = [](double a, double b) { return a - b; };
-  return BinaryFunction<Float>(ctx, fn, "-");
+  return BinaryFunction<Int>(ctx, [](int64_t a, int64_t b) { return a - b; });
 }
 
 bool StdLib::MultInt(EvaluationContext &ctx) {
-  auto fn = [](int64_t a, int64_t b) { return a * b; };
-  return BinaryFunction<Int>(ctx, fn, "*");
-}
-
-bool StdLib::MultFloat(EvaluationContext &ctx) {
-  auto fn = [](double a, double b) { return a * b; };
-  return BinaryFunction<Float>(ctx, fn, "*");
+  return BinaryFunction<Int>(ctx, [](int64_t a, int64_t b) { return a * b; });
 }
 
 template <class T>
-bool StdLib::CheckDivideByZero(EvaluationContext &ctx, const std::string &name) {
+bool StdLib::CheckDivideByZero(EvaluationContext &ctx) {
   int argNum = 0;
   for (auto &arg : ctx.Args) {
     if (argNum) {
@@ -526,26 +522,14 @@ bool StdLib::CheckDivideByZero(EvaluationContext &ctx, const std::string &name) 
 }
 
 bool StdLib::DivInt(EvaluationContext &ctx) {
-  if (CheckDivideByZero<Int>(ctx, "/")) {
-    auto fn = [](int64_t a, int64_t b) { return a / b; };
-    return BinaryFunction<Int>(ctx, fn, "/");
-  }
-  return false;
-}
-
-bool StdLib::DivFloat(EvaluationContext &ctx) {
-  if (CheckDivideByZero<Float>(ctx, "/")) {
-    auto fn = [](double a, double b) { return a / b; };
-    return BinaryFunction<Float>(ctx, fn, "/");
-  }
+  if (CheckDivideByZero<Int>(ctx))
+    return BinaryFunction<Int>(ctx, [](int64_t a, int64_t b) { return a / b; });
   return false;
 }
 
 bool StdLib::Mod(EvaluationContext &ctx) {
-  if (CheckDivideByZero<Int>(ctx, "%")) {
-    auto fn = [](int64_t a, int64_t b) { return a % b; };
-    return BinaryFunction<Int>(ctx, fn, "%");
-  }
+  if (CheckDivideByZero<Int>(ctx))
+    return BinaryFunction<Int>(ctx, [](int64_t a, int64_t b) { return a % b; });
   return false;
 }
 
@@ -588,31 +572,78 @@ bool StdLib::Dec(EvaluationContext &ctx) {
   return true;
 }
 
+bool StdLib::PowInt(EvaluationContext &ctx) {
+  return BinaryFunction<Int>(ctx, [](int64_t a, int64_t b) { return static_cast<int64_t>(std::pow(a, b)); });
+}
+
+bool StdLib::AbsInt(EvaluationContext &ctx) {
+  return UnaryFunction<Int>(ctx, [](int64_t n) { return std::abs(n); });
+}
+
+bool StdLib::MaxInt(EvaluationContext &ctx) {
+  return BinaryFunction<Int>(ctx, [](int64_t a, int64_t b) { return std::max(a, b); });
+}
+
+bool StdLib::MinInt(EvaluationContext &ctx) {
+  return BinaryFunction<Int>(ctx, [](int64_t a, int64_t b) { return std::min(a, b); });
+}
+
+// Float Functions
+
+bool StdLib::AddFloat(EvaluationContext &ctx) {
+  return BinaryFunction<Float>(ctx, [](double a, double b) { return a + b; });
+}
+
+bool StdLib::SubFloat(EvaluationContext &ctx) {
+  return BinaryFunction<Float>(ctx, [](double a, double b) { return a - b; });
+}
+
+bool StdLib::MultFloat(EvaluationContext &ctx) {
+  return BinaryFunction<Float>(ctx, [](double a, double b) { return a * b; });
+}
+
+bool StdLib::DivFloat(EvaluationContext &ctx) {
+  if (CheckDivideByZero<Float>(ctx))
+    return BinaryFunction<Float>(ctx, [](double a, double b) { return a / b; });
+  return false;
+}
+
+bool StdLib::AbsFloat(EvaluationContext &ctx) {
+  return UnaryFunction<Float>(ctx, [](double n) { return std::abs(n); });
+}
+
+bool StdLib::MaxFloat(EvaluationContext &ctx) {
+  return BinaryFunction<Float>(ctx, [](double a, double b) { return std::max(a, b); });
+}
+
+bool StdLib::MinFloat(EvaluationContext &ctx) {
+  return BinaryFunction<Float>(ctx, [](double a, double b) { return std::min(a, b); });
+}
+
+bool StdLib::PowFloat(EvaluationContext &ctx) {
+  return BinaryFunction<Float>(ctx, [](double a, double b) { return std::pow(a, b); });
+}
+
 // Bitwise Functions
 
 bool StdLib::LeftShift(EvaluationContext &ctx) {
-  auto fn = [](int64_t a, int64_t b) { return a << b; };
-  return BinaryFunction<Int>(ctx, fn, "<<");
+  return BinaryFunction<Int>(ctx, [](int64_t a, int64_t b) { return a << b; });
 }
 
 bool StdLib::RightShift(EvaluationContext &ctx) {
-  auto fn = [](int64_t a, int64_t b) { return a >> b; };
-  return BinaryFunction<Int>(ctx, fn, ">>");
+  return BinaryFunction<Int>(ctx, [](int64_t a, int64_t b) { return a >> b; });
 }
 
 bool StdLib::BitAnd(EvaluationContext &ctx) {
-  auto fn = [](int64_t a, int64_t b) { return a & b; };
-  return BinaryFunction<Int>(ctx, fn, "&");
+  return BinaryFunction<Int>(ctx, [](int64_t a, int64_t b) { return a & b; });
 }
 
 bool StdLib::BitOr(EvaluationContext &ctx) {
-  auto fn = [](int64_t a, int64_t b) { return a | b; };
-  return BinaryFunction<Int>(ctx, fn, "|");
+  return BinaryFunction<Int>(ctx, [](int64_t a, int64_t b) { return a | b; });
 }
 
 bool StdLib::BitXor(EvaluationContext &ctx) {
-  auto fn = [](int64_t a, int64_t b) { return a ^ b; };
-  return BinaryFunction<Int>(ctx, fn, "^");
+  return BinaryFunction<Int>(ctx, [](int64_t a, int64_t b) { return a ^ b; });
 }
 
 bool StdLib::BitNot(EvaluationContext &ctx) {
@@ -863,7 +894,7 @@ bool LteT(Bool &r, T &a, T &b) {
 }
 
 using ExpressionPredicate = std::function<bool(const Expression &, const Expression &)>;
-bool ExpressionPredicateFn(EvaluationContext &ctx, const std::string &name, ExpressionPredicate fn) {
+bool ExpressionPredicateFn(EvaluationContext &ctx, ExpressionPredicate fn) {
   int argNum = 0;
   if (!ctx.Args.empty()) {
     ExpressionPtr firstArg = std::move(ctx.Args.front());
@@ -898,27 +929,27 @@ bool ExpressionPredicateFn(EvaluationContext &ctx, const std::string &name, Expr
 }
 
 bool StdLib::Eq(EvaluationContext &ctx) {
-  return ExpressionPredicateFn(ctx, "==", [](const Expression &lhs, const Expression &rhs) { return lhs == rhs; });
+  return ExpressionPredicateFn(ctx, [](const Expression &lhs, const Expression &rhs) { return lhs == rhs; });
 }
 
 bool StdLib::Ne(EvaluationContext &ctx) {
-  return ExpressionPredicateFn(ctx, "!=", [](const Expression &lhs, const Expression &rhs) { return lhs != rhs; });
+  return ExpressionPredicateFn(ctx, [](const Expression &lhs, const Expression &rhs) { return lhs != rhs; });
 }
 
 bool StdLib::Lt(EvaluationContext &ctx) {
-  return BinaryPredicate(ctx, "<", LtT<Bool>, LtT<Int>, LtT<Float>, LtT<String>);
+  return BinaryPredicate(ctx, LtT<Bool>, LtT<Int>, LtT<Float>, LtT<String>);
 }
 
 bool StdLib::Gt(EvaluationContext &ctx) {
-  return BinaryPredicate(ctx, ">", GtT<Bool>, GtT<Int>, GtT<Float>, GtT<String>);
+  return BinaryPredicate(ctx, GtT<Bool>, GtT<Int>, GtT<Float>, GtT<String>);
 }
 
 bool StdLib::Lte(EvaluationContext &ctx) {
-  return BinaryPredicate(ctx, "<=", LteT<Bool>, LteT<Int>, LteT<Float>, LteT<String>);
+  return BinaryPredicate(ctx, LteT<Bool>, LteT<Int>, LteT<Float>, LteT<String>);
 }
 
 bool StdLib::Gte(EvaluationContext &ctx) {
-  return BinaryPredicate(ctx, ">=", GteT<Bool>, GteT<Int>, GteT<Float>, GteT<String>);
+  return BinaryPredicate(ctx, GteT<Bool>, GteT<Int>, GteT<Float>, GteT<String>);
 }
 
 // Branching, scoping and evaluation
@@ -1234,8 +1265,19 @@ bool StdLib::StrFunc(EvaluationContext &ctx) {
 
 // Helpers
 
+template <class T, class F>
+bool StdLib::UnaryFunction(EvaluationContext &ctx, F fn) {
+  ExpressionPtr numExpr = ctx.Args.front()->Clone();
+  auto num = dynamic_cast<T*>(numExpr.get());
+  if (num) {
+    ctx.Expr = ExpressionPtr { new T { fn(num->Value) } };
+    return true;
+  }
+  return ctx.TypeError(T::TypeInstance, ctx.Args.front());
+}
+
 template<class T, class F>
-static bool StdLib::BinaryFunction(EvaluationContext &ctx, F fn, const std::string &name) {
+bool StdLib::BinaryFunction(EvaluationContext &ctx, F fn) {
   bool first = true;
   T result { 0 };
   while (!ctx.Args.empty()) {
@@ -1263,7 +1305,7 @@ static bool StdLib::BinaryFunction(EvaluationContext &ctx, F fn, const std::stri
 }
 
 template <class B, class I, class F, class S>
-bool StdLib::BinaryPredicate(EvaluationContext &ctx, const std::string &name, B bFn, I iFn, F fFn, S sFn) {
+bool StdLib::BinaryPredicate(EvaluationContext &ctx, B bFn, I iFn, F fFn, S sFn) {
   auto currArg = ctx.Args.begin();
   if (currArg != ctx.Args.end()) {
     if (ctx.Evaluate(*currArg, 1)) {
@@ -1271,13 +1313,13 @@ bool StdLib::BinaryPredicate(EvaluationContext &ctx, const std::string &name, B 
 
       Bool defaultValue { true };
       if (bFn && (&type == &Bool::TypeInstance))
-        return PredicateHelper<Bool>(ctx, name, bFn, defaultValue);
+        return PredicateHelper<Bool>(ctx, bFn, defaultValue);
       else if (iFn && (&type == &Int::TypeInstance))
-        return PredicateHelper<Int>(ctx, name, iFn, defaultValue);
+        return PredicateHelper<Int>(ctx, iFn, defaultValue);
       else if (fFn && (&type == &Float::TypeInstance))
-        return PredicateHelper<Float>(ctx, name, fFn, defaultValue);
+        return PredicateHelper<Float>(ctx, fFn, defaultValue);
       else if (sFn && (&type == &String::TypeInstance))
-        return PredicateHelper<String>(ctx, name, sFn, defaultValue);
+        return PredicateHelper<String>(ctx, sFn, defaultValue);
       else
         return ctx.TypeError(Literal::TypeInstance, *currArg);
     }
@@ -1289,7 +1331,7 @@ bool StdLib::BinaryPredicate(EvaluationContext &ctx, const std::string &name, B 
 }
 
 template <class T, class F, class R>
-bool StdLib::PredicateHelper(EvaluationContext &ctx, const std::string &name, F fn, R defaultResult) {
+bool StdLib::PredicateHelper(EvaluationContext &ctx, F fn, R defaultResult) {
   R result { defaultResult };
   ExpressionPtr firstArg = std::move(ctx.Args.front());
   ctx.Args.pop_front();

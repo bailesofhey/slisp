@@ -28,6 +28,10 @@ class StdLib: public Library {
     static bool Sub(EvaluationContext &ctx);
     static bool Mult(EvaluationContext &ctx);
     static bool Div(EvaluationContext &ctx);
+    static bool Pow(EvaluationContext &ctx);
+    static bool Abs(EvaluationContext &ctx);
+    static bool Max(EvaluationContext &ctx);
+    static bool Min(EvaluationContext &ctx);
 
     // Int
     static bool AddInt(EvaluationContext &ctx);
@@ -37,15 +41,51 @@ class StdLib: public Library {
     static bool MultInt(EvaluationContext &ctx);
     static bool DivInt(EvaluationContext &ctx);
     static bool Mod(EvaluationContext &ctx);
+    static bool PowInt(EvaluationContext &ctx);
+    static bool AbsInt(EvaluationContext &ctx);
+    static bool MaxInt(EvaluationContext &ctx);
+    static bool MinInt(EvaluationContext &ctx);
+
     static bool Hex(EvaluationContext &ctx);
     static bool Bin(EvaluationContext &ctx);
     static bool Dec(EvaluationContext &ctx);
 
-    // Float
+    // Float - Common
     static bool AddFloat(EvaluationContext &ctx);
     static bool SubFloat(EvaluationContext &ctx);
     static bool MultFloat(EvaluationContext &ctx);
     static bool DivFloat(EvaluationContext &ctx);
+    static bool AbsFloat(EvaluationContext &ctx);
+    static bool MaxFloat(EvaluationContext &ctx);
+    static bool MinFloat(EvaluationContext &ctx);
+
+    // Float - Trig
+    //static bool Cos(EvaluationContext &ctx);
+    //static bool Sin(EvaluationContext &ctx);
+    //static bool Tan(EvaluationContext &ctx);
+    //static bool ACos(EvaluationContext &ctx);
+    //static bool ASin(EvaluationContext &ctx);
+    //static bool ATan(EvaluationContext &ctx);
+    //static bool ATan2(EvaluationContext &ctx);
+
+    // Float - Hyp
+    //static bool Cosh(EvaluationContext &ctx);
+    //static bool Sinh(EvaluationContext &ctx);
+    //static bool Tanh(EvaluationContext &ctx);
+    //static bool ACosh(EvaluationContext &ctx);
+    //static bool ASinh(EvaluationContext &ctx);
+    //static bool ATanh(EvaluationContext &ctx);
+
+    // Float - Exp and Logs
+    static bool PowFloat(EvaluationContext &ctx);
+    //static bool Exp(EvaluationContext &ctx);
+    //static bool Log(EvaluationContext &ctx);
+    //static bool Sqrt(EvaluationContext &ctx);
+
+    // Float - Round
+    //static bool Ceil(EvaluationContext &ctx);
+    //static bool Floor(EvaluationContext &ctx);
+    //static bool Round(EvaluationContext &ctx);
 
     // Bitwise
     static bool LeftShift(EvaluationContext &ctx);
@@ -100,8 +140,11 @@ class StdLib: public Library {
 
     static bool InfixRegistrationFunction(EvaluationContext &ctx, const std::string &name, bool unregister);
 
+    template <class T, class F>
+    static bool UnaryFunction(EvaluationContext &ctx, F fn);
+
     template<class T, class F>
-    static bool BinaryFunction(EvaluationContext &ctx, F fn, const std::string &name);
+    static bool BinaryFunction(EvaluationContext &ctx, F fn);
 
     static bool BinaryLogicalFunc(EvaluationContext &ctx, bool isAnd);
 
@@ -109,22 +152,18 @@ class StdLib: public Library {
     static void RegisterComparator(SymbolTable &symbolTable, const std::string& name, SlipFunction fn);
 
     template <class T, class F, class R>
-    static bool PredicateHelper(EvaluationContext &ctx, const std::string &name, F fn, R defaultResult);
+    static bool PredicateHelper(EvaluationContext &ctx, F fn, R defaultResult);
 
     template <class B, class I, class F, class S>
-    static bool BinaryPredicate(EvaluationContext &ctx, const std::string &name, B bFn = nullptr, I iFn = nullptr, F fFn = nullptr, S sFn = nullptr);
-
-
-    template <class F>
-    static bool UnaryNumberFn(EvaluationContext &ctx, const std::string &name, F fn);
+    static bool BinaryPredicate(EvaluationContext &ctx, B bFn = nullptr, I iFn = nullptr, F fFn = nullptr, S sFn = nullptr);
 
     template <class I, class F>
     static bool GenericNumFunc(EvaluationContext &ctx, I iFn, F fFn);
 
+    template <class T>
+    static bool CheckDivideByZero(EvaluationContext &ctx);
+
     static ExpressionPtr GetNil();
 
     static bool LambdaPrepareFormals(EvaluationContext &ctx, ExpressionPtr &formalsExpr, ArgList &anonFuncArgs, int &nArgs);
-
-    template <class T>
-    static bool CheckDivideByZero(EvaluationContext &ctx, const std::string &name);
 };

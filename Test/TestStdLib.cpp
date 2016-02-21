@@ -423,7 +423,8 @@ TEST_F(StdLibNumericalTest, TestSub) {
   ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("-"));
   ASSERT_NO_FATAL_FAILURE(TestIdentity("-"));
   ASSERT_TRUE(RunSuccess("(- 5 3)", "2"));
-  ASSERT_TRUE(RunSuccess("(- 3.14 4.0)", "-0.86"));
+  double r = 3.14 - 4.0;
+  ASSERT_TRUE(RunSuccess("(- 3.14 4.0)", "-0.859999"));
   ASSERT_TRUE(RunSuccess("(- 1 2 3 4 5)", "-13"));
 
   std::stringstream temp;
@@ -482,6 +483,60 @@ TEST_F(StdLibNumericalTest, TestDec) {
   ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("dec"));
   ASSERT_TRUE(RunSuccess("(dec 0)", "\"0\""));
   ASSERT_TRUE(RunSuccess("(dec 72)", "\"72\""));
+}
+
+TEST_F(StdLibNumericalTest, TestAbs) {
+  ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("abs"));
+  ASSERT_TRUE(RunSuccess("(abs 123)", "123"));
+  ASSERT_TRUE(RunSuccess("(abs -123)", "123"));
+  ASSERT_TRUE(RunSuccess("(abs 1.23)", "1.23"));
+  ASSERT_TRUE(RunSuccess("(abs -1.23)", "1.23"));
+  ASSERT_TRUE(RunSuccess("(abs 0)", "0"));
+  ASSERT_TRUE(RunSuccess("(abs -0)", "0"));
+  ASSERT_TRUE(RunSuccess("(abs 0.0)", "0"));
+  ASSERT_TRUE(RunSuccess("(abs -0.0)", "0"));
+}
+
+TEST_F(StdLibNumericalTest, TestMin) {
+  ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("min"));
+  ASSERT_TRUE(RunSuccess("(min 23)", "23"));
+  ASSERT_TRUE(RunFail("(min 23 true)"));
+  ASSERT_TRUE(RunFail("(min 23 \"foo\")"));
+  ASSERT_TRUE(RunFail("(min 23 3.14)"));
+  ASSERT_TRUE(RunSuccess("(min 23 (int 3.14))", "3"));
+  ASSERT_TRUE(RunSuccess("(min 23 34)", "23"));
+  ASSERT_TRUE(RunSuccess("(min 23 34 12)", "12"));
+
+  ASSERT_TRUE(RunSuccess("(min 2.3)", "2.29999"));
+  ASSERT_TRUE(RunFail("(min 2.3 true)"));
+  ASSERT_TRUE(RunFail("(min 2.3 \"foo\")"));
+  ASSERT_TRUE(RunFail("(min 2.3 1)"));
+  ASSERT_TRUE(RunSuccess("(min 2.3 (float 1))", "1"));
+  ASSERT_TRUE(RunSuccess("(min 2.3 3.4)", "2.29999"));
+  ASSERT_TRUE(RunSuccess("(min 2.3 3.4 1.2)", "1.2"));
+}
+
+TEST_F(StdLibNumericalTest, TestMax) {
+  ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("max"));
+  //get min tests to pass first
+} 
+
+TEST_F(StdLibNumericalTest, TestPow) {
+  ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("pow"));
+  ASSERT_TRUE(RunFail("(pow 0)"));
+  ASSERT_TRUE(RunFail("(pow 0 false)"));
+  ASSERT_TRUE(RunFail("(pow 0 \"foo\")"));
+  ASSERT_TRUE(RunSuccess("(pow 0 0)", "1"));
+  ASSERT_TRUE(RunSuccess("(pow 34 0)", "1"));
+  ASSERT_TRUE(RunSuccess("(pow 0 1)", "0"));
+  ASSERT_TRUE(RunSuccess("(pow 1 1)", "1"));
+  ASSERT_TRUE(RunSuccess("(pow 1 34)", "1"));
+  ASSERT_TRUE(RunSuccess("(pow 2 4)", "16"));
+  ASSERT_TRUE(RunFail("(pow 2 4.2)"));
+  ASSERT_TRUE(RunSuccess("(pow 2 (int 4.2))", "16"));
+  //TODO: overflow tests
+
+  ASSERT_TRUE(RunSuccess("(pow (64.0 / 81.0) (1.0 / 2.0))", ".888888888888888"));
 }
 
 class StdLibBitwiseTest: public StdLibNumericalTest {
