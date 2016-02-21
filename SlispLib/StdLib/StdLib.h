@@ -69,12 +69,12 @@ class StdLib: public Library {
     static bool ATan2(EvaluationContext &ctx);
 
     // Float - Hyp
-    //static bool Cosh(EvaluationContext &ctx);
-    //static bool Sinh(EvaluationContext &ctx);
-    //static bool Tanh(EvaluationContext &ctx);
-    //static bool ACosh(EvaluationContext &ctx);
-    //static bool ASinh(EvaluationContext &ctx);
-    //static bool ATanh(EvaluationContext &ctx);
+    static bool Cosh(EvaluationContext &ctx);
+    static bool Sinh(EvaluationContext &ctx);
+    static bool Tanh(EvaluationContext &ctx);
+    static bool ACosh(EvaluationContext &ctx);
+    static bool ASinh(EvaluationContext &ctx);
+    static bool ATanh(EvaluationContext &ctx);
 
     // Float - Exp and Logs
     static bool PowFloat(EvaluationContext &ctx);

@@ -91,6 +91,12 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("asin", &StdLib::ASin, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
   symbols.PutSymbolFunction("atan", &StdLib::ATan, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
   symbols.PutSymbolFunction("atan2", &StdLib::ATan2, FuncDef { FuncDef::ManyArgs(Float::TypeInstance, 2), FuncDef::OneArg(Float::TypeInstance) });
+  symbols.PutSymbolFunction("cosh", &StdLib::Cosh, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
+  symbols.PutSymbolFunction("sinh", &StdLib::Sinh, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
+  symbols.PutSymbolFunction("tanh", &StdLib::Tanh, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
+  symbols.PutSymbolFunction("acosh", &StdLib::ACosh, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
+  symbols.PutSymbolFunction("asinh", &StdLib::ASinh, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
+  symbols.PutSymbolFunction("atanh", &StdLib::ATanh, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
 
   // Numerical
 
@@ -690,6 +696,30 @@ bool StdLib::ATan(EvaluationContext &ctx) {
 
 bool StdLib::ATan2(EvaluationContext &ctx) {
   return BinaryFunction<Float>(ctx, [](double a, double b) { return std::atan2(a, b); });
+}
+
+bool StdLib::Cosh(EvaluationContext &ctx) {
+  return UnaryFunction<Float>(ctx, [](double a) { return std::cosh(a); });
+}
+
+bool StdLib::Sinh(EvaluationContext &ctx) {
+  return UnaryFunction<Float>(ctx, [](double a) { return std::sinh(a); });
+}
+
+bool StdLib::Tanh(EvaluationContext &ctx) {
+  return UnaryFunction<Float>(ctx, [](double a) { return std::tanh(a); });
+}
+
+bool StdLib::ACosh(EvaluationContext &ctx) {
+  return UnaryFunction<Float>(ctx, [](double a) { return std::acosh(a); });
+}
+
+bool StdLib::ASinh(EvaluationContext &ctx) {
+  return UnaryFunction<Float>(ctx, [](double a) { return std::asinh(a); });
+}
+
+bool StdLib::ATanh(EvaluationContext &ctx) {
+  return UnaryFunction<Float>(ctx, [](double a) { return std::atanh(a); });
 }
 
 // Bitwise Functions
