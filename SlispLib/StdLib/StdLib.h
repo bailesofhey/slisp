@@ -60,13 +60,13 @@ class StdLib: public Library {
     static bool MinFloat(EvaluationContext &ctx);
 
     // Float - Trig
-    //static bool Cos(EvaluationContext &ctx);
-    //static bool Sin(EvaluationContext &ctx);
-    //static bool Tan(EvaluationContext &ctx);
-    //static bool ACos(EvaluationContext &ctx);
-    //static bool ASin(EvaluationContext &ctx);
-    //static bool ATan(EvaluationContext &ctx);
-    //static bool ATan2(EvaluationContext &ctx);
+    static bool Cos(EvaluationContext &ctx);
+    static bool Sin(EvaluationContext &ctx);
+    static bool Tan(EvaluationContext &ctx);
+    static bool ACos(EvaluationContext &ctx);
+    static bool ASin(EvaluationContext &ctx);
+    static bool ATan(EvaluationContext &ctx);
+    static bool ATan2(EvaluationContext &ctx);
 
     // Float - Hyp
     //static bool Cosh(EvaluationContext &ctx);

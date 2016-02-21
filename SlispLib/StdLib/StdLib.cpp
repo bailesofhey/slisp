@@ -84,6 +84,13 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("ceil", &StdLib::Ceil, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
   symbols.PutSymbolFunction("floor", &StdLib::Floor, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
   symbols.PutSymbolFunction("round", &StdLib::Round, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
+  symbols.PutSymbolFunction("cos", &StdLib::Cos, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
+  symbols.PutSymbolFunction("sin", &StdLib::Sin, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
+  symbols.PutSymbolFunction("tan", &StdLib::Tan, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
+  symbols.PutSymbolFunction("acos", &StdLib::ACos, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
+  symbols.PutSymbolFunction("asin", &StdLib::ASin, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
+  symbols.PutSymbolFunction("atan", &StdLib::ATan, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
+  symbols.PutSymbolFunction("atan2", &StdLib::ATan2, FuncDef { FuncDef::ManyArgs(Float::TypeInstance, 2), FuncDef::OneArg(Float::TypeInstance) });
 
   // Numerical
 
@@ -655,6 +662,34 @@ bool StdLib::Floor(EvaluationContext &ctx) {
 
 bool StdLib::Round(EvaluationContext &ctx) {
   return UnaryFunction<Float>(ctx, [](double a) { return std::round(a); });
+}
+
+bool StdLib::Cos(EvaluationContext &ctx) {
+  return UnaryFunction<Float>(ctx, [](double a) { return std::cos(a); });
+}
+
+bool StdLib::Sin(EvaluationContext &ctx) {
+  return UnaryFunction<Float>(ctx, [](double a) { return std::sin(a); });
+}
+
+bool StdLib::Tan(EvaluationContext &ctx) {
+  return UnaryFunction<Float>(ctx, [](double a) { return std::tan(a); });
+}
+
+bool StdLib::ACos(EvaluationContext &ctx) {
+  return UnaryFunction<Float>(ctx, [](double a) { return std::acos(a); });
+}
+
+bool StdLib::ASin(EvaluationContext &ctx) {
+  return UnaryFunction<Float>(ctx, [](double a) { return std::asin(a); });
+}
+
+bool StdLib::ATan(EvaluationContext &ctx) {
+  return UnaryFunction<Float>(ctx, [](double a) { return std::atan(a); });
+}
+
+bool StdLib::ATan2(EvaluationContext &ctx) {
+  return BinaryFunction<Float>(ctx, [](double a, double b) { return std::atan2(a, b); });
 }
 
 // Bitwise Functions

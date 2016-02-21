@@ -565,6 +565,41 @@ TEST_F(StdLibNumericalTest, TestRound) {
   ASSERT_TRUE(RunSuccess("(round 2.4)", "2"));
 }
 
+TEST_F(StdLibNumericalTest, TestCos) {
+  ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("cos"));
+  ASSERT_TRUE(RunSuccess("(cos 2.0)", "-0.41"));
+}
+
+TEST_F(StdLibNumericalTest, TestSin) {
+  ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("sin"));
+  ASSERT_TRUE(RunSuccess("(sin 2.0)", "0.90"));
+}
+
+TEST_F(StdLibNumericalTest, TestTan) {
+  ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("tan"));
+  ASSERT_TRUE(RunSuccess("(tan 2.0)", "-2.18"));
+}
+
+TEST_F(StdLibNumericalTest, TestACos) {
+  ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("acos"));
+  ASSERT_TRUE(RunSuccess("(acos 0.5)", "1.04"));
+}
+
+TEST_F(StdLibNumericalTest, TestASin) {
+  ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("asin"));
+  ASSERT_TRUE(RunSuccess("(asin 0.5)", "0.52"));
+}
+
+TEST_F(StdLibNumericalTest, TestATan) {
+  ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("atan"));
+  ASSERT_TRUE(RunSuccess("(atan 0.5)", "0.46"));
+}
+
+TEST_F(StdLibNumericalTest, TestATan2) {
+  ASSERT_NO_FATAL_FAILURE(TestBadNumericArgs("atan2"));
+  ASSERT_TRUE(RunSuccess("(atan2 0.4 0.6)", "0.58"));
+}
+
 class StdLibBitwiseTest: public StdLibNumericalTest {
 };
 
