@@ -804,6 +804,8 @@ TEST_F(StdLibListTest, TestHead) {
   ASSERT_TRUE(RunSuccess("(head ())", "()"));
   ASSERT_TRUE(RunSuccess("(head (1))", "1"));
   ASSERT_TRUE(RunSuccess("(head (1 2))", "1"));
+  ASSERT_TRUE(RunSuccess("(car (1 2))", "1"));
+  ASSERT_TRUE(RunSuccess("(first (1 2))", "1"));
   ASSERT_TRUE(RunFail("(head (head (1 2)))"));
   ASSERT_TRUE(RunSuccess("(head ((1 2)) )", "(1 2)"));
   ASSERT_TRUE(RunSuccess("(head (head ((1 2)) ))", "1"));
@@ -818,11 +820,25 @@ TEST_F(StdLibListTest, TestTail) {
   ASSERT_TRUE(RunFail("(tail true)"));
   ASSERT_TRUE(RunSuccess("(tail ())", "()"));
   ASSERT_TRUE(RunSuccess("(tail (1))", "()"));
-  ASSERT_TRUE(RunSuccess("(tail (1 2))", "2"));
+  ASSERT_TRUE(RunSuccess("(tail (1 2))", "(2)"));
+  ASSERT_TRUE(RunSuccess("(cdr (1 2))", "(2)"));
+  ASSERT_TRUE(RunSuccess("(rest (1 2))", "(2)"));
   ASSERT_TRUE(RunSuccess("(tail (tail (1 2)))", "()"));
   ASSERT_TRUE(RunSuccess("(tail ((1 2)) )", "()"));
   ASSERT_TRUE(RunSuccess("(tail (tail ((1 2)) ))", "()"));
   ASSERT_TRUE(RunSuccess("(tail (tail (tail ((1 2)) )))", "()"));
+}
+
+TEST_F(StdLibListTest, TestCons) {
+  ASSERT_TRUE(RunFail("(cons)"));
+  ASSERT_TRUE(RunFail("(cons 1)"));
+  ASSERT_TRUE(RunFail("(cons (1))"));
+  ASSERT_TRUE(RunSuccess("(cons 1 2)", "(1 2)")); // Improper lists not supported
+  ASSERT_TRUE(RunSuccess("(cons (1) 2)", "(1 2)"));
+  ASSERT_TRUE(RunSuccess("(cons 1 (2))", "(1 2)"));
+  ASSERT_TRUE(RunSuccess("(cons (1) (2))", "(1 2)"));
+  ASSERT_TRUE(RunSuccess("(cons 1 (2 3))", "(1 2 3)"));
+  ASSERT_TRUE(RunSuccess("(cons (1 2) 3)", "(1 2 3)"));
 }
 
 class StdLibLogicalTest: public StdLibTest {

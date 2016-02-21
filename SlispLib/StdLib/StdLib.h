@@ -105,6 +105,7 @@ class StdLib: public Library {
     static bool Map(EvaluationContext &ctx);
     static bool Head(EvaluationContext &ctx);
     static bool Tail(EvaluationContext &ctx);
+    static bool Cons(EvaluationContext &ctx);
 
     // Logical
     static bool And(EvaluationContext &ctx);

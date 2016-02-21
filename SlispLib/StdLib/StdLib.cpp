@@ -68,6 +68,7 @@ void StdLib::Load(Interpreter &interpreter) {
   // Generic
 
   symbols.PutSymbolFunction("+", &StdLib::Add, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction("cons", &StdLib::Cons, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2), FuncDef::OneArg(Quote::TypeInstance) });
   symbols.PutSymbolFunction("-", &StdLib::Sub, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("*", &StdLib::Mult, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("/", &StdLib::Div, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
@@ -142,8 +143,14 @@ void StdLib::Load(Interpreter &interpreter) {
     &StdLib::List
   });
   symbols.PutSymbolFunction("map", &StdLib::Map, FuncDef { FuncDef::Args({&Function::TypeInstance, &Quote::TypeInstance}), FuncDef::OneArg(Quote::TypeInstance) });
+
   symbols.PutSymbolFunction("head", &StdLib::Head, FuncDef { FuncDef::OneArg(Quote::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction("car", &StdLib::Head, FuncDef { FuncDef::OneArg(Quote::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction("first", &StdLib::Head, FuncDef { FuncDef::OneArg(Quote::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+
   symbols.PutSymbolFunction("tail", &StdLib::Tail, FuncDef { FuncDef::OneArg(Quote::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction("cdr", &StdLib::Tail, FuncDef { FuncDef::OneArg(Quote::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction("rest", &StdLib::Tail, FuncDef { FuncDef::OneArg(Quote::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
 
   // Logical
 
@@ -198,8 +205,9 @@ void StdLib::Load(Interpreter &interpreter) {
   settings.RegisterInfixSymbol("!");
   settings.RegisterInfixSymbol("~");
 
-  settings.RegisterInfixSymbol("*");
   settings.RegisterInfixSymbol("**");
+  settings.RegisterInfixSymbol("*");
+  settings.RegisterInfixSymbol("/");
   settings.RegisterInfixSymbol("%");
 
   settings.RegisterInfixSymbol("+");
@@ -218,7 +226,8 @@ void StdLib::Load(Interpreter &interpreter) {
 
   settings.RegisterInfixSymbol("&");
 
-  settings.RegisterInfixSymbol("^"); 
+  settings.RegisterInfixSymbol("^");
+
   settings.RegisterInfixSymbol("|");
 
   settings.RegisterInfixSymbol("and");
@@ -837,6 +846,27 @@ bool StdLib::Map(EvaluationContext &ctx) {
 
   ctx.Expr = ExpressionPtr { new Quote { std::move(resultExpr) } };
   return true;
+}
+
+bool StdLib::Cons(EvaluationContext &ctx) {
+  auto arg1 = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
+  auto arg2 = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
+
+  ExpressionPtr qExpr1 { };
+  if (TypeHelper::IsAtom(arg1->Type())) 
+    ctx.Args.push_back(ExpressionPtr { new Quote(ExpressionPtr { new Sexp({std::move(arg1)}) }) });
+  else
+    ctx.Args.push_back(std::move(arg1));
+
+  ExpressionPtr qExpr2 { };
+  if (TypeHelper::IsAtom(arg2->Type())) 
+    ctx.Args.push_back(ExpressionPtr { new Quote(ExpressionPtr { new Sexp({std::move(arg2)}) }) });
+  else
+    ctx.Args.push_back(std::move(arg2));
+
+  return Add(ctx);
 }
 
 bool StdLib::AddList(EvaluationContext &ctx) {
