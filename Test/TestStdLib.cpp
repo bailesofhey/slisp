@@ -1052,8 +1052,6 @@ TEST_F(StdLibComparisonTest, TestGte) {
 }
 
 class StdLibBranchTest: public StdLibTest {
-  protected:
-    void TestQuotes();
 };
 
 TEST_F(StdLibBranchTest, TestIf) {
@@ -1149,8 +1147,7 @@ TEST_F(StdLibBranchTest, TestLet) {
   ASSERT_TRUE(RunSuccess("v1", "4")); // #20
 }
 
-void StdLibBranchTest::TestQuotes() {
-  // quotes
+TEST_F(StdLibBranchTest, TestQuoteFn) {
   ASSERT_TRUE(RunFail("(quote)"));
   ASSERT_TRUE(RunFail("(quote 2 3)"));
   ASSERT_TRUE(RunSuccess("(quote 4)", "4"));
@@ -1164,7 +1161,16 @@ void StdLibBranchTest::TestQuotes() {
   ASSERT_TRUE(RunSuccess("(quote (quote (+ 2 3)))", "(+ 2 3)"));
   ASSERT_TRUE(RunSuccess("(quote (quote (+ 2 3)))", "(+ 2 3)"));
 
-  // unquotes
+  // Quote specific tests
+  ASSERT_TRUE(RunSuccess("(* 4 (quote 5))", "20"));
+  ASSERT_TRUE(RunSuccess("(* (quote 4) (quote 5))", "20"));
+  ASSERT_TRUE(RunSuccess("(set q (quote foo))", "foo"));
+  ASSERT_TRUE(RunFail("(* 4 q)"));
+  ASSERT_TRUE(RunSuccess("(set foo 5)", "5"));
+  ASSERT_TRUE(RunSuccess("(* 4 q)", "20"));
+}
+
+TEST_F(StdLibBranchTest, TestUnquote) {
   ASSERT_TRUE(RunFail("(unquote)"));
   ASSERT_TRUE(RunFail("(unquote 2 3)"));
   ASSERT_TRUE(RunSuccess("(unquote (quote 4))", "4"));
@@ -1177,14 +1183,6 @@ void StdLibBranchTest::TestQuotes() {
   ASSERT_TRUE(RunFail("(unquote (quote thisdoesnotexist))"));
   ASSERT_TRUE(RunSuccess("(unquote (quote (quote (+ 2 3))))", "(+ 2 3)"));
   ASSERT_TRUE(RunSuccess("(unquote (unquote (quote (quote (+ 2 3)))))", "5"));
-}
-
-TEST_F(StdLibBranchTest, TestQuoteFn) {
-  ASSERT_NO_FATAL_FAILURE(TestQuotes());
-}
-
-TEST_F(StdLibBranchTest, TestUnquote) {
-  ASSERT_NO_FATAL_FAILURE(TestQuotes());
 }
 
 TEST_F(StdLibBranchTest, TestBegin) {

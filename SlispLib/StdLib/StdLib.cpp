@@ -45,7 +45,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   // Assignment Operators
 
-  FuncDef setDef { FuncDef::Args({&Symbol::TypeInstance, &Literal::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) };  
+  FuncDef setDef { FuncDef::Args({&Symbol::TypeInstance, &Sexp::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) };  
   symbols.PutSymbolFunction("set", &StdLib::Set, setDef.Clone()); 
   symbols.PutSymbolFunction("=", &StdLib::Set,   setDef.Clone()); 
   symbols.PutSymbolFunction("+=", &StdLib::Set,  setDef.Clone()); 
@@ -175,7 +175,7 @@ void StdLib::Load(Interpreter &interpreter) {
   // Branching, scoping, evaluation
 
   symbols.PutSymbolFunction("quote", &StdLib::QuoteFn, FuncDef { FuncDef::OneArg(Sexp::TypeInstance), FuncDef::OneArg(Quote::TypeInstance) });
-  symbols.PutSymbolFunction("unquote", &StdLib::Unquote, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction("unquote", &StdLib::Unquote, FuncDef { FuncDef::OneArg(Sexp::TypeInstance), FuncDef::OneArg(Quote::TypeInstance) });
   symbols.PutSymbolFunction("if", &StdLib::If, FuncDef { 
     FuncDef::Args({&Bool::TypeInstance, &Sexp::TypeInstance, &Sexp::TypeInstance}),
     FuncDef::OneArg(Literal::TypeInstance)
@@ -1101,19 +1101,23 @@ bool StdLib::QuoteFn(EvaluationContext &ctx) {
 }
 
 bool StdLib::Unquote(EvaluationContext &ctx) {
-  ExpressionPtr quoteExpr { std::move(ctx.Args.front()) };
-  ExpressionPtr toEvaluate;
-  if (auto quote = dynamic_cast<Quote*>(quoteExpr.get()))
-    toEvaluate = std::move(quote->Value);
-  else
-    toEvaluate = std::move(quoteExpr);
+  if (ctx.Evaluate(ctx.Args.front(), "1")) {
+    ExpressionPtr quoteExpr { std::move(ctx.Args.front()) };
+    ExpressionPtr toEvaluate;
 
-  if (ctx.Evaluate(toEvaluate, "expression")) {
-    ctx.Expr = std::move(toEvaluate);
+    if (auto quote = dynamic_cast<Quote*>(quoteExpr.get()))
+      toEvaluate = std::move(quote->Value);
+    else 
+      toEvaluate = std::move(quoteExpr);
+
+    if (ctx.Evaluate(toEvaluate, "expression"))
+      ctx.Expr = std::move(toEvaluate);
+    else
+      return false;
+
     return true;
   }
-  else
-    return false; 
+  return false;
 }
 
 bool StdLib::If(EvaluationContext &ctx) {
@@ -1434,11 +1438,11 @@ template<class T, class F>
 bool StdLib::BinaryFunction(EvaluationContext &ctx, F fn) {
   bool first = true;
   T result { 0 };
+  int argNum = 1;
   while (!ctx.Args.empty()) {
     bool ok = false;
-    ExpressionPtr numExpr = ctx.Args.front()->Clone();
-    if (numExpr) {
-      auto num = dynamic_cast<T*>(numExpr.get());
+    if (ctx.Evaluate(ctx.Args.front(), argNum)) {
+      auto num = dynamic_cast<T*>(ctx.Args.front().get());
       if (num) {
         if (first)
           result.Value = num->Value;
@@ -1447,11 +1451,15 @@ bool StdLib::BinaryFunction(EvaluationContext &ctx, F fn) {
         ok = true;
       }
     }
+    else
+      return false;
+
     if (!ok)
       return ctx.TypeError(T::TypeInstance, ctx.Args.front());
 
     first = false;
     ctx.Args.pop_front();
+    ++argNum;
   }
 
   ctx.Expr = ExpressionPtr { new T { result } };

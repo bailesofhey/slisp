@@ -67,6 +67,14 @@ bool ArgDef::CheckArgCount(size_t expectedMin, size_t expectedMax, ArgList &args
 
 bool ArgDef::CheckArg(ExpressionEvaluator evaluator, ExpressionPtr &arg, const TypeInfo &expectedType, size_t argNum, std::string &error) const {
   if (arg && TypeHelper::TypeMatches(expectedType, arg->Type()) || evaluator(arg)) {
+    if (&expectedType == &Literal::TypeInstance && &arg->Type() == &Quote::TypeInstance) {
+      arg = std::move(static_cast<Quote*>(arg.get())->Value);
+      if (!evaluator(arg)) {
+        error = "Argument " + std::to_string(argNum) + ": Failed to evaluate quote";
+        return false;
+      }
+    }
+
     if (!TypeHelper::TypeMatches(expectedType, arg->Type())) {
       error = "Argument " + std::to_string(argNum) + ": Expected " + expectedType.TypeName + ", got " + arg->Type().TypeName;
       return false;
