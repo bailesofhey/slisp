@@ -259,7 +259,7 @@ bool Parser::ParseSymbol(Sexp &root) {
 }
 
 bool Parser::ParseString(Sexp &root) {
-  root.Args.push_back(ExpressionPtr { new String { (*Tokenizer_).Value } });
+  root.Args.push_back(ExpressionPtr { new Str { (*Tokenizer_).Value } });
   return true;
 }
 

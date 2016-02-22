@@ -142,18 +142,18 @@ TEST_F(ParserTest, TestSingleSymbol) {
 }
 
 TEST_F(ParserTest, TestSingleString) {
-  ASSERT_PARSE({ Token(TokenTypes::STRING, "") }, { new String() });
-  ASSERT_PARSE({ Token(TokenTypes::STRING, "") }, { new String("") });
-  ASSERT_PARSE({ Token(TokenTypes::STRING, " ") }, { new String(" ") });
-  ASSERT_PARSE({ Token(TokenTypes::STRING, "        ") }, { new String("        ") });
+  ASSERT_PARSE({ Token(TokenTypes::STRING, "") }, { new Str() });
+  ASSERT_PARSE({ Token(TokenTypes::STRING, "") }, { new Str("") });
+  ASSERT_PARSE({ Token(TokenTypes::STRING, " ") }, { new Str(" ") });
+  ASSERT_PARSE({ Token(TokenTypes::STRING, "        ") }, { new Str("        ") });
 
-  ASSERT_PARSE({ Token(TokenTypes::STRING, "foo") }, { new String("foo") });
-  ASSERT_PARSE({ Token(TokenTypes::STRING, "foo bar baz") }, { new String("foo bar baz") });
+  ASSERT_PARSE({ Token(TokenTypes::STRING, "foo") }, { new Str("foo") });
+  ASSERT_PARSE({ Token(TokenTypes::STRING, "foo bar baz") }, { new Str("foo bar baz") });
 
   // Escaping?
   // Unicode?
 
-  ASSERT_PARSE({ Token(TokenTypes::STRING, "123") }, { new String("123") });
+  ASSERT_PARSE({ Token(TokenTypes::STRING, "123") }, { new Str("123") });
 }
 
 TEST_F(ParserTest, TestMultiples) {
@@ -171,7 +171,7 @@ TEST_F(ParserTest, TestMultiples) {
   );
   ASSERT_PARSE(
     { Token(TokenTypes::STRING, "hello"), Token(TokenTypes::STRING, "world!") },
-    { new String("hello"), new String("world!") }
+    { new Str("hello"), new Str("world!") }
   );
 
   ASSERT_PARSE(
@@ -180,8 +180,8 @@ TEST_F(ParserTest, TestMultiples) {
       Token(TokenTypes::NUMBER, "43"), Token(TokenTypes::NUMBER, "1.5"), Token(TokenTypes::SYMBOL, "bar"), Token(TokenTypes::STRING, "world!")
     },
     {
-      new Int(42), new Float(3.14), new Symbol("foo"), new String("hello"),
-      new Int(43), new Float(1.5), new Symbol("bar"), new String("world!") 
+      new Int(42), new Float(3.14), new Symbol("foo"), new Str("hello"),
+      new Int(43), new Float(1.5), new Symbol("bar"), new Str("world!") 
     }
   );
 }
@@ -225,7 +225,7 @@ TEST_F(ParserTest, TestImplicitInfix_Set) {
   );
   ASSERT_PARSE(
     { Token(TokenTypes::SYMBOL, "x"), Token(TokenTypes::SYMBOL, "="), Token(TokenTypes::STRING, "foo") },
-    { new Sexp({ ExpressionPtr { new Symbol("=") }, ExpressionPtr { new Symbol("x") }, ExpressionPtr { new String("foo") }})}
+    { new Sexp({ ExpressionPtr { new Symbol("=") }, ExpressionPtr { new Symbol("x") }, ExpressionPtr { new Str("foo") }})}
   );
   ASSERT_PARSE(
     { Token(TokenTypes::SYMBOL, "x"), Token(TokenTypes::SYMBOL, "="), Token(TokenTypes::SYMBOL, "n") },
@@ -255,7 +255,7 @@ TEST_F(ParserTest, TestImplicitInfix_Add) {
   );
   ASSERT_PARSE(
     { Token(TokenTypes::SYMBOL, "x"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::STRING, "foo") },
-    { new Sexp({ ExpressionPtr { new Symbol("+") }, ExpressionPtr { new Symbol("x") }, ExpressionPtr { new String("foo") }})}
+    { new Sexp({ ExpressionPtr { new Symbol("+") }, ExpressionPtr { new Symbol("x") }, ExpressionPtr { new Str("foo") }})}
   );
 
   ASSERT_PARSE(
@@ -268,7 +268,7 @@ TEST_F(ParserTest, TestImplicitInfix_Add) {
   );
   ASSERT_PARSE(
     { Token(TokenTypes::STRING, "foo"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::STRING, "bar") },
-    { new Sexp({ ExpressionPtr { new Symbol("+") }, ExpressionPtr { new String("foo") }, ExpressionPtr { new String("bar") }})}
+    { new Sexp({ ExpressionPtr { new Symbol("+") }, ExpressionPtr { new Str("foo") }, ExpressionPtr { new Str("bar") }})}
   );
 
   ASSERT_PARSE(
@@ -281,7 +281,7 @@ TEST_F(ParserTest, TestImplicitInfix_Add) {
   );
   ASSERT_PARSE(
     { Token(TokenTypes::STRING, "foo"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::STRING, "bar"), Token(TokenTypes::SYMBOL, "+"), Token(TokenTypes::STRING, "baz") },
-    { new Sexp({ ExpressionPtr { new Symbol("+") }, ExpressionPtr { new String("foo") }, ExpressionPtr { new String("bar") }, ExpressionPtr { new String("baz") }})}
+    { new Sexp({ ExpressionPtr { new Symbol("+") }, ExpressionPtr { new Str("foo") }, ExpressionPtr { new Str("bar") }, ExpressionPtr { new Str("baz") }})}
   );
 
   // 8 + 42 +
@@ -334,7 +334,7 @@ TEST_F(ParserTest, TestComplexSexps) {
                 symPrint { new Symbol("print") },
                 symPlus { new Symbol("+") },
                 symFoo { new Symbol("foo") },
-                strHello { new String("hello") },
+                strHello { new Str("hello") },
                 sexpAdd { new Sexp({ std::move(symPlus), std::move(num2), std::move(num3) }) };
   ASSERT_PARSE(
     {

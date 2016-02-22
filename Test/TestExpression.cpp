@@ -46,8 +46,8 @@ TEST(Expression, TestFloat) {
   RunExpressionTest(Float(), Float(0.0), Float(3.14));
 }
 
-TEST(Expression, TestString) {
-  RunExpressionTest(String(), String(""), String("Foo"));
+TEST(Expression, TestStr) {
+  RunExpressionTest(Str(), Str(""), Str("Foo"));
 }
 
 TEST(Expression, TestSymbol) {
@@ -56,7 +56,7 @@ TEST(Expression, TestSymbol) {
 
 TEST(Expression, TestQuote) {
   Quote qThree { ExpressionPtr { new Int(3) } };
-  Quote qFoo { ExpressionPtr { new String("Foo") } };
+  Quote qFoo { ExpressionPtr { new Str("Foo") } };
   ASSERT_FALSE(qThree.ToString().empty());
   ASSERT_NE(qThree.ToString(), qFoo.ToString());
   ASSERT_NE(qThree, qFoo);

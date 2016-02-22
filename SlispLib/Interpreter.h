@@ -104,7 +104,7 @@ class Interpreter {
     bool ReduceBool(ExpressionPtr &expr);
     bool ReduceInt(ExpressionPtr &expr);
     bool ReduceFloat(ExpressionPtr &expr);
-    bool ReduceString(ExpressionPtr &expr);
+    bool ReduceStr(ExpressionPtr &expr);
     bool ReduceSymbol(ExpressionPtr &expr);
     bool ReduceFunction(ExpressionPtr &expr);
     bool ReduceSexp(ExpressionPtr &expr);

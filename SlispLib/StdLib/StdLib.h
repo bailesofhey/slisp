@@ -95,8 +95,8 @@ class StdLib: public Library {
     static bool BitXor(EvaluationContext &ctx);
     static bool BitNot(EvaluationContext &ctx);
 
-    // String
-    static bool AddString(EvaluationContext &ctx);
+    // Str
+    static bool AddStr(EvaluationContext &ctx);
     static bool Reverse(EvaluationContext &ctx);
 
     // Lists
@@ -131,6 +131,8 @@ class StdLib: public Library {
     static bool Apply(EvaluationContext &ctx);
 
     // Conversion operators
+    static bool TypeFunc(EvaluationContext &ctx);
+    static bool TypeQFunc(EvaluationContext &ctx);
     static bool BoolFunc(EvaluationContext &ctx);
     static bool IntFunc(EvaluationContext &ctx);
     static bool FloatFunc(EvaluationContext &ctx);

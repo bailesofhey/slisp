@@ -724,10 +724,10 @@ TEST_F(StdLibBitwiseTest, BitNot) {
   ASSERT_TRUE(RunSuccess("(~ 2147483648)", "-2147483649"));
 }
 
-class StdLibStringTest: public StdLibTest {
+class StdLibStrTest: public StdLibTest {
 };
 
-TEST_F(StdLibStringTest, TestAdd) {
+TEST_F(StdLibStrTest, TestAdd) {
   ASSERT_TRUE(RunFail("(+)"));
   ASSERT_TRUE(RunSuccess("(+ \"\")", "\"\""));
   ASSERT_TRUE(RunSuccess("(+ \"foo\")", "\"foo\""));
@@ -742,7 +742,7 @@ TEST_F(StdLibStringTest, TestAdd) {
   ASSERT_TRUE(RunSuccess("(+ \"\" \"\" \"Hello,\" \" \" \"\" \"world\" \"\" \"!\" \"\" \"\")", "\"Hello, world!\""));
 }
 
-TEST_F(StdLibStringTest, TestReverse) {
+TEST_F(StdLibStrTest, TestReverse) {
   ASSERT_TRUE(RunFail("(reverse)"));
   ASSERT_TRUE(RunSuccess("(reverse \"\")", "\"\""));
   ASSERT_TRUE(RunSuccess("(reverse \"a\")", "\"a\""));
@@ -1385,4 +1385,15 @@ TEST_F(StdLibOperatorsTest, TestStr) {
 
   ASSERT_TRUE(RunSuccess("(str \"-42\")", "\"-42\""));
   ASSERT_TRUE(RunSuccess("(str \"0xfe\")", "\"0xfe\""));
+}
+
+TEST_F(StdLibOperatorsTest, TestType) {
+  ASSERT_TRUE(RunSuccess("(type 3)", "int"));
+  ASSERT_TRUE(RunSuccess("(type 3.14)", "float"));
+  ASSERT_TRUE(RunSuccess("(type true)", "bool"));
+  ASSERT_TRUE(RunSuccess("(type false)", "bool"));
+  ASSERT_TRUE(RunSuccess("(type \"foo\")", "str"));
+
+  ASSERT_TRUE(RunSuccess("a = 3.14", "3.14"));
+  ASSERT_TRUE(RunSuccess("(type a)", "float"));
 }

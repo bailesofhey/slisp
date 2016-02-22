@@ -22,7 +22,7 @@ class SymbolTable {
     void PutSymbolBool(const std::string &symbolName, bool value);
     void PutSymbolInt(const std::string &symbolName, int64_t value);
     void PutSymbolFloat(const std::string &symbolName, double value);
-    void PutSymbolString(const std::string &symbolName, const std::string &value);
+    void PutSymbolStr(const std::string &symbolName, const std::string &value);
     void PutSymbolFunction(const std::string &symbolName, Function &&func);
     void PutSymbolFunction(const std::string &symbolName, SlipFunction fn, FuncDef &&def);
     void PutSymbolQuote(const std::string &symbolName, ExpressionPtr &&value);

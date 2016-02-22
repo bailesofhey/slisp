@@ -226,54 +226,54 @@ void Float::Print(std::ostream &out) const {
 
 //=============================================================================
 
-const TypeInfo String::TypeInstance("string");
+const TypeInfo Str::TypeInstance("str");
 
-String::String():
-  String { "" }
+Str::Str():
+  Str { "" }
 { 
 }
 
-String::String(const std::string &value):
+Str::Str(const std::string &value):
   Literal { TypeInstance },
   Value { value }
 {
 }
 
-ExpressionPtr String::Clone() const {
-  return ExpressionPtr { new String(*this) };
+ExpressionPtr Str::Clone() const {
+  return ExpressionPtr { new Str(*this) };
 }
 
-bool String::operator==(const Expression &rhs) const {
-  return &rhs.Type() == &String::TypeInstance
-      && dynamic_cast<const String&>(rhs) == *this;
+bool Str::operator==(const Expression &rhs) const {
+  return &rhs.Type() == &Str::TypeInstance
+      && dynamic_cast<const Str&>(rhs) == *this;
 }
 
-bool String::operator==(const String &rhs) const {
+bool Str::operator==(const Str &rhs) const {
   return Value == rhs.Value;
 }
 
-bool String::operator!=(const String &rhs) const {
+bool Str::operator!=(const Str &rhs) const {
   return !(*this == rhs);
 }
 
-bool String::operator<(const String &rhs) const {
+bool Str::operator<(const Str &rhs) const {
   return Value < rhs.Value;
 }
 
-bool String::operator>=(const String &rhs) const {
+bool Str::operator>=(const Str &rhs) const {
   return !(*this < rhs);
 }
 
-String& String::operator=(String rhs) {
+Str& Str::operator=(Str rhs) {
   Swap(rhs);
   return *this;
 }
 
-void String::Swap(String &rhs) {
+void Str::Swap(Str &rhs) {
   Value = rhs.Value;
 }
 
-void String::Print(std::ostream &out) const {
+void Str::Print(std::ostream &out) const {
   out << "\"" << Value << "\"";
 }
 

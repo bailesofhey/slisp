@@ -25,8 +25,8 @@ void SymbolTable::PutSymbolBool(const std::string &symbolName, bool value) {
   PutSymbol(symbolName, ExpressionPtr { new Bool { value } });
 }
 
-void SymbolTable::PutSymbolString(const std::string &symbolName, const std::string &value) {
-  PutSymbol(symbolName, ExpressionPtr { new String { value } });
+void SymbolTable::PutSymbolStr(const std::string &symbolName, const std::string &value) {
+  PutSymbol(symbolName, ExpressionPtr { new Str { value } });
 }
 
 void SymbolTable::PutSymbolInt(const std::string &symbolName, int64_t value) {
@@ -42,11 +42,14 @@ void SymbolTable::PutSymbolQuote(const std::string &symbolName, ExpressionPtr &&
 }
 
 void SymbolTable::PutSymbolFunction(const std::string &symbolName, Function &&func) {
+  func.Symbol = ExpressionPtr { new Symbol(symbolName) };
   PutSymbol(symbolName, func.Clone());
 }
 
 void SymbolTable::PutSymbolFunction(const std::string &symbolName, SlipFunction fn, FuncDef &&def) {
-  PutSymbol(symbolName, ExpressionPtr { new CompiledFunction { std::move(def), fn } });
+  ExpressionPtr funcExpr { new CompiledFunction { std::move(def), fn } };
+  static_cast<CompiledFunction*>(funcExpr.get())->Symbol = ExpressionPtr { new Symbol(symbolName) };
+  PutSymbol(symbolName, std::move(funcExpr));
 }
 
 bool SymbolTable::GetSymbol(const std::string &symbolName, ExpressionPtr &value) {

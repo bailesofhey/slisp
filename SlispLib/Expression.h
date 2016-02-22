@@ -103,22 +103,22 @@ struct Float: public Literal {
   void Swap(Float &rhs);
 };
 
-struct String: public Literal {
+struct Str: public Literal {
   static const TypeInfo TypeInstance;
   
   std::string Value;
 
-  explicit String();
-  explicit String(const std::string& value);
+  explicit Str();
+  explicit Str(const std::string& value);
   virtual ExpressionPtr Clone() const override;
   virtual void Print(std::ostream& out) const;
   virtual bool operator==(const Expression &rhs) const override;
-  bool operator==(const String &rhs) const;
-  bool operator!=(const String &rhs) const;
-  bool operator<(const String &rhs) const;
-  bool operator>=(const String &rhs) const;
-  String& operator=(String rhs);
-  void Swap(String &rhs);
+  bool operator==(const Str &rhs) const;
+  bool operator!=(const Str &rhs) const;
+  bool operator<(const Str &rhs) const;
+  bool operator>=(const Str &rhs) const;
+  Str& operator=(Str rhs);
+  void Swap(Str &rhs);
 };
 
 struct Quote: public Literal {

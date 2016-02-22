@@ -477,7 +477,7 @@ bool TypeHelper::IsAtom(const TypeInfo &type) {
   return &type == &Bool::TypeInstance
       || &type == &Int::TypeInstance 
       || &type == &Float::TypeInstance 
-      || &type == &String::TypeInstance
+      || &type == &Str::TypeInstance
       || IsFunction(type)
       ;
 }

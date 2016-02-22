@@ -19,7 +19,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   int major = 0,
       minor = 1;
-  symbols.PutSymbolString("system.version", "Slip " + std::to_string(major) + "." + std::to_string(minor));
+  symbols.PutSymbolStr("system.version", "Slip " + std::to_string(major) + "." + std::to_string(minor));
   symbols.PutSymbolInt("system.versionNumber.major", major);
   symbols.PutSymbolInt("system.versionNumber.minor", minor);
 
@@ -108,7 +108,7 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("decr", &StdLib::Decr, FuncDef { FuncDef::OneArg(Int::TypeInstance), FuncDef::OneArg(Int::TypeInstance) });
   RegisterBinaryFunction(symbols, "%", &StdLib::Mod);
 
-  FuncDef baseFn { FuncDef::OneArg(Int::TypeInstance), FuncDef::OneArg(String::TypeInstance) };
+  FuncDef baseFn { FuncDef::OneArg(Int::TypeInstance), FuncDef::OneArg(Str::TypeInstance) };
   symbols.PutSymbolFunction("hex", StdLib::Hex, baseFn.Clone());
   symbols.PutSymbolFunction("bin", StdLib::Bin, baseFn.Clone());
   symbols.PutSymbolFunction("dec", StdLib::Dec, baseFn.Clone());
@@ -122,9 +122,9 @@ void StdLib::Load(Interpreter &interpreter) {
   RegisterBinaryFunction(symbols, "^", &StdLib::BitXor);
   symbols.PutSymbolFunction("~", &StdLib::BitNot, FuncDef { FuncDef::OneArg(Int::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
 
-  // String 
+  // Str 
 
-  symbols.PutSymbolFunction("reverse", &StdLib::Reverse, FuncDef { FuncDef::OneArg(String::TypeInstance), FuncDef::OneArg(String::TypeInstance) });
+  symbols.PutSymbolFunction("reverse", &StdLib::Reverse, FuncDef { FuncDef::OneArg(Str::TypeInstance), FuncDef::OneArg(Str::TypeInstance) });
 
   // Logical
 
@@ -192,10 +192,19 @@ void StdLib::Load(Interpreter &interpreter) {
 
   // Conversion operators
 
+  symbols.PutSymbolFunction("type", &StdLib::TypeFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Function::TypeInstance) });
+
+  symbols.PutSymbolFunction("atom?", &StdLib::TypeQFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
+  symbols.PutSymbolFunction("bool?", &StdLib::TypeQFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
+  symbols.PutSymbolFunction("int?", &StdLib::TypeQFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
+  symbols.PutSymbolFunction("float?", &StdLib::TypeQFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
+  symbols.PutSymbolFunction("str?", &StdLib::TypeQFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
+  symbols.PutSymbolFunction("list?", &StdLib::TypeQFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
+
   symbols.PutSymbolFunction("bool", &StdLib::BoolFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
   symbols.PutSymbolFunction("int", &StdLib::IntFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Int::TypeInstance) });
   symbols.PutSymbolFunction("float", &StdLib::FloatFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Int::TypeInstance) });
-  symbols.PutSymbolFunction("str", &StdLib::StrFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(String::TypeInstance) });
+  symbols.PutSymbolFunction("str", &StdLib::StrFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Str::TypeInstance) });
 
   // Register infix operators by precedence (using C++ rules, where appropriate)
   settings.RegisterInfixSymbol("++");
@@ -471,8 +480,8 @@ bool StdLib::Add(EvaluationContext &ctx) {
         return AddInt(ctx);
       else if (&type == &Float::TypeInstance)
         return AddFloat(ctx);
-      else if (&type == &String::TypeInstance)
-        return AddString(ctx);
+      else if (&type == &Str::TypeInstance)
+        return AddStr(ctx);
       else if (&type == &Quote::TypeInstance)
         return AddList(ctx);
       else
@@ -569,7 +578,7 @@ bool StdLib::Mod(EvaluationContext &ctx) {
 bool StdLib::Hex(EvaluationContext &ctx) {
   std::stringstream ss;
   ss << "0x" << std::hex << *ctx.Args.front();
-  ctx.Expr = ExpressionPtr { new String(ss.str()) };
+  ctx.Expr = ExpressionPtr { new Str(ss.str()) };
   return true;
 }
 
@@ -594,14 +603,14 @@ bool StdLib::Bin(EvaluationContext &ctx) {
   std::string s = ss.str();
   std::reverse(begin(s), end(s));
 
-  ctx.Expr = ExpressionPtr { new String(s) };
+  ctx.Expr = ExpressionPtr { new Str(s) };
   return true;
 }
 
 bool StdLib::Dec(EvaluationContext &ctx) {
   std::stringstream ss;
   ss << *ctx.Args.front();
-  ctx.Expr = ExpressionPtr { new String(ss.str()) };
+  ctx.Expr = ExpressionPtr { new Str(ss.str()) };
   return true;
 }
 
@@ -767,28 +776,28 @@ bool StdLib::BitNot(EvaluationContext &ctx) {
   return ctx.TypeError(Int::TypeInstance, ctx.Args.front());
 }
 
-// String functions
+// Str functions
 
-bool StdLib::AddString(EvaluationContext &ctx) {
+bool StdLib::AddStr(EvaluationContext &ctx) {
   std::stringstream ss;
   while (!ctx.Args.empty()) {
-    auto str = dynamic_cast<String*>(ctx.Args.front().get());
+    auto str = dynamic_cast<Str*>(ctx.Args.front().get());
     if (str)
       ss << str->Value;
     else
-      return ctx.TypeError(String::TypeInstance, ctx.Args.front());
+      return ctx.TypeError(Str::TypeInstance, ctx.Args.front());
 
     ctx.Args.pop_front();
   }
 
-  ctx.Expr = ExpressionPtr { new String { ss.str() } };
+  ctx.Expr = ExpressionPtr { new Str { ss.str() } };
   return true;
 }
 
 bool StdLib::Reverse(EvaluationContext &ctx) {
   ExpressionPtr arg = std::move(ctx.Args.front());
   ctx.Args.pop_front();
-  auto argString = static_cast<String*>(arg.get());
+  auto argString = static_cast<Str*>(arg.get());
   std::reverse(argString->Value.begin(), argString->Value.end());
 
   ctx.Expr = std::move(arg);
@@ -1067,19 +1076,19 @@ bool StdLib::Ne(EvaluationContext &ctx) {
 }
 
 bool StdLib::Lt(EvaluationContext &ctx) {
-  return BinaryPredicate(ctx, LtT<Bool>, LtT<Int>, LtT<Float>, LtT<String>);
+  return BinaryPredicate(ctx, LtT<Bool>, LtT<Int>, LtT<Float>, LtT<Str>);
 }
 
 bool StdLib::Gt(EvaluationContext &ctx) {
-  return BinaryPredicate(ctx, GtT<Bool>, GtT<Int>, GtT<Float>, GtT<String>);
+  return BinaryPredicate(ctx, GtT<Bool>, GtT<Int>, GtT<Float>, GtT<Str>);
 }
 
 bool StdLib::Lte(EvaluationContext &ctx) {
-  return BinaryPredicate(ctx, LteT<Bool>, LteT<Int>, LteT<Float>, LteT<String>);
+  return BinaryPredicate(ctx, LteT<Bool>, LteT<Int>, LteT<Float>, LteT<Str>);
 }
 
 bool StdLib::Gte(EvaluationContext &ctx) {
-  return BinaryPredicate(ctx, GteT<Bool>, GteT<Int>, GteT<Float>, GteT<String>);
+  return BinaryPredicate(ctx, GteT<Bool>, GteT<Int>, GteT<Float>, GteT<Str>);
 }
 
 // Branching, scoping and evaluation
@@ -1313,7 +1322,7 @@ bool StdLib::BoolFunc(EvaluationContext &ctx) {
         value = intValue->Value != 0;
       else if (auto *floatValue = dynamic_cast<Float*>(expr.get()))
         value = floatValue->Value != 0.0;
-      else if (auto *strValue = dynamic_cast<String*>(expr.get()))
+      else if (auto *strValue = dynamic_cast<Str*>(expr.get()))
         value = strValue->Value != "";
       ctx.Expr = ExpressionPtr { new Bool(value) };
       return true;
@@ -1334,7 +1343,7 @@ bool StdLib::IntFunc(EvaluationContext &ctx) {
         value = intValue->Value;
       else if (auto *floatValue = dynamic_cast<Float*>(expr.get()))
         value = std::llround(floatValue->Value);
-      else if (auto *strValue = dynamic_cast<String*>(expr.get())) {
+      else if (auto *strValue = dynamic_cast<Str*>(expr.get())) {
         if (!strValue->Value.empty()) {
           try {
             NumConverter::Convert(strValue->Value, value);
@@ -1362,7 +1371,7 @@ bool StdLib::FloatFunc(EvaluationContext &ctx) {
         value = static_cast<double>(intValue->Value);
       else if (auto *floatValue = dynamic_cast<Float*>(expr.get()))
         value = floatValue->Value;
-      else if (auto *strValue = dynamic_cast<String*>(expr.get())) {
+      else if (auto *strValue = dynamic_cast<Str*>(expr.get())) {
         if (!strValue->Value.empty()) {
           try {
             NumConverter::Convert(strValue->Value, value);
@@ -1384,12 +1393,27 @@ bool StdLib::StrFunc(EvaluationContext &ctx) {
   std::string value = "";
   if (auto &expr = ctx.Args.front()) {
     if (ctx.Evaluate(expr, 1)) {
-      ctx.Expr = ExpressionPtr { new String(expr->ToString()) };
+      ctx.Expr = ExpressionPtr { new Str(expr->ToString()) };
       return true;
     }
     else
       return false;
   }
+  return false;
+}
+
+bool StdLib::TypeFunc(EvaluationContext &ctx) {
+  auto typeName = ctx.Args.front()->Type().TypeName;
+  ExpressionPtr sym;
+  if (ctx.Interp.GetCurrentStackFrame().GetSymbol(typeName, sym))
+    ctx.Expr = std::move(sym);
+  else
+    return ctx.Error("unknown type");
+
+  return true;
+}
+
+bool StdLib::TypeQFunc(EvaluationContext &ctx) {
   return false;
 }
 
@@ -1448,8 +1472,8 @@ bool StdLib::BinaryPredicate(EvaluationContext &ctx, B bFn, I iFn, F fFn, S sFn)
         return PredicateHelper<Int>(ctx, iFn, defaultValue);
       else if (fFn && (&type == &Float::TypeInstance))
         return PredicateHelper<Float>(ctx, fFn, defaultValue);
-      else if (sFn && (&type == &String::TypeInstance))
-        return PredicateHelper<String>(ctx, sFn, defaultValue);
+      else if (sFn && (&type == &Str::TypeInstance))
+        return PredicateHelper<Str>(ctx, sFn, defaultValue);
       else
         return ctx.TypeError(Literal::TypeInstance, *currArg);
     }
