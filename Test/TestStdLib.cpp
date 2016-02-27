@@ -1391,6 +1391,9 @@ TEST_F(StdLibOperatorsTest, TestType) {
   ASSERT_TRUE(RunSuccess("(type true)", "bool"));
   ASSERT_TRUE(RunSuccess("(type false)", "bool"));
   ASSERT_TRUE(RunSuccess("(type \"foo\")", "str"));
+  ASSERT_TRUE(RunSuccess("(type ())", "list"));
+  ASSERT_TRUE(RunSuccess("(type (1))", "list"));
+  ASSERT_TRUE(RunSuccess("(type (1 2))", "list"));
 
   ASSERT_TRUE(RunSuccess("a = 3.14", "3.14"));
   ASSERT_TRUE(RunSuccess("(type a)", "float"));

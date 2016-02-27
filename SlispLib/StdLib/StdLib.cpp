@@ -1407,14 +1407,47 @@ bool StdLib::StrFunc(EvaluationContext &ctx) {
 }
 
 bool StdLib::TypeFunc(EvaluationContext &ctx) {
-  auto typeName = ctx.Args.front()->Type().TypeName;
-  ExpressionPtr sym;
-  if (ctx.Interp.GetCurrentStackFrame().GetSymbol(typeName, sym))
-    ctx.Expr = std::move(sym);
+  auto &arg = ctx.Args.front();
+  auto &type = arg->Type();
+  
+  std::string typeName;
+  if (&type == &Quote::TypeInstance) {
+    auto &quoteValue = static_cast<Quote*>(arg.get())->Value;
+    if (quoteValue) {
+      if (auto *sexp = dynamic_cast<Sexp*>(quoteValue.get())) {
+        if (sexp->Args.empty())
+          typeName = "list";
+        else {
+          auto &firstSexpArg = sexp->Args.front();
+          if (auto *sym = dynamic_cast<Symbol*>(firstSexpArg.get())) {
+            ExpressionPtr symValue;
+            if (ctx.Interp.GetCurrentStackFrame().GetSymbol(sym->Value, symValue)) {
+              if (TypeHelper::IsFunction(symValue->Type()))
+                typeName = "quote";
+              else
+                typeName = "list";
+            }
+          }
+          else 
+            typeName = "list";
+        }
+      }
+      else
+        typeName = "quote";
+    }
+    else
+      typeName = "quote";
+  }
+  else
+    typeName = ctx.Args.front()->Type().TypeName;
+
+  ExpressionPtr typeSymbol;
+  if (ctx.Interp.GetCurrentStackFrame().GetSymbol(typeName, typeSymbol)) {
+    ctx.Expr = std::move(typeSymbol);
+    return true;
+  }
   else
     return ctx.Error("unknown type");
-
-  return true;
 }
 
 bool StdLib::TypeQFunc(EvaluationContext &ctx) {
