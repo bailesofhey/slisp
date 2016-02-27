@@ -44,6 +44,8 @@ class EvaluationContext {
     bool Evaluate(ExpressionPtr &expr, const std::string &argName);
     bool EvaluateNoError(ExpressionPtr &expr);
 
+    const std::string GetThisFunctionName();
+
     bool Error(const std::string &what);
     bool EvaluateError(int argNum);
     bool EvaluateError(const std::string &argName);

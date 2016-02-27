@@ -363,40 +363,32 @@ bool StdLib::Set(EvaluationContext &ctx) {
   ctx.Args.pop_front();
   if (auto *symToSet = dynamic_cast<Symbol*>(symToSetExpr.get())) {
     std::string symToSetName = symToSet->Value;
-    if (auto *thisSexp = dynamic_cast<Sexp*>(ctx.Expr.get())) {
-      if (auto *thisFn = dynamic_cast<Function*>(thisSexp->Args.front().get())) {
-        if (thisFn->Symbol) {
-          if (auto *thisFnSym = dynamic_cast<Symbol*>(thisFn->Symbol.get())) {
-            std::string setOp = thisFnSym->Value;
-            if (setOp.length() > 1 && setOp.back() == '=') { 
-              std::string op = setOp.substr(0, setOp.length() - 1);
-              BuildOpSexp(ctx, op, symToSetExpr);
-            }
-            else if (setOp == "++")
-              BuildOpSexp(ctx, "incr", symToSetExpr);
-            else if (setOp == "--")
-              BuildOpSexp(ctx, "decr", symToSetExpr);
+    const std::string setOp = ctx.GetThisFunctionName();
+    if (!setOp.empty()) {
+      if (setOp.length() > 1 && setOp.back() == '=') { 
+        std::string op = setOp.substr(0, setOp.length() - 1);
+        BuildOpSexp(ctx, op, symToSetExpr);
+      }
+      else if (setOp == "++")
+        BuildOpSexp(ctx, "incr", symToSetExpr);
+      else if (setOp == "--")
+        BuildOpSexp(ctx, "decr", symToSetExpr);
 
-            ExpressionPtr value = std::move(ctx.Args.front());
-            ctx.Args.pop_front();
-            if (ctx.Evaluate(value, "value")) {
-              auto &currStackFrame = ctx.Interp.GetCurrentStackFrame();
-              ExpressionPtr temp;
-              if (currStackFrame.GetLocalSymbols().GetSymbol(symToSetName, temp))
-                currStackFrame.PutLocalSymbol(symToSetName, value->Clone());
-              else
-                currStackFrame.PutDynamicSymbol(symToSetName, value->Clone());
+      ExpressionPtr value = std::move(ctx.Args.front());
+      ctx.Args.pop_front();
+      if (ctx.Evaluate(value, "value")) {
+        auto &currStackFrame = ctx.Interp.GetCurrentStackFrame();
+        ExpressionPtr temp;
+        if (currStackFrame.GetLocalSymbols().GetSymbol(symToSetName, temp))
+          currStackFrame.PutLocalSymbol(symToSetName, value->Clone());
+        else
+          currStackFrame.PutDynamicSymbol(symToSetName, value->Clone());
 
-              ctx.Expr = std::move(value);
-              return true;
-            }
-            else
-              return false; 
-          }
-        }
+        ctx.Expr = std::move(value);
+        return true;
       }
     }
-    return ctx.Error("Internal error reading sexp");
+    return false;
   }
   else
     return ctx.TypeError(Symbol::TypeInstance, symToSetExpr);
@@ -1451,7 +1443,21 @@ bool StdLib::TypeFunc(EvaluationContext &ctx) {
 }
 
 bool StdLib::TypeQFunc(EvaluationContext &ctx) {
-  return false;
+  std::string thisFuncName  = ctx.GetThisFunctionName();
+  if (!thisFuncName.empty()) {
+    if (thisFuncName.back() == '?') {
+      thisFuncName.erase(thisFuncName.end() - 1);
+      ExpressionPtr typeExpr { new Sexp };
+      auto *typeSexp = static_cast<Sexp*>(typeExpr.get());
+      typeSexp->Args.push_back(ExpressionPtr { new Symbol("type") });
+      typeSexp->Args.push_back(ctx.Args.front()->Clone());
+      ctx.Args.clear();
+      ctx.Args.push_back(ExpressionPtr { new Symbol(thisFuncName) });
+      ctx.Args.push_back(std::move(typeExpr));
+      return Eq(ctx);
+    }
+  }
+  return false; 
 }
 
 // Helpers

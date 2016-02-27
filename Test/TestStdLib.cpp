@@ -1398,3 +1398,19 @@ TEST_F(StdLibOperatorsTest, TestType) {
   ASSERT_TRUE(RunSuccess("a = 3.14", "3.14"));
   ASSERT_TRUE(RunSuccess("(type a)", "float"));
 }
+
+TEST_F(StdLibOperatorsTest, TestTypeQ) {
+  ASSERT_TRUE(RunSuccess("(bool? true)", "true"));
+  ASSERT_TRUE(RunSuccess("(bool? 3)", "false"));
+  ASSERT_TRUE(RunSuccess("(int? 3)", "true"));
+  ASSERT_TRUE(RunSuccess("(int? 3.14)", "false"));
+  ASSERT_TRUE(RunSuccess("(float? 3.14)", "true"));
+  ASSERT_TRUE(RunSuccess("(float? \"foo\")", "false"));
+  ASSERT_TRUE(RunSuccess("(str? \"foo\")", "true"));
+  ASSERT_TRUE(RunSuccess("(str? (1 2))", "false"));
+  ASSERT_TRUE(RunSuccess("(list? (1 2))", "true"));
+  ASSERT_TRUE(RunSuccess("(list? false)", "false"));
+
+  ASSERT_TRUE(RunSuccess("a = 3.14", "3.14"));
+  ASSERT_TRUE(RunSuccess("(float? a)", "true"));
+}

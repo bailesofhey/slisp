@@ -78,6 +78,20 @@ bool EvaluationContext::Evaluate(ExpressionPtr &expr, const std::string &argName
   return EvaluateNoError(expr) ? true : EvaluateError(argName);
 }
 
+const std::string EvaluationContext::GetThisFunctionName() {
+  if (auto *thisSexp = dynamic_cast<Sexp*>(Expr.get())) {
+    if (auto *thisFn = dynamic_cast<Function*>(thisSexp->Args.front().get())) {
+      if (thisFn->Symbol) {
+        if (auto *thisFnSym = dynamic_cast<Symbol*>(thisFn->Symbol.get())) {
+          return thisFnSym->Value;
+        }
+      }
+    }
+  }
+  Error("Failed to get current function name");
+  return "";
+}
+
 bool EvaluationContext::Error(const std::string &what) {
   return Interp.PushError(EvalError { CurrentFunction.Value, what });
 }
