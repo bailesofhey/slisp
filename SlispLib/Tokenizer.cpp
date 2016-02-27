@@ -19,18 +19,24 @@ ITokenizer& Tokenizer::operator++() {
     TokenizeNone();
     SkipWhitespace(currChar);
     if (!Stream.eof() && currChar != '\0') {
-      if (std::isdigit(currChar))
-        TokenizeNumber(currChar);
-      else if (SymbolPredicate(currChar))
-        TokenizeSymbol(currChar);
-      else if (currChar == '"')
-        TokenizeString(currChar);
-      else if (currChar == '(')
-        TokenizeParenOpen(currChar);
-      else if (currChar == ')')
-        TokenizeParenClose(currChar);
-      else
-        TokenizeUnknown(currChar);
+      if (currChar == '#') {
+        Stream.str("");
+        Stream.clear();
+      }
+      else {
+        if (std::isdigit(currChar))
+          TokenizeNumber(currChar);
+        else if (SymbolPredicate(currChar))
+          TokenizeSymbol(currChar);
+        else if (currChar == '"')
+          TokenizeString(currChar);
+        else if (currChar == '(')
+          TokenizeParenOpen(currChar);
+        else if (currChar == ')')
+          TokenizeParenClose(currChar);
+        else
+          TokenizeUnknown(currChar);
+      }
     }
     else
       TokenizeNone();

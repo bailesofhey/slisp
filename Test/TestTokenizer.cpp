@@ -56,6 +56,10 @@ TEST(Tokenizer, TestNone) {
     { "", { Token() } },
     { " ", { Token() } },
     { "     ", { Token() } },
+
+    // comments
+    { "# this is a comment", { Token() } },
+    { "# this is a \n# multiline\n# comment!", { Token() } },
   });
 }
 
@@ -87,6 +91,8 @@ TEST(Tokenizer, TestNumber) {
 
     { "   123   ", { Token(TokenTypes::NUMBER, "123") } },
     { " 1 23  345 ", { Token(TokenTypes::NUMBER, "1"), Token(TokenTypes::NUMBER, "23"), Token(TokenTypes::NUMBER, "345") } },
+
+    { "123 # this is tokenize as a number", { Token(TokenTypes::NUMBER, "123") } },
   });
 }
 
@@ -101,7 +107,6 @@ TEST(Tokenizer, TestSymbol) {
     { "`", { Token(TokenTypes::SYMBOL, "`") } },
     { "!", { Token(TokenTypes::SYMBOL, "!") } },
     { "@", { Token(TokenTypes::SYMBOL, "@") } },
-    { "#", { Token(TokenTypes::SYMBOL, "#") } },
     { "$", { Token(TokenTypes::SYMBOL, "$") } },
     { "%", { Token(TokenTypes::SYMBOL, "%") } },
     { "^", { Token(TokenTypes::SYMBOL, "^") } },
@@ -136,6 +141,7 @@ TEST(Tokenizer, TestSymbol) {
       Token(TokenTypes::SYMBOL, "$baraaa**z"),
     }},
 
+    { "foobar # this is tokenize as a symbol", { Token(TokenTypes::SYMBOL, "foobar") } },
   });
 }
 
@@ -156,6 +162,9 @@ TEST(Tokenizer, TestString) {
       Token(TokenTypes::STRING, "a   "),
       Token(TokenTypes::STRING, "  a b "),
     }},
+
+    { "\"Hello, world!\" # this is tokenize as a string", { Token(TokenTypes::STRING, "Hello, world!") } },
+    { "\"This string has an octothorpe #\" # this is tokenize as a string and not loose the hash mark", { Token(TokenTypes::STRING, "This string has an octothorpe #") } },
 
     // TODO: need to support escape characters: \" \\ \n \r \t
   });
