@@ -1447,14 +1447,15 @@ bool StdLib::TypeQFunc(EvaluationContext &ctx) {
   if (!thisFuncName.empty()) {
     if (thisFuncName.back() == '?') {
       thisFuncName.erase(thisFuncName.end() - 1);
+      bool isAtomFunc = thisFuncName == "atom";
       ExpressionPtr typeExpr { new Sexp };
       auto *typeSexp = static_cast<Sexp*>(typeExpr.get());
       typeSexp->Args.push_back(ExpressionPtr { new Symbol("type") });
       typeSexp->Args.push_back(ctx.Args.front()->Clone());
       ctx.Args.clear();
-      ctx.Args.push_back(ExpressionPtr { new Symbol(thisFuncName) });
+      ctx.Args.push_back(ExpressionPtr { new Symbol(isAtomFunc ? "list" : thisFuncName) });
       ctx.Args.push_back(std::move(typeExpr));
-      return Eq(ctx);
+      return isAtomFunc ? Ne(ctx) : Eq(ctx);
     }
   }
   return false; 
