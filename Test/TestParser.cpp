@@ -139,6 +139,8 @@ TEST_F(ParserTest, TestSingleSymbol) {
 
   std::string longSym = "abcdefghijklmnopqrstuvwxyz0123456789";
   ASSERT_PARSE({ Token(TokenTypes::SYMBOL, longSym) }, { new Symbol(longSym) });
+
+  ASSERT_PARSE({ Token(TokenTypes::SYMBOL, "'a") }, { new Sexp({ExpressionPtr {new Symbol("'")}, ExpressionPtr {new Symbol("a")} }) });
 }
 
 TEST_F(ParserTest, TestSingleString) {

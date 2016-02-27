@@ -207,6 +207,12 @@ TEST(Tokenizer, TestUnknown) {
 
     { "0b", { Token(TokenTypes::UNKNOWN, "0b") } },
     { "0b11012", { Token(TokenTypes::UNKNOWN, "0b11012") } },
+
+    { "'a'", { Token(TokenTypes::UNKNOWN, "'a'") } },
+    { "a'", { Token(TokenTypes::UNKNOWN, "a'") } },
+    { "'a'b", { Token(TokenTypes::UNKNOWN, "'a'b") } },
+    { "'a'b'", { Token(TokenTypes::UNKNOWN, "'a'b'") } },
+    { "a'b", { Token(TokenTypes::UNKNOWN, "a'b") } },
   });
 }
 

@@ -1168,6 +1168,9 @@ TEST_F(StdLibBranchTest, TestQuoteFn) {
   ASSERT_TRUE(RunFail("(* 4 q)"));
   ASSERT_TRUE(RunSuccess("(set foo 5)", "5"));
   ASSERT_TRUE(RunSuccess("(* 4 q)", "20"));
+
+  ASSERT_TRUE(RunSuccess("'a", "a"));
+  ASSERT_TRUE(RunSuccess("'foobar", "foobar"));
 }
 
 TEST_F(StdLibBranchTest, TestUnquote) {

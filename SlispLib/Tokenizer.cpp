@@ -108,6 +108,13 @@ void Tokenizer::TokenizeSymbol(char &currChar) {
     }
     CurrToken.Type = TokenTypes::NUMBER;
   }
+
+  for (size_t i = 1; i < len; ++i) {
+    if (CurrToken.Value[i] == '\'') {
+      CurrToken.Type = TokenTypes::UNKNOWN;
+      return;
+    }
+  }
 }
 
 void Tokenizer::TokenizeString(char &currChar) {

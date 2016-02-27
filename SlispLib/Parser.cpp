@@ -249,7 +249,14 @@ bool Parser::ParseNumber(Sexp &root) {
 bool Parser::ParseSymbol(Sexp &root) {
   auto &val = (*Tokenizer_).Value;
   if (!val.empty()) {
-    root.Args.push_back(ExpressionPtr { new Symbol { val } });
+    if (val.length() > 1 && val[0] == '\'') {
+      root.Args.push_back(ExpressionPtr { new Sexp({
+        ExpressionPtr { new Symbol("'") },
+        ExpressionPtr { new Symbol(val.substr(1)) }
+      }) });
+    }
+    else
+      root.Args.push_back(ExpressionPtr { new Symbol { val } });
     return true;
   }
   else {
