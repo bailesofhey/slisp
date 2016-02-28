@@ -864,6 +864,20 @@ TEST_F(StdLibListTest, TestRange) {
   ASSERT_TRUE(RunSuccess("(range 1 3)", "(1 2 3)"));
   ASSERT_TRUE(RunFail("(range 3 1)"));
   ASSERT_TRUE(RunSuccess("(range -3 -1)", "(-3 -2 -1)"));
+
+  // using step
+  ASSERT_TRUE(RunFail("(range 1 4 0)"));
+  ASSERT_TRUE(RunSuccess("(range 1 4 1)", "(1 2 3 4)"));
+  ASSERT_TRUE(RunSuccess("(range 1 4 2)", "(1 3)"));
+  ASSERT_TRUE(RunFail("(range 4 1 1)"));
+  ASSERT_TRUE(RunSuccess("(range 4 1 -1)", "(4 3 2 1)"));
+
+  ASSERT_TRUE(RunSuccess("(range -4 -1 1)", "(-4 -3 -2 -1)"));
+  ASSERT_TRUE(RunSuccess("(range -4 -1 2)", "(-4 -2)"));
+  ASSERT_TRUE(RunFail("(range -1 -4 1)"));
+  ASSERT_TRUE(RunSuccess("(range -1 -4 -1)", "(-1 -2 -3 -4)"));
+
+  ASSERT_TRUE(RunSuccess("(range 1 4 100)", "(1)"));
 }
 
 class StdLibLogicalTest: public StdLibTest {

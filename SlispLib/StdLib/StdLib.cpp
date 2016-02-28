@@ -153,7 +153,7 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("rest", &StdLib::Tail, FuncDef { FuncDef::OneArg(Quote::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
 
   symbols.PutSymbolFunction("cons", &StdLib::Cons, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2), FuncDef::OneArg(Quote::TypeInstance) });
-  symbols.PutSymbolFunction("range", &StdLib::Range, FuncDef { FuncDef::ManyArgs(Int::TypeInstance, 2), FuncDef::OneArg(Quote::TypeInstance) });
+  symbols.PutSymbolFunction("range", &StdLib::Range, FuncDef { FuncDef::ManyArgs(Int::TypeInstance, 2, 3), FuncDef::OneArg(Quote::TypeInstance) });
 
   // Logical
 
@@ -974,19 +974,35 @@ bool StdLib::Range(EvaluationContext &ctx) {
   ExpressionPtr endExpr = std::move(ctx.Args.front());
   ctx.Args.pop_front();
 
-  auto start = static_cast<Int*>(startExpr.get()),
-       end   = static_cast<Int*>(endExpr.get());
-  if (start->Value <= end->Value) {
-    ExpressionPtr listSexp { new Sexp };
-    auto list = static_cast<Sexp*>(listSexp.get());
-    for (int64_t i = start->Value; i <= end->Value; ++i)
-      list->Args.push_back(ExpressionPtr { new Int(i) });
-    ctx.Expr = ExpressionPtr { new Quote(std::move(listSexp)) };
-    return true;
+  int64_t step = 1;
+  if (!ctx.Args.empty()) {
+    ExpressionPtr stepExpr = std::move(ctx.Args.front());
+    ctx.Args.pop_front();
+    auto stepV = static_cast<Int*>(stepExpr.get());
+    step = stepV->Value; 
+    if (step == 0)
+      return ctx.Error("step cannot be zero");
   }
-  else
-    return ctx.Error("infinite ranges are not supported");
-   
+  bool positiveStep = step > 0;
+  auto startV = static_cast<Int*>(startExpr.get()),
+       endV   = static_cast<Int*>(endExpr.get());
+  int64_t start = startV->Value,
+          end   = endV->Value;
+  if (positiveStep) {
+    if (start > end)
+      return ctx.Error("start cannot be greater than end when using a positive step");
+  }
+  else {
+    if (start < end)
+      return ctx.Error("start cannot be less than end when using a negative step");
+  }
+
+  ExpressionPtr listSexp { new Sexp };
+  auto list = static_cast<Sexp*>(listSexp.get());
+  for (int64_t i = start; positiveStep ? (i <= end) : (i >= end); i += step)
+    list->Args.push_back(ExpressionPtr { new Int(i) });
+  ctx.Expr = ExpressionPtr { new Quote(std::move(listSexp)) };
+  return true;
 }
 
 // Logical
