@@ -758,6 +758,13 @@ TEST_F(StdLibStrTest, TestEmpty) {
   ASSERT_TRUE(RunSuccess("(empty? \"foo bar\")", "false"));
 }
 
+TEST_F(StdLibStrTest, TestLength) {
+  ASSERT_TRUE(RunFail("(length)"));
+  ASSERT_TRUE(RunFail("(length 3)"));
+  ASSERT_TRUE(RunSuccess("(length \"\")", "0"));
+  ASSERT_TRUE(RunSuccess("(length \"foo\")", "3"));
+}
+
 class StdLibListTest: public StdLibTest {
 };
 
@@ -854,6 +861,14 @@ TEST_F(StdLibListTest, TestEmpty) {
   ASSERT_TRUE(RunSuccess("(empty? ())", "true"));
   ASSERT_TRUE(RunSuccess("(empty? nil)", "true"));
   ASSERT_TRUE(RunSuccess("(empty? (1 2))", "false"));
+}
+
+TEST_F(StdLibListTest, TestLength) {
+  ASSERT_TRUE(RunFail("(length)"));
+  ASSERT_TRUE(RunFail("(length 3)"));
+  ASSERT_TRUE(RunSuccess("(length ())", "0"));
+  ASSERT_TRUE(RunSuccess("(length nil)", "0"));
+  ASSERT_TRUE(RunSuccess("(length (23 42))", "2"));
 }
 
 TEST_F(StdLibListTest, TestRange) {

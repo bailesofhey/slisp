@@ -26,6 +26,7 @@ class StdLib: public Library {
     // Generic
     static bool Add(EvaluationContext &ctx);
     static bool EmptyQ(EvaluationContext &ctx);
+    static bool Length(EvaluationContext &ctx);
     static bool Sub(EvaluationContext &ctx);
     static bool Mult(EvaluationContext &ctx);
     static bool Div(EvaluationContext &ctx);
@@ -144,6 +145,9 @@ class StdLib: public Library {
     static bool StrFunc(EvaluationContext &ctx);
 
     // Helpers
+    template <class S, class L>
+    static bool SequenceFn(EvaluationContext &ctx, S strFn, L listFn);
+
     static bool IsQuoteAList(EvaluationContext &ctx, Quote &quote);
     static bool EvaluateListSexp(EvaluationContext &ctx); 
 

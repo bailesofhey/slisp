@@ -67,6 +67,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   // Generic
 
+  symbols.PutSymbolFunction("length", &StdLib::Length, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Int::TypeInstance) });
   symbols.PutSymbolFunction("+", &StdLib::Add, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("empty?", &StdLib::EmptyQ, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
   symbols.PutSymbolFunction("-", &StdLib::Sub, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
@@ -496,18 +497,33 @@ bool StdLib::Add(EvaluationContext &ctx) {
     return ctx.ArgumentExpectedError();
 }
 
+bool StdLib::Length(EvaluationContext &ctx) {
+  return SequenceFn(ctx, 
+    [](std::string &value) { return new Int(value.size()); },
+    [](ArgList &value)     { return new Int(value.size()); }
+  );
+}
+
 bool StdLib::EmptyQ(EvaluationContext &ctx) {
+  return SequenceFn(ctx, 
+    [](std::string &value) { return new Bool(value.empty()); },
+    [](ArgList &value)     { return new Bool(value.empty()); }
+  );
+}
+
+template <class S, class L>
+bool StdLib::SequenceFn(EvaluationContext &ctx, S strFn, L listFn) {
   ExpressionPtr arg = std::move(ctx.Args.front());
   ctx.Args.clear();
   if (ctx.Evaluate(arg, "1")) {
     if (auto str = dynamic_cast<Str*>(arg.get())) {
-      ctx.Expr = ExpressionPtr { new Bool(str->Value.empty()) };
+      ctx.Expr = ExpressionPtr { strFn(str->Value) };
       return true;
     }
     else if (auto quote = dynamic_cast<Quote*>(arg.get())) {
       if (IsQuoteAList(ctx, *quote)) {
         if (auto listSexp = dynamic_cast<Sexp*>(quote->Value.get())) {
-          ctx.Expr = ExpressionPtr { new Bool(listSexp->Args.empty()) };
+          ctx.Expr = ExpressionPtr { listFn(listSexp->Args) };
           return true;
         }
       }
