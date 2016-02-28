@@ -123,6 +123,7 @@ class StdLib: public Library {
     // Branching, scoping, evaluation
     static bool If(EvaluationContext &ctx);
     static bool Cond(EvaluationContext &ctx);
+    static bool Switch(EvaluationContext &ctx);
     static bool Let(EvaluationContext &ctx);
     static bool QuoteFn(EvaluationContext &ctx);
     static bool Unquote(EvaluationContext &ctx);

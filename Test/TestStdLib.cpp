@@ -1088,6 +1088,43 @@ TEST_F(StdLibBranchTest, TestCond) {
   ASSERT_TRUE(RunFail(code));
 }
 
+TEST_F(StdLibBranchTest, TestSwitch) {
+  ASSERT_TRUE(RunFail("(switch)"));
+  ASSERT_TRUE(RunFail("(switch 2)"));
+  ASSERT_TRUE(RunFail("(switch 2 ())"));
+  ASSERT_TRUE(RunSuccess("(switch 2 (1 \"one\") (\"other\"))", "other"));
+  ASSERT_TRUE(RunSuccess("(switch 2 (case 1 \"one\") (default \"other\"))", "other"));
+  ASSERT_TRUE(RunSuccess("(switch 2 (1 \"one\") (2 \"two\") (\"other\"))", "two"));
+  ASSERT_TRUE(RunSuccess("(switch 2 (case 1 \"one\") (case 2 \"two\") (default \"other\"))", "two"));
+  ASSERT_TRUE(RunSuccess("(switch 3 (1 \"one\") (2 \"two\") (\"other\"))", "other"));
+
+  ASSERT_TRUE(RunFail("(switch 3 (noncasesymbol 3 \"three\") (default 3))"));
+
+  // Make sure varExpr only gets evaluated once
+  ASSERT_TRUE(RunSuccess("n = 1", "1"));
+  ASSERT_TRUE(RunSuccess("(switch (n += 1) (2 \"two\") (\"other\"))", "two"));
+  
+  const char *code1 = "(switch (type x)            "
+                      "  (int \"x is an int\")     "
+                      "  (float \"x is a float\")  "
+                      "  (\"x is not a number\"))  ";
+  const char *code2 = "(switch (type x)                    "
+                      "  (case int \"x is an int\")        "
+                      "  (case float \"x is a float\")     "
+                      "  (default \"x is not a number\"))  ";
+  ASSERT_TRUE(RunFail(code1));
+  ASSERT_TRUE(RunFail(code2));
+  ASSERT_TRUE(RunSuccess("x = 4", "4"));
+  ASSERT_TRUE(RunSuccess(code1, "is an int"));
+  ASSERT_TRUE(RunSuccess(code2, "is an int"));
+  ASSERT_TRUE(RunSuccess("x = 3.14", "3.14"));
+  ASSERT_TRUE(RunSuccess(code1, "is a float"));
+  ASSERT_TRUE(RunSuccess(code2, "is a float"));
+  ASSERT_TRUE(RunSuccess("x = \"foo\"", "foo"));
+  ASSERT_TRUE(RunSuccess(code1, "is not a number"));
+  ASSERT_TRUE(RunSuccess(code2, "is not a number"));
+}
+
 TEST_F(StdLibBranchTest, TestIf) {
   ASSERT_TRUE(RunFail("(if)"));
   ASSERT_TRUE(RunFail("(if true)"));

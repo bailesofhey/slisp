@@ -184,6 +184,7 @@ void StdLib::Load(Interpreter &interpreter) {
   });
 
   symbols.PutSymbolFunction("cond", &StdLib::Cond, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 1, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction("switch", &StdLib::Switch, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 3, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("let", &StdLib::Let, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("begin", &StdLib::Begin, FuncDef { FuncDef::AtleastOneArg(Sexp::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("lambda", &StdLib::Lambda, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2), FuncDef::OneArg(Function::TypeInstance) });
@@ -1117,17 +1118,21 @@ bool StdLib::Unquote(EvaluationContext &ctx) {
   return false;
 }
 
+// (cond 
+//   ((n > 0) "greater than zero") 
+//   ((n < 0) "less than zero") 
+//   (true    "equal to zero")) 
 bool StdLib::Cond(EvaluationContext &ctx) {
   int argNum = 1;
   while (!ctx.Args.empty()) {
     ExpressionPtr arg = std::move(ctx.Args.front());
     ctx.Args.pop_front();
-    if (auto sexp = dynamic_cast<Sexp*>(arg.get())) {
-      if (sexp->Args.size() == 2) {
-        ExpressionPtr boolExpr = std::move(sexp->Args.front());
-        sexp->Args.pop_front();
-        ExpressionPtr statementExpr = std::move(sexp->Args.front());
-        sexp->Args.pop_front();
+    if (auto argSexp = dynamic_cast<Sexp*>(arg.get())) {
+      if (argSexp->Args.size() == 2) {
+        ExpressionPtr boolExpr = std::move(argSexp->Args.front());
+        argSexp->Args.pop_front();
+        ExpressionPtr statementExpr = std::move(argSexp->Args.front());
+        argSexp->Args.pop_front();
         if (ctx.Evaluate(boolExpr, "condition")) {
           if (auto boolResult = dynamic_cast<Bool*>(boolExpr.get())) {
             if (boolResult->Value) {
@@ -1146,12 +1151,98 @@ bool StdLib::Cond(EvaluationContext &ctx) {
           return false;
       }
       else
-        return ctx.Error("arg " + std::to_string(argNum) + ": expected 2 args. got " + std::to_string(sexp->Args.size()));
+        return ctx.Error("arg " + std::to_string(argNum) + ": expected 2 args. got " + std::to_string(argSexp->Args.size()));
     }
     else
       return ctx.TypeError(Sexp::TypeInstance, arg);
     ++argNum;
   }
+  ctx.Expr = GetNil();
+  return true;
+}
+
+// (switch (type x)                  #  (switch (type x)
+//   (case int "x is an int")        #    (int "x is an int")
+//   (case float "x is a float")     #    (float "x is a float")
+//   (default "x is not a number"))  #    ("x is not a number"))
+
+// TODO: needs refactoring!
+bool StdLib::Switch(EvaluationContext &ctx) {
+  ArgList argCopy;
+  ArgListHelper::CopyTo(ctx.Args, argCopy);
+  ExpressionPtr varExpr = std::move(argCopy.front());
+  argCopy.pop_front();
+  int argNum = 1;
+  if (ctx.Evaluate(varExpr, "variable")) {
+    while (!argCopy.empty()) {
+      ExpressionPtr arg = std::move(argCopy.front());
+      argCopy.pop_front();
+      bool isDefault = argCopy.empty();
+      if (auto argSexp = dynamic_cast<Sexp*>(arg.get())) {
+        const std::string optionalSymbolName = isDefault ? "default" : "case";
+        if (argSexp->Args.size() == (isDefault ? 2 : 3)) {
+          ExpressionPtr optionalCaseSymbolExpr = std::move(argSexp->Args.front());
+          argSexp->Args.front();
+          argSexp->Args.pop_front();
+          if (auto optionalCaseSymbol = dynamic_cast<Symbol*>(optionalCaseSymbolExpr.get())) {
+            if (optionalCaseSymbol->Value != optionalSymbolName)
+              return ctx.Error("Expected \"" + optionalSymbolName + "\"");
+          }
+          else
+            return ctx.Error("Expected \"" + optionalSymbolName + "\" symbol");
+        }
+
+        if (isDefault) {
+          if (argSexp->Args.size() == 1) {
+            ExpressionPtr statementExpr = std::move(argSexp->Args.front());
+            argSexp->Args.pop_front();
+            if (ctx.Evaluate(statementExpr, "statement")) {
+              ctx.Expr = std::move(statementExpr);
+              return true;
+            }
+            else
+              return false;
+          }
+          else
+            return ctx.Error("arg " + std::to_string(argNum) + ": expected 1 args. got " + std::to_string(argSexp->Args.size()));
+        }
+        else {
+          if (argSexp->Args.size() == 2) {
+            ExpressionPtr valueExpr = std::move(argSexp->Args.front());
+            argSexp->Args.pop_front();
+            ExpressionPtr statementExpr = std::move(argSexp->Args.front());
+            argSexp->Args.pop_front();
+            ctx.Args.clear();
+            ctx.Args.push_front(std::move(valueExpr));
+            ctx.Args.push_front(varExpr->Clone());
+            if (Eq(ctx)) {
+              if (auto boolResult = dynamic_cast<Bool*>(ctx.Expr.get())) {
+                if (boolResult->Value) {
+                  if (ctx.Evaluate(statementExpr, "statement")) {
+                    ctx.Expr = std::move(statementExpr);
+                    return true;
+                  }
+                  else
+                    return false;
+                }
+              }
+              else
+                return ctx.TypeError(Bool::TypeInstance, ctx.Expr);
+            }
+            else
+              return false;
+          }
+          else
+            return ctx.Error("arg " + std::to_string(argNum) + ": expected 2 args. got " + std::to_string(argSexp->Args.size()));
+        }
+      }
+      else
+        return ctx.TypeError(Sexp::TypeInstance, arg);
+      ++argNum;
+    }
+  }
+  else
+    return false;
   ctx.Expr = GetNil();
   return true;
 }
