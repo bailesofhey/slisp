@@ -320,7 +320,7 @@ const std::string FuncDef::ToString() const {
 
 //=============================================================================
 
-const TypeInfo Function::TypeInstance("function");
+const TypeInfo Function::TypeInstance("fn");
 
 Function::Function():
   Function {

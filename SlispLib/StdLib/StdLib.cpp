@@ -177,10 +177,13 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("quote", &StdLib::QuoteFn, FuncDef { FuncDef::OneArg(Sexp::TypeInstance), FuncDef::OneArg(Quote::TypeInstance) });
   symbols.PutSymbolFunction("'", &StdLib::QuoteFn, FuncDef { FuncDef::OneArg(Sexp::TypeInstance), FuncDef::OneArg(Quote::TypeInstance) });
   symbols.PutSymbolFunction("unquote", &StdLib::Unquote, FuncDef { FuncDef::OneArg(Sexp::TypeInstance), FuncDef::OneArg(Quote::TypeInstance) });
+
   symbols.PutSymbolFunction("if", &StdLib::If, FuncDef { 
     FuncDef::Args({&Bool::TypeInstance, &Sexp::TypeInstance, &Sexp::TypeInstance}),
     FuncDef::OneArg(Literal::TypeInstance)
   });
+
+  symbols.PutSymbolFunction("cond", &StdLib::Cond, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("let", &StdLib::Let, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("begin", &StdLib::Begin, FuncDef { FuncDef::AtleastOneArg(Sexp::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("lambda", &StdLib::Lambda, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2), FuncDef::OneArg(Function::TypeInstance) });
@@ -201,6 +204,7 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("float?", &StdLib::TypeQFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
   symbols.PutSymbolFunction("str?", &StdLib::TypeQFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
   symbols.PutSymbolFunction("list?", &StdLib::TypeQFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
+  symbols.PutSymbolFunction("fn?", &StdLib::TypeQFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
 
   symbols.PutSymbolFunction("bool", &StdLib::BoolFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
   symbols.PutSymbolFunction("int", &StdLib::IntFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Int::TypeInstance) });
@@ -1110,6 +1114,10 @@ bool StdLib::Unquote(EvaluationContext &ctx) {
 
     return true;
   }
+  return false;
+}
+
+bool StdLib::Cond(EvaluationContext &ctx) {
   return false;
 }
 

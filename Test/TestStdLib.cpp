@@ -1397,6 +1397,7 @@ TEST_F(StdLibOperatorsTest, TestType) {
   ASSERT_TRUE(RunSuccess("(type ())", "list"));
   ASSERT_TRUE(RunSuccess("(type (1))", "list"));
   ASSERT_TRUE(RunSuccess("(type (1 2))", "list"));
+  ASSERT_TRUE(RunSuccess("(type +)", "fn"));
 
   ASSERT_TRUE(RunSuccess("a = 3.14", "3.14"));
   ASSERT_TRUE(RunSuccess("(type a)", "float"));
@@ -1412,7 +1413,9 @@ TEST_F(StdLibOperatorsTest, TestTypeQ) {
   ASSERT_TRUE(RunSuccess("(str? \"foo\")", "true"));
   ASSERT_TRUE(RunSuccess("(str? (1 2))", "false"));
   ASSERT_TRUE(RunSuccess("(list? (1 2))", "true"));
-  ASSERT_TRUE(RunSuccess("(list? false)", "false"));
+  ASSERT_TRUE(RunSuccess("(list? +)", "false"));
+  ASSERT_TRUE(RunSuccess("(fn? +)", "true"));
+  ASSERT_TRUE(RunSuccess("(fn? false)", "false"));
   ASSERT_TRUE(RunSuccess("(atom? 3)", "true"));
   ASSERT_TRUE(RunSuccess("(atom? (3))", "false"));
 
