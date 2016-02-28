@@ -68,7 +68,7 @@ void StdLib::Load(Interpreter &interpreter) {
   // Generic
 
   symbols.PutSymbolFunction("+", &StdLib::Add, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
-  symbols.PutSymbolFunction("cons", &StdLib::Cons, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2), FuncDef::OneArg(Quote::TypeInstance) });
+  symbols.PutSymbolFunction("empty?", &StdLib::EmptyQ, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
   symbols.PutSymbolFunction("-", &StdLib::Sub, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("*", &StdLib::Mult, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("/", &StdLib::Div, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
@@ -151,6 +151,8 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("tail", &StdLib::Tail, FuncDef { FuncDef::OneArg(Quote::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("cdr", &StdLib::Tail, FuncDef { FuncDef::OneArg(Quote::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("rest", &StdLib::Tail, FuncDef { FuncDef::OneArg(Quote::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+
+  symbols.PutSymbolFunction("cons", &StdLib::Cons, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2), FuncDef::OneArg(Quote::TypeInstance) });
 
   // Logical
 
@@ -491,6 +493,28 @@ bool StdLib::Add(EvaluationContext &ctx) {
   }
   else
     return ctx.ArgumentExpectedError();
+}
+
+bool StdLib::EmptyQ(EvaluationContext &ctx) {
+  ExpressionPtr arg = std::move(ctx.Args.front());
+  ctx.Args.clear();
+  if (ctx.Evaluate(arg, "1")) {
+    if (auto str = dynamic_cast<Str*>(arg.get())) {
+      ctx.Expr = ExpressionPtr { new Bool(str->Value.empty()) };
+      return true;
+    }
+    else if (auto quote = dynamic_cast<Quote*>(arg.get())) {
+      if (IsQuoteAList(ctx, *quote)) {
+        if (auto listSexp = dynamic_cast<Sexp*>(quote->Value.get())) {
+          ctx.Expr = ExpressionPtr { new Bool(listSexp->Args.empty()) };
+          return true;
+        }
+      }
+    }
+    return ctx.TypeError("str/list", arg);
+  }
+  else
+    return false;
 }
 
 bool StdLib::Sub(EvaluationContext &ctx) {
@@ -1577,31 +1601,10 @@ bool StdLib::TypeFunc(EvaluationContext &ctx) {
   
   std::string typeName;
   if (&type == &Quote::TypeInstance) {
-    auto &quoteValue = static_cast<Quote*>(arg.get())->Value;
-    if (quoteValue) {
-      if (auto *sexp = dynamic_cast<Sexp*>(quoteValue.get())) {
-        if (sexp->Args.empty())
-          typeName = "list";
-        else {
-          auto &firstSexpArg = sexp->Args.front();
-          if (auto *sym = dynamic_cast<Symbol*>(firstSexpArg.get())) {
-            ExpressionPtr symValue;
-            if (ctx.Interp.GetCurrentStackFrame().GetSymbol(sym->Value, symValue)) {
-              if (TypeHelper::IsFunction(symValue->Type()))
-                typeName = "quote";
-              else
-                typeName = "list";
-            }
-          }
-          else 
-            typeName = "list";
-        }
-      }
-      else
-        typeName = "quote";
-    }
+    if (IsQuoteAList(ctx, *static_cast<Quote*>(arg.get())))
+      typeName = "list";
     else
-      typeName = "quote";
+      typeName = Quote::TypeInstance.TypeName;
   }
   else
     typeName = ctx.Args.front()->Type().TypeName;
@@ -1635,6 +1638,33 @@ bool StdLib::TypeQFunc(EvaluationContext &ctx) {
 }
 
 // Helpers
+
+bool StdLib::IsQuoteAList(EvaluationContext &ctx, Quote &quote) {
+  auto &quoteValue = quote.Value;
+  if (quoteValue) {
+    if (auto *sexp = dynamic_cast<Sexp*>(quoteValue.get())) {
+      if (sexp->Args.empty())
+        return true;
+      else {
+        auto &firstSexpArg = sexp->Args.front();
+        if (auto *sym = dynamic_cast<Symbol*>(firstSexpArg.get())) {
+          ExpressionPtr symValue;
+          if (ctx.Interp.GetCurrentStackFrame().GetSymbol(sym->Value, symValue)) {
+            if (TypeHelper::IsFunction(symValue->Type()))
+              return false;
+            else
+              return true;
+          }
+        }
+        return true;
+      }
+    }
+    else
+      return false;
+  }
+  else
+    return false;
+}
 
 template <class T, class F>
 bool StdLib::UnaryFunction(EvaluationContext &ctx, F fn) {

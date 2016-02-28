@@ -751,6 +751,13 @@ TEST_F(StdLibStrTest, TestReverse) {
   ASSERT_TRUE(RunSuccess("(reverse \"satan oscillate my metallic sonatas\")", "\"satanos cillatem ym etallicso natas\""));
 }
 
+TEST_F(StdLibStrTest, TestEmpty) {
+  ASSERT_TRUE(RunFail("(empty?)"));
+  ASSERT_TRUE(RunFail("(empty? 3)"));
+  ASSERT_TRUE(RunSuccess("(empty? \"\")", "true"));
+  ASSERT_TRUE(RunSuccess("(empty? \"foo bar\")", "false"));
+}
+
 class StdLibListTest: public StdLibTest {
 };
 
@@ -839,6 +846,14 @@ TEST_F(StdLibListTest, TestCons) {
   ASSERT_TRUE(RunSuccess("(cons (1) (2))", "(1 2)"));
   ASSERT_TRUE(RunSuccess("(cons 1 (2 3))", "(1 2 3)"));
   ASSERT_TRUE(RunSuccess("(cons (1 2) 3)", "(1 2 3)"));
+}
+
+TEST_F(StdLibListTest, TestEmpty) {
+  ASSERT_TRUE(RunFail("(empty?)"));
+  ASSERT_TRUE(RunFail("(empty? 3)"));
+  ASSERT_TRUE(RunSuccess("(empty? ())", "true"));
+  ASSERT_TRUE(RunSuccess("(empty? nil)", "true"));
+  ASSERT_TRUE(RunSuccess("(empty? (1 2))", "false"));
 }
 
 class StdLibLogicalTest: public StdLibTest {

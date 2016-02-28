@@ -25,6 +25,7 @@ class StdLib: public Library {
 
     // Generic
     static bool Add(EvaluationContext &ctx);
+    static bool EmptyQ(EvaluationContext &ctx);
     static bool Sub(EvaluationContext &ctx);
     static bool Mult(EvaluationContext &ctx);
     static bool Div(EvaluationContext &ctx);
@@ -142,6 +143,7 @@ class StdLib: public Library {
     static bool StrFunc(EvaluationContext &ctx);
 
     // Helpers
+    static bool IsQuoteAList(EvaluationContext &ctx, Quote &quote);
     static bool EvaluateListSexp(EvaluationContext &ctx); 
 
     static bool InfixRegistrationFunction(EvaluationContext &ctx, const std::string &name, bool unregister);
