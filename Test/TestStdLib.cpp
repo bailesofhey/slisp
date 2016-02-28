@@ -856,6 +856,16 @@ TEST_F(StdLibListTest, TestEmpty) {
   ASSERT_TRUE(RunSuccess("(empty? (1 2))", "false"));
 }
 
+TEST_F(StdLibListTest, TestRange) {
+  ASSERT_TRUE(RunFail("(range)"));
+  ASSERT_TRUE(RunFail("(range 1)"));
+  ASSERT_TRUE(RunFail("(range 1 true)"));
+  ASSERT_TRUE(RunSuccess("(range 1 1)", "(1)"));
+  ASSERT_TRUE(RunSuccess("(range 1 3)", "(1 2 3)"));
+  ASSERT_TRUE(RunFail("(range 3 1)"));
+  ASSERT_TRUE(RunSuccess("(range -3 -1)", "(-3 -2 -1)"));
+}
+
 class StdLibLogicalTest: public StdLibTest {
   protected:
     std::string Prefix;

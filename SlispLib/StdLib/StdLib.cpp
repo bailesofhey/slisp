@@ -153,6 +153,7 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("rest", &StdLib::Tail, FuncDef { FuncDef::OneArg(Quote::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
 
   symbols.PutSymbolFunction("cons", &StdLib::Cons, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2), FuncDef::OneArg(Quote::TypeInstance) });
+  symbols.PutSymbolFunction("range", &StdLib::Range, FuncDef { FuncDef::ManyArgs(Int::TypeInstance, 2), FuncDef::OneArg(Quote::TypeInstance) });
 
   // Logical
 
@@ -965,6 +966,27 @@ bool StdLib::Tail(EvaluationContext &ctx) {
   }
   else
     return ctx.TypeError("list", quote->Value);
+}
+
+bool StdLib::Range(EvaluationContext &ctx) {
+  ExpressionPtr startExpr = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
+  ExpressionPtr endExpr = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
+
+  auto start = static_cast<Int*>(startExpr.get()),
+       end   = static_cast<Int*>(endExpr.get());
+  if (start->Value <= end->Value) {
+    ExpressionPtr listSexp { new Sexp };
+    auto list = static_cast<Sexp*>(listSexp.get());
+    for (int64_t i = start->Value; i <= end->Value; ++i)
+      list->Args.push_back(ExpressionPtr { new Int(i) });
+    ctx.Expr = ExpressionPtr { new Quote(std::move(listSexp)) };
+    return true;
+  }
+  else
+    return ctx.Error("infinite ranges are not supported");
+   
 }
 
 // Logical
