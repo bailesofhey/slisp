@@ -183,7 +183,7 @@ void StdLib::Load(Interpreter &interpreter) {
     FuncDef::OneArg(Literal::TypeInstance)
   });
 
-  symbols.PutSymbolFunction("cond", &StdLib::Cond, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction("cond", &StdLib::Cond, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 1, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("let", &StdLib::Let, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("begin", &StdLib::Begin, FuncDef { FuncDef::AtleastOneArg(Sexp::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("lambda", &StdLib::Lambda, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2), FuncDef::OneArg(Function::TypeInstance) });
@@ -1118,7 +1118,42 @@ bool StdLib::Unquote(EvaluationContext &ctx) {
 }
 
 bool StdLib::Cond(EvaluationContext &ctx) {
-  return false;
+  int argNum = 1;
+  while (!ctx.Args.empty()) {
+    ExpressionPtr arg = std::move(ctx.Args.front());
+    ctx.Args.pop_front();
+    if (auto sexp = dynamic_cast<Sexp*>(arg.get())) {
+      if (sexp->Args.size() == 2) {
+        ExpressionPtr boolExpr = std::move(sexp->Args.front());
+        sexp->Args.pop_front();
+        ExpressionPtr statementExpr = std::move(sexp->Args.front());
+        sexp->Args.pop_front();
+        if (ctx.Evaluate(boolExpr, "condition")) {
+          if (auto boolResult = dynamic_cast<Bool*>(boolExpr.get())) {
+            if (boolResult->Value) {
+              if (ctx.Evaluate(statementExpr, "statement")) {
+                ctx.Expr = std::move(statementExpr);
+                return true;
+              }
+              else
+                return false;
+            }
+          }
+          else
+            return ctx.TypeError(Bool::TypeInstance, boolExpr);
+        }
+        else
+          return false;
+      }
+      else
+        return ctx.Error("arg " + std::to_string(argNum) + ": expected 2 args. got " + std::to_string(sexp->Args.size()));
+    }
+    else
+      return ctx.TypeError(Sexp::TypeInstance, arg);
+    ++argNum;
+  }
+  ctx.Expr = GetNil();
+  return true;
 }
 
 bool StdLib::If(EvaluationContext &ctx) {

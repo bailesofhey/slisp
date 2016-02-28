@@ -1054,6 +1054,40 @@ TEST_F(StdLibComparisonTest, TestGte) {
 class StdLibBranchTest: public StdLibTest {
 };
 
+TEST_F(StdLibBranchTest, TestCond) {
+  ASSERT_TRUE(RunFail("(cond)"));
+  ASSERT_TRUE(RunFail("(cond 3)"));
+  ASSERT_TRUE(RunFail("(cond ())"));
+  ASSERT_TRUE(RunFail("(cond (true))"));
+  ASSERT_TRUE(RunFail("(cond (3))"));
+  ASSERT_TRUE(RunFail("(cond (3 true))"));
+  ASSERT_TRUE(RunSuccess("(cond (true 3))", "3"));
+  ASSERT_TRUE(RunFail("(cond (true 3 4))"));
+  ASSERT_TRUE(RunFail("(cond 3 4)"));
+  ASSERT_TRUE(RunFail("(cond () ())"));
+  ASSERT_TRUE(RunSuccess("(cond (false 3))", "()"));
+  ASSERT_TRUE(RunSuccess("(cond (true 3) (true 4))", "3"));
+
+  ASSERT_TRUE(RunFail("(cond (foo 3))"));
+  ASSERT_TRUE(RunFail("(cond (true foo))"));
+  ASSERT_TRUE(RunSuccess("foo = true", "true"));
+  ASSERT_TRUE(RunSuccess("(cond (foo 3))", "3"));
+  ASSERT_TRUE(RunSuccess("(cond (true foo))", "true"));
+
+  const char * code = "(cond "
+                      "  ((n > 0) \"greater than zero\") "
+                      "  ((n < 0) \"less than zero\") "
+                      "  (true    \"equal to zero\")) ";
+  ASSERT_TRUE(RunSuccess("n = 2", "2"));
+  ASSERT_TRUE(RunSuccess(code, "greater"));
+  ASSERT_TRUE(RunSuccess("n = -3", "-3"));
+  ASSERT_TRUE(RunSuccess(code, "less"));
+  ASSERT_TRUE(RunSuccess("n = 0", "0"));
+  ASSERT_TRUE(RunSuccess(code, "equal"));
+  ASSERT_TRUE(RunSuccess("n = \"foobar\"", "\"foobar\""));
+  ASSERT_TRUE(RunFail(code));
+}
+
 TEST_F(StdLibBranchTest, TestIf) {
   ASSERT_TRUE(RunFail("(if)"));
   ASSERT_TRUE(RunFail("(if true)"));
