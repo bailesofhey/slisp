@@ -124,6 +124,7 @@ class StdLib: public Library {
     static bool If(EvaluationContext &ctx);
     static bool Cond(EvaluationContext &ctx);
     static bool Switch(EvaluationContext &ctx);
+    static bool While(EvaluationContext &ctx);
     static bool Let(EvaluationContext &ctx);
     static bool QuoteFn(EvaluationContext &ctx);
     static bool Unquote(EvaluationContext &ctx);

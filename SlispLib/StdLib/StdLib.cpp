@@ -185,6 +185,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction("cond", &StdLib::Cond, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 1, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("switch", &StdLib::Switch, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 3, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction("while", &StdLib::While, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("let", &StdLib::Let, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("begin", &StdLib::Begin, FuncDef { FuncDef::AtleastOneArg(Sexp::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("lambda", &StdLib::Lambda, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2), FuncDef::OneArg(Function::TypeInstance) });
@@ -1245,6 +1246,43 @@ bool StdLib::Switch(EvaluationContext &ctx) {
     return false;
   ctx.Expr = GetNil();
   return true;
+}
+
+bool StdLib::While(EvaluationContext &ctx) {
+  ExpressionPtr lastStatementResult = GetNil();
+  ArgList loopArgs;
+  while (true) {
+    loopArgs.clear();
+    ArgListHelper::CopyTo(ctx.Args, loopArgs);
+    ExpressionPtr condExpr = std::move(loopArgs.front());
+    loopArgs.pop_front();
+    if (ctx.Evaluate(condExpr, "condition")) {
+      if (auto condResult = dynamic_cast<Bool*>(condExpr.get())) {
+        if (condResult->Value) {
+          int bodyStatementNum = 1;
+          while (!loopArgs.empty()) {
+            ExpressionPtr currBodyStatement = std::move(loopArgs.front());
+            loopArgs.pop_front();
+            if (ctx.Evaluate(currBodyStatement, "body" + std::to_string(bodyStatementNum)))
+              lastStatementResult = std::move(currBodyStatement);
+            else
+              return false;
+            ++bodyStatementNum;
+          }
+        }
+        else {
+          ctx.Expr = std::move(lastStatementResult);
+          return true;
+        }
+      }
+      else
+        return ctx.TypeError(Bool::TypeInstance, condExpr);
+    }
+    else
+      return false;
+  }
+
+  return false;
 }
 
 bool StdLib::If(EvaluationContext &ctx) {

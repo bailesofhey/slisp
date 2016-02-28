@@ -1139,6 +1139,33 @@ TEST_F(StdLibBranchTest, TestIf) {
   ASSERT_TRUE(RunSuccess("(if (< 3 3) \"less than\" (if (> 3 3) \"greater than\" \"equal to\"))", "\"equal to\"")); 
 }
 
+TEST_F(StdLibBranchTest, TestWhile) {
+  ASSERT_TRUE(RunFail("(while)"));
+  ASSERT_TRUE(RunFail("(while (false))"));
+  ASSERT_TRUE(RunSuccess("(while false 3)", "()"));
+  ASSERT_TRUE(RunFail("(while foo 3)"));
+  ASSERT_TRUE(RunFail("(while true foo)"));
+
+  ASSERT_TRUE(RunSuccess("a = 0", "0"));
+  ASSERT_TRUE(RunSuccess("(while (a == 0) (++ a) 3 4 5)", "5"));
+
+  ASSERT_TRUE(RunSuccess("a = 0", "0"));
+  ASSERT_TRUE(RunFail("(while (a < 10)        "
+                      "  (++ a)               "
+                      "  (if (a == 9) foobar) "
+                      "  5)                   "));
+
+  ASSERT_TRUE(RunSuccess("a = 0", "0"));
+  ASSERT_TRUE(RunSuccess("b = 0", "0"));
+  ASSERT_TRUE(RunSuccess("(while ((+= a 2) < 12) 3 (++ b) 5)", "5"));
+  ASSERT_TRUE(RunSuccess("b", "5"));
+
+  const char *code = "(while (i < 10) "
+                     "  (++ i))       ";
+  ASSERT_TRUE(RunSuccess("i = 1", "1"));
+  ASSERT_TRUE(RunSuccess(code, "10"));
+}
+
 TEST_F(StdLibBranchTest, TestLet) {
   ASSERT_TRUE(RunFail("(let)"));
   ASSERT_TRUE(RunFail("(let ("));
