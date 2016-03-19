@@ -51,6 +51,11 @@ std::ostream& operator<<(std::ostream &out, const Expression &expr) {
 
 //=============================================================================
 
+IIterator::~IIterator() {
+}
+
+//=============================================================================
+
 const TypeInfo Void::TypeInstance { "" };
 
 //=============================================================================
@@ -243,6 +248,10 @@ ExpressionPtr Str::Clone() const {
   return ExpressionPtr { new Str(*this) };
 }
 
+IteratorPtr Str::GetIterator() {
+  return IteratorPtr { new StrIterator(*this) };
+}
+
 bool Str::operator==(const Expression &rhs) const {
   return &rhs.Type() == &Str::TypeInstance
       && dynamic_cast<const Str&>(rhs) == *this;
@@ -279,6 +288,22 @@ void Str::Print(std::ostream &out) const {
 
 //=============================================================================
 
+StrIterator::StrIterator(Str &str):
+  Value(str),
+  Index(0)
+{
+}
+
+// TODO: really should be returning a CharRef (see #98)
+ExpressionPtr StrIterator::Next() {
+  if (Index < Value.Value.length())
+    return ExpressionPtr { new Str(std::string(1, Value.Value[Index++]))};
+  else
+    return ExpressionPtr { };
+}
+
+//=============================================================================
+
 const TypeInfo Quote::TypeInstance("quote");
 
 Quote::Quote(ExpressionPtr &&expr):
@@ -289,6 +314,14 @@ Quote::Quote(ExpressionPtr &&expr):
 
 ExpressionPtr Quote::Clone() const {
   return ExpressionPtr { new Quote(std::move(Value->Clone())) };
+}
+
+IteratorPtr Quote::GetIterator() {
+  if (Value) {
+    if (auto *sexp = dynamic_cast<Sexp*>(Value.get()))
+      return sexp->GetIterator();
+  }
+  return IteratorPtr { };
 }
 
 bool Quote::operator==(const Expression &rhs) const {
@@ -413,6 +446,10 @@ ExpressionPtr Sexp::Clone() const {
   return copy;
 }
 
+IteratorPtr Sexp::GetIterator() {
+  return IteratorPtr { new SexpIterator(*this) };
+}
+
 bool Sexp::operator==(const Expression &rhs) const {
   return &rhs.Type() == &Sexp::TypeInstance
       && dynamic_cast<const Sexp&>(rhs) == *this;
@@ -438,4 +475,17 @@ void Sexp::Print(std::ostream &out) const {
     ++argCurr;
   }
   out << ")";
+}
+
+SexpIterator::SexpIterator(Sexp &sexp):
+  Curr(sexp.Args.begin()),
+  End(sexp.Args.end())
+{
+}
+
+ExpressionPtr SexpIterator::Next() {
+  if (Curr != End)
+    return (Curr++)->get()->Clone();
+  else
+    return ExpressionPtr { };
 }

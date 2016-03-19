@@ -39,6 +39,18 @@ struct Expression {
   static bool AreEqual(const ExpressionPtr &lhs, const ExpressionPtr &rhs);
 };
 
+class IIterator {
+public:
+  virtual ~IIterator();
+  virtual ExpressionPtr Next() = 0;
+};
+ using IteratorPtr = std::unique_ptr<IIterator>;
+
+class IIterable {
+public:
+  virtual IteratorPtr GetIterator() = 0;
+};
+
 struct Void: public Expression {
   static const TypeInfo TypeInstance;
 };
@@ -103,7 +115,7 @@ struct Float: public Literal {
   void Swap(Float &rhs);
 };
 
-struct Str: public Literal {
+struct Str: public Literal, IIterable {
   static const TypeInfo TypeInstance;
   
   std::string Value;
@@ -112,6 +124,7 @@ struct Str: public Literal {
   explicit Str(const std::string& value);
   virtual ExpressionPtr Clone() const override;
   virtual void Print(std::ostream& out) const;
+  virtual IteratorPtr GetIterator();
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Str &rhs) const;
   bool operator!=(const Str &rhs) const;
@@ -121,7 +134,16 @@ struct Str: public Literal {
   void Swap(Str &rhs);
 };
 
-struct Quote: public Literal {
+class StrIterator: public IIterator {
+public:
+  explicit StrIterator(Str &str);
+  virtual ExpressionPtr Next();
+private:
+  Str &Value;
+  int Index;
+};
+
+struct Quote: public Literal, IIterable {
   static const TypeInfo TypeInstance;
 
   ExpressionPtr Value;
@@ -129,6 +151,7 @@ struct Quote: public Literal {
   explicit Quote(ExpressionPtr &&expr);
   virtual ExpressionPtr Clone() const override;
   virtual void Print(std::ostream& out) const override;
+  virtual IteratorPtr GetIterator();
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Quote &rhs) const;
   bool operator!=(const Quote &rhs) const;
@@ -159,7 +182,7 @@ class ArgListHelper {
     static void CopyTo(const ArgList &src, ArgList &dst);
 };
 
-struct Sexp: public Expression {
+struct Sexp: public Expression, IIterable {
   static const TypeInfo TypeInstance;
 
   ArgList Args;
@@ -169,7 +192,17 @@ struct Sexp: public Expression {
   explicit Sexp(std::initializer_list<ExpressionPtr> &&args);
   virtual void Print(std::ostream& out) const override;
   virtual ExpressionPtr Clone() const override;
+  virtual IteratorPtr GetIterator();
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Sexp &rhs) const;
   bool operator!=(const Sexp &rhs) const;
+};
+
+class SexpIterator: public IIterator {
+public:
+  explicit SexpIterator(Sexp &sexp);
+  virtual ExpressionPtr Next();
+private:
+  ArgList::const_iterator Curr;
+  ArgList::const_iterator End;
 };

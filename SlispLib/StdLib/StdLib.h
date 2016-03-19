@@ -101,7 +101,6 @@ class StdLib: public Library {
     // Str
     static bool AddStr(EvaluationContext &ctx);
     static bool Reverse(EvaluationContext &ctx);
-    static bool ForeachStr(EvaluationContext &ctx);
 
     // Lists
     static bool AddList(EvaluationContext &ctx);
@@ -111,7 +110,6 @@ class StdLib: public Library {
     static bool Tail(EvaluationContext &ctx);
     static bool Cons(EvaluationContext &ctx);
     static bool Range(EvaluationContext &ctx);
-    static bool ForeachList(EvaluationContext &ctx);
 
     // Logical
     static bool And(EvaluationContext &ctx);

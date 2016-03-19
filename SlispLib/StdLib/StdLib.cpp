@@ -581,25 +581,24 @@ bool StdLib::Foreach(EvaluationContext &ctx) {
       }
     }
 
-    if (ctx.Evaluate(second, "string")) {
-      if (Str *str = dynamic_cast<Str*>(second.get())) {
-        Scope scope(ctx.Interp.GetCurrentStackFrame().GetLocalSymbols());
-        ArgList bodyCopy;
-        ArgListHelper::CopyTo(ctx.Args, bodyCopy);
-        for (auto &c : str->Value) {
-
-          // TODO: really should be returning a CharRef (see #98)
-          scope.PutSymbol(sym->Value, ExpressionPtr { new Str(std::string(1, c)) });
-
-          ctx.Args.clear();
-          ArgListHelper::CopyTo(bodyCopy, ctx.Args);
-          if (!Begin(ctx))
-            return false;
+    if (ctx.Evaluate(second, "iterable")) {
+      if (auto *iterable = dynamic_cast<IIterable*>(second.get())) {
+        if (IteratorPtr iterator = iterable->GetIterator()) {
+          Scope scope(ctx.Interp.GetCurrentStackFrame().GetLocalSymbols());
+          ArgList bodyCopy;
+          ArgListHelper::CopyTo(ctx.Args, bodyCopy);
+          ExpressionPtr curr;
+          while (curr = iterator->Next()) {
+            scope.PutSymbol(sym->Value, curr); 
+            ctx.Args.clear();
+            ArgListHelper::CopyTo(bodyCopy, ctx.Args);
+            if (!Begin(ctx))
+              return false;
+          }
+          return true;
         }
-        return true;
       }
-      else
-        return ctx.TypeError(Str::TypeInstance, second);
+      return ctx.TypeError("iterable", second);
     }
     else
       return false;

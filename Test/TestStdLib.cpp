@@ -907,6 +907,18 @@ TEST_F(StdLibListTest, TestRange) {
   ASSERT_TRUE(RunSuccess("(range 1 4 100)", "(1)"));
 }
 
+TEST_F(StdLibListTest, TestForeach) {
+  ASSERT_TRUE(RunSuccess("lst = (2 3 4)", "(2 3 4)"));
+  ASSERT_TRUE(RunFail("(foreach)"));
+  ASSERT_TRUE(RunFail("(foreach lst)"));
+  ASSERT_TRUE(RunFail("(foreach e lst)"));
+
+  ASSERT_TRUE(RunSuccess("tsl = ()", ""));
+  ASSERT_TRUE(RunSuccess("(foreach e lst (tsl = (e) + tsl))", "(4 3 2)"));
+  ASSERT_TRUE(RunSuccess("tsl = ()", ""));
+  ASSERT_TRUE(RunSuccess("(foreach e in lst (tsl = (e) + tsl))", "(4 3 2)"));
+}
+
 class StdLibLogicalTest: public StdLibTest {
   protected:
     std::string Prefix;
