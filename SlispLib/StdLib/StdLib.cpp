@@ -80,6 +80,7 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("abs", &StdLib::Abs, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("max", &StdLib::Max, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("min", &StdLib::Min, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction("foreach", &StdLib::Foreach, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 3, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) });
 
   // Float
 
@@ -560,6 +561,51 @@ bool StdLib::Max(EvaluationContext &ctx) {
 
 bool StdLib::Min(EvaluationContext &ctx) {
   return GenericNumFunc(ctx, StdLib::MinInt, StdLib::MinFloat);
+}
+
+// (foreach e lst (print e))
+// (foreach e in lst (print e))
+// (foreach lst print)
+bool StdLib::Foreach(EvaluationContext &ctx) {
+  auto first = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
+  auto second = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
+  if (Symbol *sym = dynamic_cast<Symbol*>(first.get())) {
+    if (ctx.Args.size() > 1) {
+      if (Symbol *optionalInSym = dynamic_cast<Symbol*>(second.get())) {
+        if (optionalInSym->Value == "in") {
+          second = std::move(ctx.Args.front());
+          ctx.Args.pop_front();
+        }
+      }
+    }
+
+    if (ctx.Evaluate(second, "string")) {
+      if (Str *str = dynamic_cast<Str*>(second.get())) {
+        Scope scope(ctx.Interp.GetCurrentStackFrame().GetLocalSymbols());
+        ArgList bodyCopy;
+        ArgListHelper::CopyTo(ctx.Args, bodyCopy);
+        for (auto &c : str->Value) {
+
+          // TODO: really should be returning a CharRef (see #98)
+          scope.PutSymbol(sym->Value, ExpressionPtr { new Str(std::string(1, c)) });
+
+          ctx.Args.clear();
+          ArgListHelper::CopyTo(bodyCopy, ctx.Args);
+          if (!Begin(ctx))
+            return false;
+        }
+        return true;
+      }
+      else
+        return ctx.TypeError(Str::TypeInstance, second);
+    }
+    else
+      return false;
+  }
+  else
+    return ctx.TypeError(Symbol::TypeInstance, first);
 }
 
 // Int Functions

@@ -765,6 +765,18 @@ TEST_F(StdLibStrTest, TestLength) {
   ASSERT_TRUE(RunSuccess("(length \"foo\")", "3"));
 }
 
+TEST_F(StdLibStrTest, TestForeach) {
+  ASSERT_TRUE(RunSuccess("s = \"abc\"", "abc"));
+  ASSERT_TRUE(RunFail("(foreach)"));
+  ASSERT_TRUE(RunFail("(foreach s)"));
+  ASSERT_TRUE(RunFail("(foreach c s)"));
+
+  ASSERT_TRUE(RunSuccess("r = \"\"", ""));
+  ASSERT_TRUE(RunSuccess("(foreach c s (r = c + r))", "cba"));
+  ASSERT_TRUE(RunSuccess("r = \"\"", ""));
+  ASSERT_TRUE(RunSuccess("(foreach c in s (r = c + r))", "cba"));
+}
+
 class StdLibListTest: public StdLibTest {
 };
 
