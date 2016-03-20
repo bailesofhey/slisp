@@ -79,10 +79,10 @@ bool EvaluationContext::Evaluate(ExpressionPtr &expr, const std::string &argName
 }
 
 const std::string EvaluationContext::GetThisFunctionName() {
-  if (auto *thisSexp = dynamic_cast<Sexp*>(Expr.get())) {
-    if (auto *thisFn = dynamic_cast<Function*>(thisSexp->Args.front().get())) {
+  if (auto thisSexp = TypeHelper::GetValue<Sexp>(Expr)) {
+    if (auto thisFn = TypeHelper::GetValue<Function>(thisSexp->Args.front())) {
       if (thisFn->Symbol) {
-        if (auto *thisFnSym = dynamic_cast<Symbol*>(thisFn->Symbol.get())) {
+        if (auto thisFnSym = TypeHelper::GetValue<Symbol>(thisFn->Symbol)) {
           return thisFnSym->Value;
         }
       }
@@ -244,7 +244,7 @@ bool Interpreter::ReduceSymbol(ExpressionPtr &expr) {
       if (auto copy = value->Clone()) {
         if (copy) {
           expr = std::move(copy);
-          if (auto *fn = dynamic_cast<Function*>(expr.get()))
+          if (auto fn = TypeHelper::GetValue<Function>(expr))
             fn->Symbol = std::move(symCopy);
           return true;
         }
@@ -271,7 +271,7 @@ bool Interpreter::ReduceSexp(ExpressionPtr &expr) {
     if (EvaluatePartial(firstArg)) {
       args.push_front(std::move(firstArg));
       auto &funcExpr = args.front();
-      if (auto *func = dynamic_cast<Function*>(funcExpr.get()))
+      if (auto func = TypeHelper::GetValue<Function>(funcExpr))
         return ReduceSexpFunction(expr, *func);
       else if (TypeHelper::TypeMatches(Literal::TypeInstance, funcExpr.get()->Type())) 
         return ReduceSexpList(expr, args);
@@ -311,7 +311,7 @@ bool Interpreter::ReduceSexpFunction(ExpressionPtr &expr, Function &function) {
 
 bool Interpreter::ReduceSexpCompiledFunction(ExpressionPtr &expr, CompiledFunction &function, ArgList &args) {
   if (function.Symbol) {
-    if (auto *fnSym = dynamic_cast<Symbol*>(function.Symbol.get())) {
+    if (auto fnSym = TypeHelper::GetValue<Symbol>(function.Symbol)) {
       return function.Fn(EvaluationContext { *this, *fnSym, expr, args });
     }
   } 
@@ -325,8 +325,7 @@ bool Interpreter::ReduceSexpInterpretedFunction(ExpressionPtr &expr, Interpreted
   auto endArg = end(args);
   auto endFormal = end(function.Args);
   while (currArg != endArg && currFormal != endFormal) {
-    auto sym = dynamic_cast<Symbol*>((*currFormal).get());
-    if (sym) {
+    if (auto sym = TypeHelper::GetValue<Symbol>(*currFormal)) {
       if (EvaluatePartial(*currArg)) {
         newFrame.PutLocalSymbol(sym->Value, std::move(*currArg));
         ++currArg;

@@ -776,7 +776,7 @@ TEST_F(StdLibStrTest, TestForeach) {
   ASSERT_TRUE(RunSuccess("r = \"\"", ""));
   ASSERT_TRUE(RunSuccess("(foreach c in s (r = c + r))", "cba"));
   ASSERT_TRUE(RunSuccess("r = \"\"", ""));
-  ASSERT_TRUE(RunSuccess("(foreach s (fn (c) r = c + r))", "cba"));
+  //ASSERT_TRUE(RunSuccess("(foreach s (fn (c) r = c + r))", "cba"));
 }
 
 class StdLibListTest: public StdLibTest {

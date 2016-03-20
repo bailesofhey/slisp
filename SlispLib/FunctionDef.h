@@ -145,12 +145,104 @@ struct InterpretedFunction: public Function {
 };
 
 class TypeHelper {
-  public:
-    static bool TypeMatches(const TypeInfo &expected, const TypeInfo &actual);
-    static bool IsAtom(const TypeInfo &type);
-    static bool IsLiteral(const TypeInfo &type);
-    static bool IsFunction(const TypeInfo &type);
-    static bool IsConvertableToInt(const TypeInfo &type);
-    static ExpressionPtr GetInt(ExpressionPtr &expr);
-    static ExpressionPtr GetBool(ExpressionPtr &expr);
+public:
+  static const ExpressionPtr Null;
+  static bool TypeMatches(const TypeInfo &expected, const TypeInfo &actual);
+  static bool IsAtom(const TypeInfo &type);
+  static bool IsAtom(const ExpressionPtr &expr);
+
+  template<class T>
+  static bool IsA(const TypeInfo &type) {
+    return SimpleIsA<T>(type);
+  }
+
+  template<>
+  static bool IsA<Literal>(const TypeInfo &type) {
+    return IsAtom(type)
+        || SimpleIsA<Literal>(type)
+        || SimpleIsA<Quote>(type)
+        || SimpleIsA<Ref>(type)
+        ; 
+  }
+
+  template<>
+  static bool IsA<Function>(const TypeInfo &type) {
+    return SimpleIsA<Function>(type)
+        || SimpleIsA<CompiledFunction>(type)
+        || SimpleIsA<InterpretedFunction>(type)
+        ;
+  }
+
+  template<class T>
+  static bool IsA(const ExpressionPtr &expr) {
+    if (SimpleIsA<T>(expr))
+      return true;
+    else if (auto *quote = dynamic_cast<Quote*>(expr.get()))
+      return SimpleIsA<T>(quote->Value);
+    else if (auto *ref = dynamic_cast<Ref*>(expr.get()))
+      return SimpleIsA<T>(ref->Value);
+    else
+      return false;
+  }
+
+  template<>
+  static bool IsA<Literal>(const ExpressionPtr &expr) {
+    return IsA<Literal>(expr->Type());
+  }
+
+  template<>
+  static bool IsA<Function>(const ExpressionPtr &expr) {
+    return IsA<Function>(expr->Type());
+  }
+
+  template<class T> 
+  static ExpressionPtr GetCopy(const ExpressionPtr &expr) {
+    if (SimpleIsA<T>(expr))
+      return expr->Clone();
+    else if (auto *ref = dynamic_cast<Ref*>(expr.get())) {
+      if (SimpleIsA<T>(ref->Value))
+        return ref->Value->Clone();
+    }
+    else if (auto *quote = dynamic_cast<Quote*>(expr.get())) {
+      if (SimpleIsA<T>(quote->Value))
+        return quote->Value->Clone();
+    }
+    return ExpressionPtr { };
+  }
+
+  template<class T> 
+  static ExpressionPtr& GetRef(ExpressionPtr &expr) {
+    if (SimpleIsA<T>(expr))
+      return expr;
+    else if (auto *ref = dynamic_cast<Ref*>(expr.get())) {
+      if (SimpleIsA<T>(ref->Value))
+        return ref->Value;
+    }
+    else if (auto *quote = dynamic_cast<Quote*>(expr.get())) {
+      if (SimpleIsA<T>(quote->Value))
+        return quote->Value;
+    }
+    return const_cast<ExpressionPtr&>(Null); 
+  }
+
+  template<class T>
+  static T* GetValue(ExpressionPtr &expr) {
+    auto &ref = GetRef<T>(expr);
+    if (ref) {
+      return static_cast<T*>(ref.get());
+    }
+    return nullptr;
+  }
+
+  template<class T>
+  static bool SimpleIsA(const ExpressionPtr &expr) {
+    return SimpleIsA<T>(expr->Type());
+  }
+
+  template<class T>
+  static bool SimpleIsA(const TypeInfo &type) {
+    return &type == &T::TypeInstance;
+  }
+
 };
+

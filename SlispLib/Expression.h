@@ -49,7 +49,9 @@ struct Expression {
 class IIterator {
 public:
   virtual ~IIterator();
-  virtual ExpressionPtr Next() = 0;
+  virtual ExpressionPtr& Next() = 0;
+protected:
+  ExpressionPtr Null;
 };
  using IteratorPtr = std::unique_ptr<IIterator>;
 
@@ -148,8 +150,9 @@ struct Str: public Literal, IIterable {
 class StrIterator: public IIterator {
 public:
   explicit StrIterator(Str &str);
-  virtual ExpressionPtr Next();
+  virtual ExpressionPtr& Next();
 private:
+  ExpressionPtr Curr;
   Str &Value;
   int Index;
 };
@@ -215,8 +218,22 @@ struct Sexp: public Expression, IIterable {
 class SexpIterator: public IIterator {
 public:
   explicit SexpIterator(Sexp &sexp);
-  virtual ExpressionPtr Next();
+  virtual ExpressionPtr& Next();
 private:
-  ArgList::const_iterator Curr;
-  ArgList::const_iterator End;
+  ArgList::iterator Curr;
+  ArgList::iterator End;
+};
+
+struct Ref: public Expression, IIterable {
+  static const TypeInfo TypeInstance;
+
+  ExpressionPtr &Value;
+
+  explicit Ref(ExpressionPtr &value);
+  virtual ExpressionPtr Clone() const override;
+  virtual void Print(std::ostream& out) const override;
+  virtual IteratorPtr GetIterator();
+  virtual bool operator==(const Expression &rhs) const override;
+  bool operator==(const Ref &rhs) const;
+  bool operator!=(const Ref &rhs) const;
 };

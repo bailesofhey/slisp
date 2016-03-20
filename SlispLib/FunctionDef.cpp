@@ -15,13 +15,12 @@ ArgDef::~ArgDef() {
 
 bool ArgDef::Validate(ExpressionEvaluator evaluator, ExpressionPtr &expr, std::string &error) const {
   if (expr) {
-    if (auto sexp = dynamic_cast<Sexp*>(expr.get())) {
+    if (auto sexp = TypeHelper::GetValue<Sexp>(expr)) {
       auto &args = sexp->Args;
       if (!args.empty()) {
         ExpressionPtr fnExpr = std::move(args.front());
         args.pop_front();
-        auto fn = dynamic_cast<Function*>(fnExpr.get());
-        if (fn) {
+        if (auto fn = TypeHelper::GetValue<Function>(fnExpr)) {
           bool result = ValidateArgs(evaluator, args, error);
           args.push_front(std::move(fnExpr));
           return result;
@@ -461,66 +460,28 @@ bool InterpretedFunction::operator!=(const InterpretedFunction &rhs) const {
 }
 
 //=============================================================================
+const ExpressionPtr TypeHelper::Null;
 
 //TODO: Need to account for inheritance in TypeInfo itself
 bool TypeHelper::TypeMatches(const TypeInfo &expected, const TypeInfo &actual) {
-  if (&expected == &Literal::TypeInstance)
-    return IsLiteral(actual);
-  else if (&expected == &Sexp::TypeInstance)
+  if (SimpleIsA<Literal>(expected))
+    return IsA<Literal>(actual);
+  else if (SimpleIsA<Sexp>(expected))
     return true;
-  else if (&expected == &Int::TypeInstance)
-    return IsConvertableToInt(actual);
   else
     return &expected == &actual;
 }
 
-bool TypeHelper::IsFunction(const TypeInfo &type) {
-  return &type == &Function::TypeInstance 
-      || &type == &CompiledFunction::TypeInstance 
-      || &type == &InterpretedFunction::TypeInstance
-      ;
+bool TypeHelper::IsAtom(const ExpressionPtr &expr) {
+  return IsAtom(expr->Type());
 }
 
 bool TypeHelper::IsAtom(const TypeInfo &type) {
-  return &type == &Bool::TypeInstance
-      || &type == &Int::TypeInstance 
-      || &type == &Float::TypeInstance 
-      || &type == &Str::TypeInstance
-      || IsFunction(type)
+  return IsA<Bool>(type)
+      || IsA<Int>(type)
+      || IsA<Float>(type)
+      || IsA<Str>(type)
+      || IsA<Function>(type)
       ;
 }
 
-bool TypeHelper::IsLiteral(const TypeInfo &type) {
-  return IsAtom(type)
-      || &type == &Literal::TypeInstance
-      || &type == &Quote::TypeInstance
-      ;
-}
-
-// implicit conversion from bool to number - a good thing?
-bool TypeHelper::IsConvertableToInt(const TypeInfo &type) {
-  //return &type == &Number::TypeInstance
-  //    || &type == &Bool::TypeInstance
-  //    ;
-  return &type == &Int::TypeInstance;
-}
-
-ExpressionPtr TypeHelper::GetInt(ExpressionPtr &expr) {
-  //if (expr) {
-  //  if (&expr->Type() == &Number::TypeInstance)
-  //    return expr->Clone();
-  //  else if (&expr->Type() == &Bool::TypeInstance)
-  //    return ExpressionPtr { new Number(static_cast<Bool&>(*expr).Value) };
-  //}
-  //return ExpressionPtr {};
-
-  if (expr) {
-    if (&expr->Type() == &Int::TypeInstance)
-      return expr->Clone();
-  }
-  return ExpressionPtr {};
-}
-
-ExpressionPtr TypeHelper::GetBool(ExpressionPtr &expr) {
-  return expr->Clone();
-}

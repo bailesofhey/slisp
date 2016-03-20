@@ -173,13 +173,13 @@ int InterpreterSettings::GetInfixSymbolPrecedence(const std::string &symbolName)
 bool InterpreterSettings::IsSymbolFunction(const std::string &symbolName) const {
   ExpressionPtr value { };
   return DynamicSymbols.GetSymbol(symbolName, value) &&
-         dynamic_cast<Function*>(value.get());
+         TypeHelper::GetValue<Function>(value);
 }
 
 bool InterpreterSettings::GetSpecialFunction(const std::string &name, FunctionPtr &func) const {
   ExpressionPtr symbol;
   if (DynamicSymbols.GetSymbol(name, symbol)) {
-    if (auto sym = dynamic_cast<Function*>(symbol.get())) {
+    if (auto sym = TypeHelper::GetValue<Function>(symbol)) {
       symbol.release();
       func.reset(sym);
       return true;

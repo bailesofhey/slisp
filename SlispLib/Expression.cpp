@@ -330,11 +330,13 @@ StrIterator::StrIterator(Str &str):
 }
 
 // TODO: really should be returning a CharRef (see #98)
-ExpressionPtr StrIterator::Next() {
-  if (Index < Value.Value.length())
-    return ExpressionPtr { new Str(std::string(1, Value.Value[Index++]))};
+ExpressionPtr& StrIterator::Next() {
+  if (Index < Value.Value.length()) {
+    Curr = ExpressionPtr { new Str(std::string(1, Value.Value[Index++]))};
+    return Curr;
+  }
   else
-    return ExpressionPtr { };
+    return Null;
 }
 
 //=============================================================================
@@ -528,9 +530,47 @@ SexpIterator::SexpIterator(Sexp &sexp):
 {
 }
 
-ExpressionPtr SexpIterator::Next() {
+ExpressionPtr& SexpIterator::Next() {
   if (Curr != End)
-    return (Curr++)->get()->Clone();
+    return *(Curr++); 
   else
-    return ExpressionPtr { };
+    return Null; 
+}
+
+//=============================================================================
+
+const TypeInfo Ref::TypeInstance { "ref", TypeInfo::NewUndefined };
+
+Ref::Ref(ExpressionPtr &value):
+  Expression(TypeInstance),
+  Value(value)
+{
+}
+
+ExpressionPtr Ref::Clone() const {
+  return ExpressionPtr { new Ref(Value) };
+}
+
+void Ref::Print(std::ostream& out) const {
+  out << *Value;
+}
+
+IteratorPtr Ref::GetIterator() {
+  if (auto *iterable = dynamic_cast<IIterable*>(Value.get()))
+    return iterable->GetIterator();
+  else
+    return IteratorPtr {};
+}
+
+bool Ref::operator==(const Expression &rhs) const {
+  return &rhs.Type() == &Ref::TypeInstance
+      && dynamic_cast<const Ref&>(rhs) == *this;
+}
+
+bool Ref::operator==(const Ref &rhs) const {
+  return Value.get() == rhs.Value.get();
+}
+
+bool Ref::operator!=(const Ref &rhs) const {
+  return !(rhs == *this);
 }

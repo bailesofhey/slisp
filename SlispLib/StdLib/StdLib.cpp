@@ -319,7 +319,7 @@ bool StdLib::Print(EvaluationContext &ctx) {
 
 bool StdLib::Quit(EvaluationContext &ctx) {
   ctx.Interp.Stop();
-  ctx.Expr = ExpressionPtr { new Int { 0 } };
+  ctx.Expr = GetNil();
   return true;
 }
 
@@ -327,9 +327,9 @@ bool StdLib::Help(EvaluationContext &ctx) {
   std::string defaultSexp = ctx.Interp.GetSettings().GetDefaultSexp();
   std::stringstream ss;
   Interpreter::SymbolFunctor functor = [&ss, &defaultSexp](const std::string &symbolName, ExpressionPtr &expr) {
-    if (&expr->Type() == &Function::TypeInstance && symbolName != defaultSexp) {
-      auto fn = static_cast<Function*>(expr.get());
-      ss << "(" << symbolName << fn->Def.ToString() << std::endl;
+    if (symbolName != defaultSexp) {
+      if (auto fn = TypeHelper::GetValue<Function>(expr))
+        ss << "(" << symbolName << fn->Def.ToString() << std::endl;
     }
   };
 
@@ -341,8 +341,7 @@ bool StdLib::Help(EvaluationContext &ctx) {
       ExpressionPtr currArg = std::move(ctx.Args.front());
       ctx.Args.pop_front();
 
-      if (&currArg->Type() == &Symbol::TypeInstance) {
-        auto sym = static_cast<Symbol*>(currArg.get());
+      if (auto sym = TypeHelper::GetValue<Symbol>(currArg)) {
         ExpressionPtr currValue;
         if (symbols.GetSymbol(sym->Value, currValue)) {
           functor(sym->Value, currValue);
@@ -373,7 +372,7 @@ void BuildOpSexp(EvaluationContext &ctx, const std::string &op, ExpressionPtr &s
 bool StdLib::Set(EvaluationContext &ctx) {
   ExpressionPtr symToSetExpr = std::move(ctx.Args.front());
   ctx.Args.pop_front();
-  if (auto *symToSet = dynamic_cast<Symbol*>(symToSetExpr.get())) {
+  if (auto symToSet = TypeHelper::GetValue<Symbol>(symToSetExpr)) { 
     std::string symToSetName = symToSet->Value;
     const std::string setOp = ctx.GetThisFunctionName();
     if (!setOp.empty()) {
@@ -403,33 +402,35 @@ bool StdLib::Set(EvaluationContext &ctx) {
     return false;
   }
   else
-    return ctx.TypeError(Symbol::TypeInstance, symToSetExpr);
+    return ctx.TypeError<Symbol>(symToSetExpr);
 }
 
 bool StdLib::UnSet(EvaluationContext &ctx) {
   ExpressionPtr sym = std::move(ctx.Args.front());
   ctx.Args.pop_front();
 
-  std::string symName = "";
-  auto symE = static_cast<Symbol*>(sym.get());
-  symName = symE->Value;
+  if (auto symE = TypeHelper::GetValue<Symbol>(sym)) {
+    std::string symName = symE->Value;
 
-  ExpressionPtr value;
-  auto &currFrame = ctx.Interp.GetCurrentStackFrame();
-  if (currFrame.GetSymbol(symName, value)) {
-    currFrame.DeleteSymbol(symName);
-    ctx.Expr = std::move(value);
-    return true;
+    ExpressionPtr value;
+    auto &currFrame = ctx.Interp.GetCurrentStackFrame();
+    if (currFrame.GetSymbol(symName, value)) {
+      currFrame.DeleteSymbol(symName);
+      ctx.Expr = std::move(value);
+      return true;
+    }
+    else
+      return ctx.UnknownSymbolError(symName);
   }
   else
-    return ctx.UnknownSymbolError(symName);
+    return ctx.TypeError<Symbol>(sym);
 }
 
 bool StdLib::InfixRegistrationFunction(EvaluationContext &ctx, const std::string &name, bool unregister) {
   auto sym = static_cast<Symbol&>(*ctx.Args.front());
   ExpressionPtr fnExpr;
   if (ctx.Interp.GetDynamicSymbols().GetSymbol(sym.Value, fnExpr)) {
-    if (TypeHelper::TypeMatches(Function::TypeInstance, fnExpr->Type())) {
+    if (TypeHelper::IsA<Function>(fnExpr)) { 
       auto &settings = ctx.Interp.GetSettings();
       if (unregister)
         settings.UnregisterInfixSymbol(sym.Value);
@@ -439,7 +440,7 @@ bool StdLib::InfixRegistrationFunction(EvaluationContext &ctx, const std::string
       return true;
     }
     else
-      return ctx.TypeError(Function::TypeInstance, fnExpr);
+      return ctx.TypeError<Function>(fnExpr);
   }
   else
     return ctx.UnknownSymbolError(sym.Value);
@@ -460,10 +461,9 @@ bool StdLib::GenericNumFunc(EvaluationContext &ctx, I iFn, F fFn) {
   auto currArg = ctx.Args.begin();
   if (currArg != ctx.Args.end()) {
     if (ctx.Evaluate(*currArg, 1)) {
-      auto &type = (*currArg)->Type();
-      if (TypeHelper::IsConvertableToInt(type))
+      if (TypeHelper::IsA<Int>(*currArg))
         return iFn(ctx);
-      else if (&type == &Float::TypeInstance)
+      else if (TypeHelper::IsA<Float>(*currArg))
         return fFn(ctx);
       else
         return ctx.TypeError("int/float", *currArg);
@@ -480,13 +480,13 @@ bool StdLib::Add(EvaluationContext &ctx) {
   if (currArg != ctx.Args.end()) {
     if (ctx.Evaluate(*currArg, 1)) {
       auto &type = (*currArg)->Type();
-      if (TypeHelper::IsConvertableToInt(type))
+      if (TypeHelper::IsA<Int>(type))
         return AddInt(ctx);
-      else if (&type == &Float::TypeInstance)
+      else if (TypeHelper::IsA<Float>(type))
         return AddFloat(ctx);
-      else if (&type == &Str::TypeInstance)
+      else if (TypeHelper::IsA<Str>(type))
         return AddStr(ctx);
-      else if (&type == &Quote::TypeInstance)
+      else if (TypeHelper::IsA<Quote>(type))
         return AddList(ctx);
       else
         return ctx.TypeError("string/int/float/list", *currArg);
@@ -517,13 +517,13 @@ bool StdLib::SequenceFn(EvaluationContext &ctx, S strFn, L listFn) {
   ExpressionPtr arg = std::move(ctx.Args.front());
   ctx.Args.clear();
   if (ctx.Evaluate(arg, "1")) {
-    if (auto str = dynamic_cast<Str*>(arg.get())) {
+    if (auto str = TypeHelper::GetValue<Str>(arg)) {
       ctx.Expr = ExpressionPtr { strFn(str->Value) };
       return true;
     }
-    else if (auto quote = dynamic_cast<Quote*>(arg.get())) {
+    else if (auto quote = TypeHelper::GetValue<Quote>(arg)) {
       if (IsQuoteAList(ctx, *quote)) {
-        if (auto listSexp = dynamic_cast<Sexp*>(quote->Value.get())) {
+        if (auto listSexp = TypeHelper::GetValue<Sexp>(quote->Value)) {
           ctx.Expr = ExpressionPtr { listFn(listSexp->Args) };
           return true;
         }
@@ -571,9 +571,9 @@ bool StdLib::Foreach(EvaluationContext &ctx) {
   ctx.Args.pop_front();
   auto second = std::move(ctx.Args.front());
   ctx.Args.pop_front();
-  if (Symbol *sym = dynamic_cast<Symbol*>(first.get())) {
+  if (auto sym = TypeHelper::GetValue<Symbol>(first)) {
     if (ctx.Args.size() > 1) {
-      if (Symbol *optionalInSym = dynamic_cast<Symbol*>(second.get())) {
+      if (auto optionalInSym = TypeHelper::GetValue<Symbol>(second)) {
         if (optionalInSym->Value == "in") {
           second = std::move(ctx.Args.front());
           ctx.Args.pop_front();
@@ -587,14 +587,18 @@ bool StdLib::Foreach(EvaluationContext &ctx) {
           Scope scope(ctx.Interp.GetCurrentStackFrame().GetLocalSymbols());
           ArgList bodyCopy;
           ArgListHelper::CopyTo(ctx.Args, bodyCopy);
-          ExpressionPtr curr;
-          while (curr = iterator->Next()) {
-            scope.PutSymbol(sym->Value, curr); 
-            ctx.Args.clear();
-            ArgListHelper::CopyTo(bodyCopy, ctx.Args);
-            if (!Begin(ctx))
-              return false;
-          }
+          bool more = false;
+          do {
+            ExpressionPtr& curr = iterator->Next();
+            more = curr.operator bool();
+            if (more) {
+              scope.PutSymbol(sym->Value, curr); 
+              ctx.Args.clear();
+              ArgListHelper::CopyTo(bodyCopy, ctx.Args);
+              if (!Begin(ctx))
+                return false;
+            }
+          } while (more);
           return true;
         }
       }
@@ -604,7 +608,7 @@ bool StdLib::Foreach(EvaluationContext &ctx) {
       return false;
   }
   else
-    return ctx.TypeError(Symbol::TypeInstance, first);
+    return ctx.TypeError<Symbol>(first);
 }
 
 // Int Functions
@@ -636,12 +640,12 @@ bool StdLib::CheckDivideByZero(EvaluationContext &ctx) {
     if (argNum) {
       ExpressionPtr numExpr = arg->Clone();
       if (numExpr) {
-        auto *num = dynamic_cast<T*>(numExpr.get());
+        auto num = TypeHelper::GetValue<T>(numExpr);
         if (num && num->Value == 0)
           return ctx.Error("Divide by zero");
       }
       else
-        return ctx.TypeError(T::TypeInstance, arg);
+        return ctx.TypeError<T>(arg);
     }
     ++argNum;
   }
@@ -669,7 +673,7 @@ bool StdLib::Hex(EvaluationContext &ctx) {
 
 bool StdLib::Bin(EvaluationContext &ctx) {
   std::stringstream ss;
-  if (auto *num = dynamic_cast<Int*>(ctx.Args.front().get())) {
+  if (auto num = TypeHelper::GetValue<Int>(ctx.Args.front())) {
     int64_t value = num->Value;
     if (value) {
       while (value) {
@@ -850,15 +854,11 @@ bool StdLib::BitXor(EvaluationContext &ctx) {
 }
 
 bool StdLib::BitNot(EvaluationContext &ctx) {
-  ExpressionPtr numExpr = TypeHelper::GetInt(ctx.Args.front());
-  if (numExpr) {
-    auto *num = dynamic_cast<Int*>(numExpr.get());
-    if (num) {
-      ctx.Expr = ExpressionPtr { new Int(~num->Value) };
-      return true;
-    }
+  if (auto num = TypeHelper::GetValue<Int>(ctx.Args.front())) {
+    ctx.Expr = ExpressionPtr { new Int(~num->Value) };
+    return true;
   }
-  return ctx.TypeError(Int::TypeInstance, ctx.Args.front());
+  return ctx.TypeError<Int>(ctx.Args.front());
 }
 
 // Str functions
@@ -866,12 +866,10 @@ bool StdLib::BitNot(EvaluationContext &ctx) {
 bool StdLib::AddStr(EvaluationContext &ctx) {
   std::stringstream ss;
   while (!ctx.Args.empty()) {
-    auto str = dynamic_cast<Str*>(ctx.Args.front().get());
-    if (str)
+    if (auto str = TypeHelper::GetValue<Str>(ctx.Args.front()))
       ss << str->Value;
     else
-      return ctx.TypeError(Str::TypeInstance, ctx.Args.front());
-
+      return ctx.TypeError<Str>(ctx.Args.front());
     ctx.Args.pop_front();
   }
 
@@ -882,11 +880,13 @@ bool StdLib::AddStr(EvaluationContext &ctx) {
 bool StdLib::Reverse(EvaluationContext &ctx) {
   ExpressionPtr arg = std::move(ctx.Args.front());
   ctx.Args.pop_front();
-  auto argString = static_cast<Str*>(arg.get());
-  std::reverse(argString->Value.begin(), argString->Value.end());
-
-  ctx.Expr = std::move(arg);
-  return true;
+  if (auto argString = TypeHelper::GetValue<Str>(arg)) {
+    std::reverse(argString->Value.begin(), argString->Value.end());
+    ctx.Expr = std::move(arg);
+    return true;
+  }
+  else
+    return ctx.TypeError<Str>(arg);
 }
 
 // Lists
@@ -918,12 +918,12 @@ bool StdLib::Map(EvaluationContext &ctx) {
 
   ExpressionPtr resultExpr { new Sexp {} };
 
-  auto fn = static_cast<Function*>(fnExpr.get());
-  auto quote = static_cast<Quote*>(quoteExpr.get());
-  auto list = dynamic_cast<Sexp*>(quote->Value.get());
-  auto resultList = static_cast<Sexp*>(resultExpr.get());
+  auto fn = TypeHelper::GetValue<Function>(fnExpr);
+  auto quote = TypeHelper::GetValue<Quote>(quoteExpr);
+  auto list = TypeHelper::GetValue<Sexp>(quote->Value);
+  auto resultList = TypeHelper::GetValue<Sexp>(resultExpr);
   int i = 0;
-  if (list) {
+  if (fn && quote && list) {
     for (auto &item : list->Args) {
       ExpressionPtr evalExpr { new Sexp { } };
       auto evalSexp = static_cast<Sexp*>(evalExpr.get());
@@ -967,10 +967,8 @@ bool StdLib::AddList(EvaluationContext &ctx) {
   ExpressionPtr resultExpr { new Sexp {} };
   auto resultList = static_cast<Sexp*>(resultExpr.get());
   while (!ctx.Args.empty()) {
-    auto quote = dynamic_cast<Quote*>(ctx.Args.front().get());
-    if (quote) {
-      auto list = dynamic_cast<Sexp*>(quote->Value.get());
-      if (list) {
+    if (auto quote = TypeHelper::GetValue<Quote>(ctx.Args.front())) {
+      if (auto list = TypeHelper::GetValue<Sexp>(quote->Value)) {
         while (!list->Args.empty()) {
           resultList->Args.push_back(std::move(list->Args.front()));
           list->Args.pop_front();
@@ -992,8 +990,7 @@ bool StdLib::AddList(EvaluationContext &ctx) {
 bool StdLib::Head(EvaluationContext &ctx) {
   ExpressionPtr quoteExpr { std::move(ctx.Args.front()) };
   auto quote = static_cast<Quote*>(quoteExpr.get());
-  auto list = dynamic_cast<Sexp*>(quote->Value.get());
-  if (list) {
+  if (auto list = TypeHelper::GetValue<Sexp>(quote->Value)) {
     if (list->Args.empty())
       ctx.Expr = StdLib::GetNil();
     else {
@@ -1008,22 +1005,24 @@ bool StdLib::Head(EvaluationContext &ctx) {
 
 bool StdLib::Tail(EvaluationContext &ctx) {
   ExpressionPtr quoteExpr { std::move(ctx.Args.front()) };
-  auto quote = static_cast<Quote*>(quoteExpr.get());
-  auto list = dynamic_cast<Sexp*>(quote->Value.get());
-  if (list) {
-    if (list->Args.empty())
-      ctx.Expr = StdLib::GetNil();
-    else {
-      list->Args.pop_front();
-      ExpressionPtr tail { new Sexp {} };
-      auto newList = dynamic_cast<Sexp*>(tail.get());
-      while (!list->Args.empty()) {
-        newList->Args.push_back(std::move(list->Args.front()));
+  if (auto quote = TypeHelper::GetValue<Quote>(quoteExpr)) {
+    if (auto list = TypeHelper::GetValue<Sexp>(quote->Value)) {
+      if (list->Args.empty())
+        ctx.Expr = StdLib::GetNil();
+      else {
         list->Args.pop_front();
+        ExpressionPtr tail { new Sexp {} };
+        auto newList = dynamic_cast<Sexp*>(tail.get());
+        while (!list->Args.empty()) {
+          newList->Args.push_back(std::move(list->Args.front()));
+          list->Args.pop_front();
+        }
+        ctx.Expr = ExpressionPtr { new Quote { std::move(tail) } };
       }
-      ctx.Expr = ExpressionPtr { new Quote { std::move(tail) } };
+      return true;
     }
-    return true;
+    else
+      return ctx.TypeError("list", quote->Value);
   }
   else
     return ctx.TypeError("list", quote->Value);
@@ -1039,31 +1038,41 @@ bool StdLib::Range(EvaluationContext &ctx) {
   if (!ctx.Args.empty()) {
     ExpressionPtr stepExpr = std::move(ctx.Args.front());
     ctx.Args.pop_front();
-    auto stepV = static_cast<Int*>(stepExpr.get());
-    step = stepV->Value; 
-    if (step == 0)
-      return ctx.Error("step cannot be zero");
+    
+    if (auto stepV = TypeHelper::GetValue<Int>(stepExpr)) {
+      step = stepV->Value; 
+      if (step == 0)
+        return ctx.Error("step cannot be zero");
+    }
+    else
+      return ctx.TypeError<Int>(stepExpr);
   }
   bool positiveStep = step > 0;
-  auto startV = static_cast<Int*>(startExpr.get()),
-       endV   = static_cast<Int*>(endExpr.get());
-  int64_t start = startV->Value,
-          end   = endV->Value;
-  if (positiveStep) {
-    if (start > end)
-      return ctx.Error("start cannot be greater than end when using a positive step");
-  }
-  else {
-    if (start < end)
-      return ctx.Error("start cannot be less than end when using a negative step");
-  }
+  if (auto startV = TypeHelper::GetValue<Int>(startExpr)) {
+    if (auto endV = TypeHelper::GetValue<Int>(endExpr)) {
+      int64_t start = startV->Value,
+              end   = endV->Value;
+      if (positiveStep) {
+        if (start > end)
+          return ctx.Error("start cannot be greater than end when using a positive step");
+      }
+      else {
+        if (start < end)
+          return ctx.Error("start cannot be less than end when using a negative step");
+      }
 
-  ExpressionPtr listSexp { new Sexp };
-  auto list = static_cast<Sexp*>(listSexp.get());
-  for (int64_t i = start; positiveStep ? (i <= end) : (i >= end); i += step)
-    list->Args.push_back(ExpressionPtr { new Int(i) });
-  ctx.Expr = ExpressionPtr { new Quote(std::move(listSexp)) };
-  return true;
+      ExpressionPtr listSexp { new Sexp };
+      auto list = static_cast<Sexp*>(listSexp.get());
+      for (int64_t i = start; positiveStep ? (i <= end) : (i >= end); i += step)
+        list->Args.push_back(ExpressionPtr { new Int(i) });
+      ctx.Expr = ExpressionPtr { new Quote(std::move(listSexp)) };
+      return true;
+    }
+    else
+      return ctx.TypeError<Int>(endExpr);
+  }
+  else
+    return ctx.TypeError<Int>(startExpr);
 }
 
 // Logical
@@ -1074,8 +1083,7 @@ bool StdLib::BinaryLogicalFunc(EvaluationContext &ctx, bool isAnd) {
     ExpressionPtr currArg = std::move(ctx.Args.front());
     ctx.Args.pop_front();
     if (ctx.Evaluate(currArg, argNum)) {
-      Bool *argValue = dynamic_cast<Bool*>(currArg.get());
-      if (argValue) {
+      if (auto argValue = TypeHelper::GetValue<Bool>(currArg)) {
         bool value = argValue->Value;
         if (isAnd ? !value : value) {
           ctx.Expr = ExpressionPtr { new Bool(isAnd ? false : true) };
@@ -1083,7 +1091,7 @@ bool StdLib::BinaryLogicalFunc(EvaluationContext &ctx, bool isAnd) {
         }
       }
       else
-        return ctx.TypeError(Bool::TypeInstance, currArg);
+        return ctx.TypeError<Bool>(currArg);
     }
     else
       return false; 
@@ -1107,13 +1115,12 @@ bool StdLib::Not(EvaluationContext &ctx) {
     ExpressionPtr arg = std::move(ctx.Args.front());
     ctx.Args.pop_front();
     if (ctx.Evaluate(arg, 1)) {
-      Bool *boolArg = dynamic_cast<Bool*>(arg.get());
-      if (boolArg) {
+      if (auto boolArg = TypeHelper::GetValue<Bool>(arg)) {
         ctx.Expr = ExpressionPtr { new Bool(!boolArg->Value) };
         return true;
       }
       else
-        return ctx.TypeError(Bool::TypeInstance, arg);
+        return ctx.TypeError<Bool>(arg);
     }
     else
       return false; 
@@ -1227,7 +1234,7 @@ bool StdLib::Unquote(EvaluationContext &ctx) {
     ExpressionPtr quoteExpr { std::move(ctx.Args.front()) };
     ExpressionPtr toEvaluate;
 
-    if (auto quote = dynamic_cast<Quote*>(quoteExpr.get()))
+    if (auto quote = TypeHelper::GetValue<Quote>(quoteExpr))
       toEvaluate = std::move(quote->Value);
     else 
       toEvaluate = std::move(quoteExpr);
@@ -1251,14 +1258,14 @@ bool StdLib::Cond(EvaluationContext &ctx) {
   while (!ctx.Args.empty()) {
     ExpressionPtr arg = std::move(ctx.Args.front());
     ctx.Args.pop_front();
-    if (auto argSexp = dynamic_cast<Sexp*>(arg.get())) {
+    if (auto argSexp = TypeHelper::GetValue<Sexp>(arg)) {
       if (argSexp->Args.size() == 2) {
         ExpressionPtr boolExpr = std::move(argSexp->Args.front());
         argSexp->Args.pop_front();
         ExpressionPtr statementExpr = std::move(argSexp->Args.front());
         argSexp->Args.pop_front();
         if (ctx.Evaluate(boolExpr, "condition")) {
-          if (auto boolResult = dynamic_cast<Bool*>(boolExpr.get())) {
+          if (auto boolResult = TypeHelper::GetValue<Bool>(boolExpr)) {
             if (boolResult->Value) {
               if (ctx.Evaluate(statementExpr, "statement")) {
                 ctx.Expr = std::move(statementExpr);
@@ -1269,7 +1276,7 @@ bool StdLib::Cond(EvaluationContext &ctx) {
             }
           }
           else
-            return ctx.TypeError(Bool::TypeInstance, boolExpr);
+            return ctx.TypeError<Bool>(boolExpr);
         }
         else
           return false;
@@ -1278,7 +1285,7 @@ bool StdLib::Cond(EvaluationContext &ctx) {
         return ctx.Error("arg " + std::to_string(argNum) + ": expected 2 args. got " + std::to_string(argSexp->Args.size()));
     }
     else
-      return ctx.TypeError(Sexp::TypeInstance, arg);
+      return ctx.TypeError<Sexp>(arg);
     ++argNum;
   }
   ctx.Expr = GetNil();
@@ -1302,13 +1309,13 @@ bool StdLib::Switch(EvaluationContext &ctx) {
       ExpressionPtr arg = std::move(argCopy.front());
       argCopy.pop_front();
       bool isDefault = argCopy.empty();
-      if (auto argSexp = dynamic_cast<Sexp*>(arg.get())) {
+      if (auto argSexp = TypeHelper::GetValue<Sexp>(arg)) {
         const std::string optionalSymbolName = isDefault ? "default" : "case";
         if (argSexp->Args.size() == (isDefault ? 2 : 3)) {
           ExpressionPtr optionalCaseSymbolExpr = std::move(argSexp->Args.front());
           argSexp->Args.front();
           argSexp->Args.pop_front();
-          if (auto optionalCaseSymbol = dynamic_cast<Symbol*>(optionalCaseSymbolExpr.get())) {
+          if (auto optionalCaseSymbol = TypeHelper::GetValue<Symbol>(optionalCaseSymbolExpr)) {
             if (optionalCaseSymbol->Value != optionalSymbolName)
               return ctx.Error("Expected \"" + optionalSymbolName + "\"");
           }
@@ -1340,7 +1347,7 @@ bool StdLib::Switch(EvaluationContext &ctx) {
             ctx.Args.push_front(std::move(valueExpr));
             ctx.Args.push_front(varExpr->Clone());
             if (Eq(ctx)) {
-              if (auto boolResult = dynamic_cast<Bool*>(ctx.Expr.get())) {
+              if (auto boolResult = TypeHelper::GetValue<Bool>(ctx.Expr)) {
                 if (boolResult->Value) {
                   if (ctx.Evaluate(statementExpr, "statement")) {
                     ctx.Expr = std::move(statementExpr);
@@ -1351,7 +1358,7 @@ bool StdLib::Switch(EvaluationContext &ctx) {
                 }
               }
               else
-                return ctx.TypeError(Bool::TypeInstance, ctx.Expr);
+                return ctx.TypeError<Bool>(ctx.Expr);
             }
             else
               return false;
@@ -1361,7 +1368,7 @@ bool StdLib::Switch(EvaluationContext &ctx) {
         }
       }
       else
-        return ctx.TypeError(Sexp::TypeInstance, arg);
+        return ctx.TypeError<Sexp>(arg);
       ++argNum;
     }
   }
@@ -1380,7 +1387,7 @@ bool StdLib::While(EvaluationContext &ctx) {
     ExpressionPtr condExpr = std::move(loopArgs.front());
     loopArgs.pop_front();
     if (ctx.Evaluate(condExpr, "condition")) {
-      if (auto condResult = dynamic_cast<Bool*>(condExpr.get())) {
+      if (auto condResult = TypeHelper::GetValue<Bool>(condExpr)) {
         if (condResult->Value) {
           int bodyStatementNum = 1;
           while (!loopArgs.empty()) {
@@ -1399,7 +1406,7 @@ bool StdLib::While(EvaluationContext &ctx) {
         }
       }
       else
-        return ctx.TypeError(Bool::TypeInstance, condExpr);
+        return ctx.TypeError<Bool>(condExpr);
     }
     else
       return false;
@@ -1418,14 +1425,17 @@ bool StdLib::If(EvaluationContext &ctx) {
   ExpressionPtr falseExpr = std::move(ctx.Args.front());
   ctx.Args.pop_front();
 
-  auto cond = static_cast<Bool*>(condExpr.get());
-  ExpressionPtr *branchExpr = cond->Value ? &trueExpr : &falseExpr;
-  if (ctx.Evaluate(*branchExpr, "branch")) {
-    ctx.Expr = std::move(*branchExpr);
-    return true;
+  if (auto cond = TypeHelper::GetValue<Bool>(condExpr)) {
+    ExpressionPtr *branchExpr = cond->Value ? &trueExpr : &falseExpr;
+    if (ctx.Evaluate(*branchExpr, "branch")) {
+      ctx.Expr = std::move(*branchExpr);
+      return true;
+    }
+    else
+      return false; 
   }
   else
-    return false; 
+    return ctx.TypeError<Bool>(condExpr);
 }
 
 // Go through all the code and harden, perform additional argument checking
@@ -1435,13 +1445,12 @@ bool StdLib::Let(EvaluationContext &ctx) {
   ExpressionPtr varsExpr = std::move(ctx.Args.front());
   ctx.Args.pop_front();
 
-  auto vars = dynamic_cast<Sexp*>(varsExpr.get());
+  auto vars = TypeHelper::GetValue<Sexp>(varsExpr);
   if (!vars)
-    return ctx.TypeError(Sexp::TypeInstance, varsExpr);
+    return ctx.TypeError<Sexp>(varsExpr);
 
   for (auto &varExpr : vars->Args) {
-    auto var = dynamic_cast<Sexp*>(varExpr.get());
-    if (var) {
+    if (auto var = TypeHelper::GetValue<Sexp>(varExpr)) {
       size_t nVarArgs = var->Args.size();
       if (nVarArgs == 2) {
         ExpressionPtr varNameExpr = std::move(var->Args.front());
@@ -1450,8 +1459,7 @@ bool StdLib::Let(EvaluationContext &ctx) {
         ExpressionPtr varValueExpr = std::move(var->Args.front());
         var->Args.pop_front();
 
-        auto varName = dynamic_cast<Symbol*>(varNameExpr.get());
-        if (varName) {
+        if (auto varName = TypeHelper::GetValue<Symbol>(varNameExpr)) {
           if (ctx.Evaluate(varValueExpr, varName->Value)) {
             if (!scope.IsScopedSymbol(varName->Value))
               scope.PutSymbol(varName->Value, varValueExpr);
@@ -1462,7 +1470,7 @@ bool StdLib::Let(EvaluationContext &ctx) {
             return false; 
         }
         else
-          return ctx.TypeError(Symbol::TypeInstance, varNameExpr);
+          return ctx.TypeError<Symbol>(varNameExpr);
       }
       else
         return ctx.Error("Expected 2 args: (name1 value1). Got " + std::to_string(nVarArgs) + " args");
@@ -1521,15 +1529,13 @@ bool StdLib::Lambda(EvaluationContext &ctx) {
 }
 
 bool StdLib::LambdaPrepareFormals(EvaluationContext &ctx, ExpressionPtr &formalsExpr, ArgList &anonFuncArgs, int &nArgs) {
-  auto formalsList = dynamic_cast<Sexp*>(formalsExpr.get());
-  if (formalsList) {
+  if (auto formalsList = TypeHelper::GetValue<Sexp>(formalsExpr)) {
     for (auto &formal : formalsList->Args) {
-      auto formalSym = dynamic_cast<Symbol*>(formal.get());
-      if (formalSym) {
+      if (auto formalSym = TypeHelper::GetValue<Symbol>(formal)) {
         anonFuncArgs.push_back(formalSym->Clone());
       }
       else
-        return ctx.TypeError(Symbol::TypeInstance, formal);
+        return ctx.TypeError<Symbol>(formal);
       ++nArgs;
     }
   }
@@ -1576,14 +1582,13 @@ bool StdLib::Apply(EvaluationContext &ctx) {
 
   if (ctx.Evaluate(appArgsExpr, "argsList")) {
     ExpressionPtr newArgs;
-    if (auto quote = dynamic_cast<Quote*>(appArgsExpr.get())) {
+    if (auto quote = TypeHelper::GetValue<Quote>(appArgsExpr)) {
       newArgs = std::move(quote->Value);
     }
     else
       newArgs = std::move(appArgsExpr);
 
-    auto appArgsSexp = dynamic_cast<Sexp*>(newArgs.get());
-    if (appArgsSexp) {
+    if (auto appArgsSexp = TypeHelper::GetValue<Sexp>(newArgs)) {
       while (!appArgsSexp->Args.empty()) {
         application->Args.push_back(std::move(appArgsSexp->Args.front()));
         appArgsSexp->Args.pop_front();
@@ -1608,13 +1613,13 @@ bool StdLib::BoolFunc(EvaluationContext &ctx) {
   bool value = false;
   if (auto &expr = ctx.Args.front()) {
     if (ctx.Evaluate(expr, 1)) {
-      if (auto *boolValue = dynamic_cast<Bool*>(expr.get()))
+      if (auto boolValue = TypeHelper::GetValue<Bool>(expr))
         value = boolValue->Value;
-      else if (auto *intValue = dynamic_cast<Int*>(expr.get()))
+      else if (auto intValue = TypeHelper::GetValue<Int>(expr))
         value = intValue->Value != 0;
-      else if (auto *floatValue = dynamic_cast<Float*>(expr.get()))
+      else if (auto floatValue = TypeHelper::GetValue<Float>(expr))
         value = floatValue->Value != 0.0;
-      else if (auto *strValue = dynamic_cast<Str*>(expr.get()))
+      else if (auto strValue = TypeHelper::GetValue<Str>(expr))
         value = strValue->Value != "";
       ctx.Expr = ExpressionPtr { new Bool(value) };
       return true;
@@ -1629,13 +1634,13 @@ bool StdLib::IntFunc(EvaluationContext &ctx) {
   int64_t value = 0;
   if (auto &expr = ctx.Args.front()) {
     if (ctx.Evaluate(expr, 1)) {
-      if (auto *boolValue = dynamic_cast<Bool*>(expr.get()))
+      if (auto boolValue = TypeHelper::GetValue<Bool>(expr))
         value = boolValue->Value;
-      else if (auto *intValue = dynamic_cast<Int*>(expr.get()))
+      else if (auto intValue = TypeHelper::GetValue<Int>(expr))
         value = intValue->Value;
-      else if (auto *floatValue = dynamic_cast<Float*>(expr.get()))
+      else if (auto floatValue = TypeHelper::GetValue<Float>(expr))
         value = std::llround(floatValue->Value);
-      else if (auto *strValue = dynamic_cast<Str*>(expr.get())) {
+      else if (auto strValue = TypeHelper::GetValue<Str>(expr)) {
         if (!strValue->Value.empty()) {
           try {
             NumConverter::Convert(strValue->Value, value);
@@ -1657,13 +1662,13 @@ bool StdLib::FloatFunc(EvaluationContext &ctx) {
   double value = 0;
   if (auto &expr = ctx.Args.front()) {
     if (ctx.Evaluate(expr, 1)) {
-      if (auto *boolValue = dynamic_cast<Bool*>(expr.get()))
+      if (auto boolValue = TypeHelper::GetValue<Bool>(expr))
         value = boolValue->Value ? 1 : 0;
-      else if (auto *intValue = dynamic_cast<Int*>(expr.get()))
+      else if (auto intValue = TypeHelper::GetValue<Int>(expr))
         value = static_cast<double>(intValue->Value);
-      else if (auto *floatValue = dynamic_cast<Float*>(expr.get()))
+      else if (auto floatValue = TypeHelper::GetValue<Float>(expr))
         value = floatValue->Value;
-      else if (auto *strValue = dynamic_cast<Str*>(expr.get())) {
+      else if (auto strValue = TypeHelper::GetValue<Str>(expr)) {
         if (!strValue->Value.empty()) {
           try {
             NumConverter::Convert(strValue->Value, value);
@@ -1695,15 +1700,12 @@ bool StdLib::StrFunc(EvaluationContext &ctx) {
 }
 
 bool StdLib::TypeFunc(EvaluationContext &ctx) {
-  auto &arg = ctx.Args.front();
-  auto &type = arg->Type();
-  
   std::string typeName;
-  if (&type == &Quote::TypeInstance) {
-    if (IsQuoteAList(ctx, *static_cast<Quote*>(arg.get())))
+  if (auto quote = TypeHelper::GetValue<Quote>(ctx.Args.front())) {
+    if (IsQuoteAList(ctx, *quote)) 
       typeName = "list";
     else
-      typeName = Quote::TypeInstance.Name();
+      typeName = quote->Type().Name();
   }
   else
     typeName = ctx.Args.front()->Type().Name();
@@ -1741,15 +1743,15 @@ bool StdLib::TypeQFunc(EvaluationContext &ctx) {
 bool StdLib::IsQuoteAList(EvaluationContext &ctx, Quote &quote) {
   auto &quoteValue = quote.Value;
   if (quoteValue) {
-    if (auto *sexp = dynamic_cast<Sexp*>(quoteValue.get())) {
+    if (auto sexp = TypeHelper::GetValue<Sexp>(quoteValue)) {
       if (sexp->Args.empty())
         return true;
       else {
         auto &firstSexpArg = sexp->Args.front();
-        if (auto *sym = dynamic_cast<Symbol*>(firstSexpArg.get())) {
+        if (auto sym = TypeHelper::GetValue<Symbol>(firstSexpArg)) {
           ExpressionPtr symValue;
           if (ctx.Interp.GetCurrentStackFrame().GetSymbol(sym->Value, symValue)) {
-            if (TypeHelper::IsFunction(symValue->Type()))
+            if (TypeHelper::IsA<Function>(symValue))
               return false;
             else
               return true;
@@ -1768,12 +1770,11 @@ bool StdLib::IsQuoteAList(EvaluationContext &ctx, Quote &quote) {
 template <class T, class F>
 bool StdLib::UnaryFunction(EvaluationContext &ctx, F fn) {
   ExpressionPtr numExpr = ctx.Args.front()->Clone();
-  auto num = dynamic_cast<T*>(numExpr.get());
-  if (num) {
+  if (auto num = TypeHelper::GetValue<T>(numExpr)) {
     ctx.Expr = ExpressionPtr { new T { fn(num->Value) } };
     return true;
   }
-  return ctx.TypeError(T::TypeInstance, ctx.Args.front());
+  return ctx.TypeError<T>(ctx.Args.front());
 }
 
 template<class T, class F>
@@ -1784,8 +1785,7 @@ bool StdLib::BinaryFunction(EvaluationContext &ctx, F fn) {
   while (!ctx.Args.empty()) {
     bool ok = false;
     if (ctx.Evaluate(ctx.Args.front(), argNum)) {
-      auto num = dynamic_cast<T*>(ctx.Args.front().get());
-      if (num) {
+      if (auto num = TypeHelper::GetValue<T>(ctx.Args.front())) {
         if (first)
           result.Value = num->Value;
         else
@@ -1797,7 +1797,7 @@ bool StdLib::BinaryFunction(EvaluationContext &ctx, F fn) {
       return false;
 
     if (!ok)
-      return ctx.TypeError(T::TypeInstance, ctx.Args.front());
+      return ctx.TypeError<T>(ctx.Args.front());
 
     first = false;
     ctx.Args.pop_front();
@@ -1813,19 +1813,17 @@ bool StdLib::BinaryPredicate(EvaluationContext &ctx, B bFn, I iFn, F fFn, S sFn)
   auto currArg = ctx.Args.begin();
   if (currArg != ctx.Args.end()) {
     if (ctx.Evaluate(*currArg, 1)) {
-      auto &type = (*currArg)->Type();
-
       Bool defaultValue { true };
-      if (bFn && (&type == &Bool::TypeInstance))
+      if (bFn && TypeHelper::IsA<Bool>(*currArg))
         return PredicateHelper<Bool>(ctx, bFn, defaultValue);
-      else if (iFn && (&type == &Int::TypeInstance))
+      else if (iFn && TypeHelper::IsA<Int>(*currArg))
         return PredicateHelper<Int>(ctx, iFn, defaultValue);
-      else if (fFn && (&type == &Float::TypeInstance))
+      else if (fFn && TypeHelper::IsA<Float>(*currArg))
         return PredicateHelper<Float>(ctx, fFn, defaultValue);
-      else if (sFn && (&type == &Str::TypeInstance))
+      else if (sFn && TypeHelper::IsA<Str>(*currArg))
         return PredicateHelper<Str>(ctx, sFn, defaultValue);
       else
-        return ctx.TypeError(Literal::TypeInstance, *currArg);
+        return ctx.TypeError<Literal>(*currArg);
     }
     else
       return false; 
@@ -1839,18 +1837,17 @@ bool StdLib::PredicateHelper(EvaluationContext &ctx, F fn, R defaultResult) {
   R result { defaultResult };
   ExpressionPtr firstArg = std::move(ctx.Args.front());
   ctx.Args.pop_front();
-  auto last = dynamic_cast<T*>(firstArg.get());
-  if (last) {
+  if (auto last = TypeHelper::GetValue<T>(firstArg)) {
     int argNum = 1;
     while (!ctx.Args.empty()) {
       if (ctx.Evaluate(ctx.Args.front(), argNum)) {
-        auto curr = dynamic_cast<T*>(ctx.Args.front().get());
+        auto curr = TypeHelper::GetValue<T>(ctx.Args.front());
         if (curr) {
           R tmp { fn(result, *last, *curr) };
           result = tmp;
         }
         else
-          return ctx.TypeError(T::TypeInstance, ctx.Args.front());
+          return ctx.TypeError<T>(ctx.Args.front());
 
         *last = *curr;
         ctx.Args.pop_front();
@@ -1862,7 +1859,7 @@ bool StdLib::PredicateHelper(EvaluationContext &ctx, F fn, R defaultResult) {
     }
   }
   else
-    return ctx.TypeError(T::TypeInstance, firstArg);
+    return ctx.TypeError<T>(firstArg);
 
   ctx.Expr = ExpressionPtr { result.Clone() };
   return true;

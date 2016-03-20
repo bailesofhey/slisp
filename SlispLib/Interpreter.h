@@ -50,6 +50,12 @@ class EvaluationContext {
     bool EvaluateError(int argNum);
     bool EvaluateError(const std::string &argName);
     bool UnknownSymbolError(const std::string &symName);
+
+    template<class T>
+    bool TypeError(const ExpressionPtr &actual) {
+      return TypeError(T::TypeInstance, actual);
+    }
+
     bool TypeError(const TypeInfo &expected, const ExpressionPtr &actual);
     bool TypeError(const std::string &expectedName, const ExpressionPtr &actual);
     bool ArgumentExpectedError();
