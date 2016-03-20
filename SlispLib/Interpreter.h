@@ -44,6 +44,22 @@ class EvaluationContext {
     bool Evaluate(ExpressionPtr &expr, const std::string &argName);
     bool EvaluateNoError(ExpressionPtr &expr);
 
+    template<class T>
+    T* GetRequiredValue(ExpressionPtr &expr) {
+      if (auto value = TypeHelper::GetValue<T>(expr)) 
+        return value;
+      TypeError<T>(expr);
+      return nullptr;
+    }
+
+    template<class T>
+    T* GetRequiredValue(ExpressionPtr &expr, const std::string &expectedType) {
+      if (auto value = TypeHelper::GetValue<T>(expr)) 
+        return value;
+      TypeError(expectedType, expr);
+      return nullptr;
+    }
+
     const std::string GetThisFunctionName();
 
     bool Error(const std::string &what);
