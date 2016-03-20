@@ -78,6 +78,14 @@ bool EvaluationContext::Evaluate(ExpressionPtr &expr, const std::string &argName
   return EvaluateNoError(expr) ? true : EvaluateError(argName);
 }
 
+Sexp* EvaluationContext::GetRequiredListValue(ExpressionPtr &expr) {
+  if (auto quote = GetRequiredValue<Quote>(expr, "list")) {
+    if (auto list = GetRequiredValue<Sexp>(quote->Value, "list"))
+      return list;
+  }
+  return false;
+}
+
 const std::string EvaluationContext::GetThisFunctionName() {
   if (auto thisSexp = TypeHelper::GetValue<Sexp>(Expr)) {
     if (auto thisFn = TypeHelper::GetValue<Function>(thisSexp->Args.front())) {

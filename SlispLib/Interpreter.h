@@ -60,6 +60,7 @@ class EvaluationContext {
       return nullptr;
     }
 
+    Sexp* GetRequiredListValue(ExpressionPtr &expr);
     const std::string GetThisFunctionName();
 
     bool Error(const std::string &what);

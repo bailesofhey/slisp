@@ -911,30 +911,26 @@ bool StdLib::Map(EvaluationContext &ctx) {
   ExpressionPtr fnExpr { std::move(ctx.Args.front()) };
   ctx.Args.pop_front();
 
-  ExpressionPtr quoteExpr { std::move(ctx.Args.front()) };
+  ExpressionPtr listExpr { std::move(ctx.Args.front()) };
   ctx.Args.pop_front();
 
   ExpressionPtr resultExpr { new Sexp {} };
   auto resultList = static_cast<Sexp*>(resultExpr.get());
   int i = 0;
   if (auto fn = ctx.GetRequiredValue<Function>(fnExpr)) {
-    if (auto quote = ctx.GetRequiredValue<Quote>(quoteExpr, "list")) {
-      if (auto list = ctx.GetRequiredValue<Sexp>(quote->Value, "list")) {
-        for (auto &item : list->Args) {
-          ExpressionPtr evalExpr { new Sexp { } };
-          auto evalSexp = static_cast<Sexp*>(evalExpr.get());
-          evalSexp->Args.push_back(fn->Clone());
-          evalSexp->Args.push_back(item->Clone());
-          if (!ctx.EvaluateNoError(evalExpr))
-            return ctx.Error("Failed to call " +  fn->ToString() + " on item " + std::to_string(i));
-          resultList->Args.push_back(std::move(evalExpr));
-          ++i;
-        }
+    if (auto list = ctx.GetRequiredListValue(listExpr)) {
+      for (auto &item : list->Args) {
+        ExpressionPtr evalExpr { new Sexp { } };
+        auto evalSexp = static_cast<Sexp*>(evalExpr.get());
+        evalSexp->Args.push_back(fn->Clone());
+        evalSexp->Args.push_back(item->Clone());
+        if (!ctx.EvaluateNoError(evalExpr))
+          return ctx.Error("Failed to call " +  fn->ToString() + " on item " + std::to_string(i));
+        resultList->Args.push_back(std::move(evalExpr));
+        ++i;
       }
-      else 
-        return false;
     }
-    else
+    else 
       return false;
   }
   else
@@ -969,19 +965,14 @@ bool StdLib::AddList(EvaluationContext &ctx) {
   ExpressionPtr resultExpr { new Sexp {} };
   auto resultList = static_cast<Sexp*>(resultExpr.get());
   while (!ctx.Args.empty()) {
-    if (auto quote = ctx.GetRequiredValue<Quote>(ctx.Args.front(), "list")) {
-      if (auto list = ctx.GetRequiredValue<Sexp>(quote->Value, "list")) {
-        while (!list->Args.empty()) {
-          resultList->Args.push_back(std::move(list->Args.front()));
-          list->Args.pop_front();
-        }
+    if (auto list = ctx.GetRequiredListValue(ctx.Args.front())) {
+      while (!list->Args.empty()) {
+        resultList->Args.push_back(std::move(list->Args.front()));
+        list->Args.pop_front();
       }
-      else
-        return false;
     }
     else
       return false;
-
     ctx.Args.pop_front();
   }
 
@@ -990,9 +981,8 @@ bool StdLib::AddList(EvaluationContext &ctx) {
 }
 
 bool StdLib::Head(EvaluationContext &ctx) {
-  ExpressionPtr quoteExpr { std::move(ctx.Args.front()) };
-  auto quote = static_cast<Quote*>(quoteExpr.get());
-  if (auto list = ctx.GetRequiredValue<Sexp>(quote->Value, "list")) {
+  ExpressionPtr listExpr { std::move(ctx.Args.front()) };
+  if (auto list = ctx.GetRequiredListValue(listExpr)) {
     if (list->Args.empty())
       ctx.Expr = StdLib::GetNil();
     else {
@@ -1006,25 +996,21 @@ bool StdLib::Head(EvaluationContext &ctx) {
 }
 
 bool StdLib::Tail(EvaluationContext &ctx) {
-  ExpressionPtr quoteExpr { std::move(ctx.Args.front()) };
-  if (auto quote = ctx.GetRequiredValue<Quote>(quoteExpr, "list")) {
-    if (auto list = ctx.GetRequiredValue<Sexp>(quote->Value, "list")) {
-      if (list->Args.empty())
-        ctx.Expr = StdLib::GetNil();
-      else {
+  ExpressionPtr listExpr { std::move(ctx.Args.front()) };
+  if (auto list = ctx.GetRequiredListValue(listExpr)) {
+    if (list->Args.empty())
+      ctx.Expr = StdLib::GetNil();
+    else {
+      list->Args.pop_front();
+      ExpressionPtr tail { new Sexp {} };
+      auto newList = static_cast<Sexp*>(tail.get());
+      while (!list->Args.empty()) {
+        newList->Args.push_back(std::move(list->Args.front()));
         list->Args.pop_front();
-        ExpressionPtr tail { new Sexp {} };
-        auto newList = dynamic_cast<Sexp*>(tail.get());
-        while (!list->Args.empty()) {
-          newList->Args.push_back(std::move(list->Args.front()));
-          list->Args.pop_front();
-        }
-        ctx.Expr = ExpressionPtr { new Quote { std::move(tail) } };
       }
-      return true;
+      ctx.Expr = ExpressionPtr { new Quote { std::move(tail) } };
     }
-    else
-      return false;
+    return true;
   }
   else
     return false;
