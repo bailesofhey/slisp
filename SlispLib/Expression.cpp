@@ -8,9 +8,22 @@
 
 //=============================================================================
 
-TypeInfo::TypeInfo(const std::string &typeName):
-  TypeName { typeName }
+TypeInfo::TypeInfo(const std::string &typeName, const ExpressionNewFn newFn):
+  TypeName { typeName },
+  NewFn { newFn }
 {
+}
+
+const std::string& TypeInfo::Name() const {
+  return TypeName;
+}
+
+ExpressionPtr TypeInfo::New() const {
+  return (*NewFn)();
+}
+
+ExpressionPtr TypeInfo::NewUndefined() {
+  return ExpressionPtr { };
 }
 
 //=============================================================================
@@ -25,6 +38,10 @@ Expression::~Expression() {
 
 const TypeInfo& Expression::Type() const {
   return _Type;
+}
+
+ExpressionPtr Expression::New() const {
+  return Type().New();
 }
 
 bool Expression::operator!=(const Expression &rhs) const {
@@ -56,11 +73,11 @@ IIterator::~IIterator() {
 
 //=============================================================================
 
-const TypeInfo Void::TypeInstance { "" };
+const TypeInfo Void::TypeInstance { "void", TypeInfo::NewUndefined };
 
 //=============================================================================
 
-const TypeInfo Literal::TypeInstance { "literal" };
+const TypeInfo Literal::TypeInstance { "literal", TypeInfo::NewUndefined };
 
 Literal::Literal(const TypeInfo& typeInfo):
   Expression { typeInfo }
@@ -69,7 +86,7 @@ Literal::Literal(const TypeInfo& typeInfo):
 
 //=============================================================================
 
-const TypeInfo Bool::TypeInstance("bool");
+const TypeInfo Bool::TypeInstance("bool", Bool::New);
 
 Bool::Bool():
   Bool { false }
@@ -123,9 +140,13 @@ void Bool::Print(std::ostream &out) const {
     out << "false";
 }
 
+ExpressionPtr Bool::New() {
+  return ExpressionPtr { new Bool() };
+}
+
 //=============================================================================
 
-const TypeInfo Int::TypeInstance("int");
+const TypeInfo Int::TypeInstance("int", Int::New);
 
 Int::Int():
   Int { 0 }
@@ -176,9 +197,13 @@ void Int::Print(std::ostream &out) const {
   out << Value;
 }
 
+ExpressionPtr Int::New() {
+  return ExpressionPtr { new Int() };
+}
+
 //=============================================================================
 
-const TypeInfo Float::TypeInstance("float");
+const TypeInfo Float::TypeInstance("float", Float::New);
 
 Float::Float():
   Float { 0 }
@@ -229,9 +254,14 @@ void Float::Print(std::ostream &out) const {
   out << Value;
 }
 
+ExpressionPtr Float::New() {
+  return ExpressionPtr { new Float() };
+}
+
+
 //=============================================================================
 
-const TypeInfo Str::TypeInstance("str");
+const TypeInfo Str::TypeInstance("str", Str::New);
 
 Str::Str():
   Str { "" }
@@ -286,6 +316,11 @@ void Str::Print(std::ostream &out) const {
   out << "\"" << Value << "\"";
 }
 
+ExpressionPtr Str::New() {
+  return ExpressionPtr { new Str() };
+}
+
+
 //=============================================================================
 
 StrIterator::StrIterator(Str &str):
@@ -304,7 +339,7 @@ ExpressionPtr StrIterator::Next() {
 
 //=============================================================================
 
-const TypeInfo Quote::TypeInstance("quote");
+const TypeInfo Quote::TypeInstance("quote", Quote::New);
 
 Quote::Quote(ExpressionPtr &&expr):
   Literal { TypeInstance },
@@ -341,9 +376,13 @@ void Quote::Print(std::ostream &out) const {
   out << *Value;
 }
 
+ExpressionPtr Quote::New() {
+  return ExpressionPtr { new Quote(ExpressionPtr {}) };
+}
+
 //=============================================================================
 
-const TypeInfo Symbol::TypeInstance("symbol");
+const TypeInfo Symbol::TypeInstance("symbol", TypeInfo::NewUndefined);
 
 Symbol::Symbol(const std::string &value):
   Expression { TypeInstance },
@@ -414,7 +453,7 @@ void ArgListHelper::CopyTo(const ArgList &src, ArgList &dst) {
 
 //=============================================================================
 
-const TypeInfo Sexp::TypeInstance("sexp");
+const TypeInfo Sexp::TypeInstance("sexp", Sexp::New);
 
 Sexp::Sexp():
   Expression { TypeInstance }
@@ -476,6 +515,12 @@ void Sexp::Print(std::ostream &out) const {
   }
   out << ")";
 }
+
+ExpressionPtr Sexp::New() {
+  return ExpressionPtr { new Sexp() };
+}
+
+//=============================================================================
 
 SexpIterator::SexpIterator(Sexp &sexp):
   Curr(sexp.Args.begin()),

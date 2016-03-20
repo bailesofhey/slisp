@@ -109,11 +109,11 @@ bool EvaluationContext::UnknownSymbolError(const std::string &symName) {
 }
 
 bool EvaluationContext::TypeError(const TypeInfo &expected, const ExpressionPtr &actual) {
-  return TypeError(expected.TypeName, actual);
+  return TypeError(expected.Name(), actual);
 }
 
 bool EvaluationContext::TypeError(const std::string &expectedName, const ExpressionPtr &actual) {
-  return Error("Expecting: " + expectedName + ". Got: " + actual->Type().TypeName);
+  return Error("Expecting: " + expectedName + ". Got: " + actual->Type().Name());
 }
 
 bool EvaluationContext::ArgumentExpectedError() {

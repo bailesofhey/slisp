@@ -33,7 +33,7 @@ bool ArgDef::Validate(ExpressionEvaluator evaluator, ExpressionPtr &expr, std::s
         throw std::exception("sexp requires at least one argument");
     }
     else
-      error = "Expected: Sexp. Actual: " + expr->Type().TypeName;
+      error = "Expected: Sexp. Actual: " + expr->Type().Name();
   }
   else
     throw std::exception("ExpressionPtr is empty");
@@ -76,7 +76,7 @@ bool ArgDef::CheckArg(ExpressionEvaluator evaluator, ExpressionPtr &arg, const T
     }
 
     if (!TypeHelper::TypeMatches(expectedType, arg->Type())) {
-      error = "Argument " + std::to_string(argNum) + ": Expected " + expectedType.TypeName + ", got " + arg->Type().TypeName;
+      error = "Argument " + std::to_string(argNum) + ": Expected " + expectedType.Name() + ", got " + arg->Type().Name();
       return false;
     }
     else
@@ -113,17 +113,17 @@ const std::string FuncDef::VarArgDef::ToString() const {
   else {
     std::stringstream ss;
     for (int i = 0; i < MinArgs; ++i)
-      ss << " " << Type.TypeName;
+      ss << " " << Type.Name();
     
     if (MaxArgs == ANY_ARGS) {
       if (ss.str().empty())
-        ss << " " << Type.TypeName;
+        ss << " " << Type.Name();
       ss << " ..";
     }
     else if (MaxArgs > MinArgs) {
       ss << " |";
       for (int i = 0; i < MaxArgs; ++i)
-        ss << " " << Type.TypeName;
+        ss << " " << Type.Name();
     }
     return ss.str();
   }
@@ -181,7 +181,7 @@ ArgDefPtr FuncDef::ListArgDef::Clone() const {
 const std::string FuncDef::ListArgDef::ToString() const {
   std::stringstream ss;
   for (auto type : Types) {
-    ss << " " << type->TypeName;
+    ss << " " << type->Name();
   }
   return ss.str();
 }
@@ -320,7 +320,7 @@ const std::string FuncDef::ToString() const {
 
 //=============================================================================
 
-const TypeInfo Function::TypeInstance("fn");
+const TypeInfo Function::TypeInstance("fn", TypeInfo::NewUndefined);
 
 Function::Function():
   Function {
@@ -366,7 +366,7 @@ bool Function::operator==(const Function &rhs) const {
 
 //=============================================================================
 
-const TypeInfo CompiledFunction::TypeInstance("compiledfunction");
+const TypeInfo CompiledFunction::TypeInstance("compiledfunction", TypeInfo::NewUndefined);
 
 CompiledFunction::CompiledFunction():
   Function {},
@@ -416,7 +416,7 @@ void CompiledFunction::Swap(CompiledFunction &rhs) {
 
 //=============================================================================
 
-const TypeInfo InterpretedFunction::TypeInstance("interpretedfunction");
+const TypeInfo InterpretedFunction::TypeInstance("interpretedfunction", TypeInfo::NewUndefined);
 
 InterpretedFunction::InterpretedFunction(const InterpretedFunction &rhs):
   Function(rhs),

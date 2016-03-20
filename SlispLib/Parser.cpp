@@ -223,7 +223,7 @@ bool ParseNum(const std::string &val, ExpressionPtr &numExpr, Sexp &root, std::s
     return true;
   }
   else {
-    error = "Value could not be converted to " + N::TypeInstance.TypeName;
+    error = "Value could not be converted to " + N::TypeInstance.Name();
     return false;
   }
 }

@@ -1703,10 +1703,10 @@ bool StdLib::TypeFunc(EvaluationContext &ctx) {
     if (IsQuoteAList(ctx, *static_cast<Quote*>(arg.get())))
       typeName = "list";
     else
-      typeName = Quote::TypeInstance.TypeName;
+      typeName = Quote::TypeInstance.Name();
   }
   else
-    typeName = ctx.Args.front()->Type().TypeName;
+    typeName = ctx.Args.front()->Type().Name();
 
   ExpressionPtr typeSymbol;
   if (ctx.Interp.GetCurrentStackFrame().GetSymbol(typeName, typeSymbol)) {
