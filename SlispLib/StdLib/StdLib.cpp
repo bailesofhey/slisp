@@ -604,6 +604,12 @@ bool StdLib::Foreach(EvaluationContext &ctx) {
       if (!ctx.GetSymbol(iterableSym->Value, iterableArg))
         return ctx.UnknownSymbolError(iterableSym->Value);
     }
+    else if (auto sexp = TypeHelper::GetValue<Sexp>(iterableValueOrSym)) {
+      if (ctx.Evaluate(iterableValueOrSym, "iterable expression")) 
+        iterableArg = iterableValueOrSym.get();
+      else
+        return false;
+    }
     else
       iterableArg = iterableValueOrSym.get();
 

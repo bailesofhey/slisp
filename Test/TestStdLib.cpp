@@ -939,6 +939,9 @@ TEST_F(StdLibListTest, TestForeach) {
   ASSERT_TRUE(RunSuccess("lst", "(4 6 8)"));
   ASSERT_TRUE(RunSuccess("(foreach lst (fn (e) (e *= 2)))", "16"));
   ASSERT_TRUE(RunSuccess("lst", "(8 12 16)"));
+
+  ASSERT_TRUE(RunSuccess("sum = 0", "0"));
+  ASSERT_TRUE(RunSuccess("(foreach i in (range 1 100) (sum += i))", "5050"));
 }
 
 class StdLibLogicalTest: public StdLibTest {
