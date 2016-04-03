@@ -146,6 +146,7 @@ class StdLib: public Library {
     static bool StrFunc(EvaluationContext &ctx);
 
     // Helpers
+    static bool ForeachIterate(EvaluationContext &ctx, Expression *iterableArg, Symbol *currElementSym, Function *fn);
     template <class S, class L>
     static bool SequenceFn(EvaluationContext &ctx, S strFn, L listFn);
 

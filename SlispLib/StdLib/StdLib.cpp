@@ -607,42 +607,46 @@ bool StdLib::Foreach(EvaluationContext &ctx) {
     else
       iterableArg = iterableValueOrSym.get();
 
-    if (auto *iterable = dynamic_cast<IIterable*>(iterableArg)) {
-      if (IteratorPtr iterator = iterable->GetIterator()) {
-        ArgList bodyCopy;
-        ArgListHelper::CopyTo(ctx.Args, bodyCopy);
-        bool more = false;
-        do {
-          ExpressionPtr& curr = iterator->Next();
-          more = curr.operator bool();
-          if (more) {
-            if (currElementSym) {
-              Scope scope(ctx.Interp.GetCurrentStackFrame().GetLocalSymbols());
-              scope.PutSymbol(currElementSym->Value, ExpressionPtr { new Ref(curr) }); 
-              ctx.Args.clear();
-              ArgListHelper::CopyTo(bodyCopy, ctx.Args);
-              if (!Begin(ctx))
-                return false;
-            }
-            else {
-              ExpressionPtr fnEvalExpr { new Sexp };
-              Sexp &fnEvalSexp = static_cast<Sexp&>(*fnEvalExpr);
-              fnEvalSexp.Args.push_back(fn->Clone());
-              fnEvalSexp.Args.push_back(ExpressionPtr { new Ref(curr) });
-              if (ctx.Evaluate(fnEvalExpr, "function evaluation"))
-                ctx.Expr = std::move(fnEvalExpr);
-              else
-                return false;
-            }
-          }
-        } while (more);
-        return true;
-      }
-    }
-    return ctx.Error("argument is not iterable");
+    return ForeachIterate(ctx, iterableArg, currElementSym, fn);
   }
   else
     return false;
+}
+
+bool StdLib::ForeachIterate(EvaluationContext &ctx, Expression *iterableArg, Symbol *currElementSym, Function *fn) {
+  if (auto *iterable = dynamic_cast<IIterable*>(iterableArg)) {
+    if (IteratorPtr iterator = iterable->GetIterator()) {
+      ArgList bodyCopy;
+      ArgListHelper::CopyTo(ctx.Args, bodyCopy);
+      bool more = false;
+      do {
+        ExpressionPtr& curr = iterator->Next();
+        more = curr.operator bool();
+        if (more) {
+          if (currElementSym) {
+            Scope scope(ctx.Interp.GetCurrentStackFrame().GetLocalSymbols());
+            scope.PutSymbol(currElementSym->Value, ExpressionPtr { new Ref(curr) }); 
+            ctx.Args.clear();
+            ArgListHelper::CopyTo(bodyCopy, ctx.Args);
+            if (!Begin(ctx))
+              return false;
+          }
+          else {
+            ExpressionPtr fnEvalExpr { new Sexp };
+            Sexp &fnEvalSexp = static_cast<Sexp&>(*fnEvalExpr);
+            fnEvalSexp.Args.push_back(fn->Clone());
+            fnEvalSexp.Args.push_back(ExpressionPtr { new Ref(curr) });
+            if (ctx.Evaluate(fnEvalExpr, "function evaluation"))
+              ctx.Expr = std::move(fnEvalExpr);
+            else
+              return false;
+          }
+        }
+      } while (more);
+      return true;
+    }
+  }
+  return ctx.Error("argument is not iterable");
 }
 
 // Int Functions
