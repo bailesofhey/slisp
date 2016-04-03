@@ -35,6 +35,7 @@ class StdLib: public Library {
     static bool Max(EvaluationContext &ctx);
     static bool Min(EvaluationContext &ctx);
     static bool Foreach(EvaluationContext &ctx);
+    static bool Reverse(EvaluationContext &ctx);
 
     // Int
     static bool AddInt(EvaluationContext &ctx);
@@ -100,7 +101,6 @@ class StdLib: public Library {
 
     // Str
     static bool AddStr(EvaluationContext &ctx);
-    static bool Reverse(EvaluationContext &ctx);
 
     // Lists
     static bool AddList(EvaluationContext &ctx);

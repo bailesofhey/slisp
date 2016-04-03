@@ -942,6 +942,19 @@ TEST_F(StdLibListTest, TestForeach) {
 
   ASSERT_TRUE(RunSuccess("sum = 0", "0"));
   ASSERT_TRUE(RunSuccess("(foreach i in (range 1 100) (sum += i))", "5050"));
+
+  ASSERT_TRUE(RunSuccess("(for e : lst (e += 10))", "26"));
+  ASSERT_TRUE(RunSuccess("lst", "(18 22 26)"));
+}
+
+TEST_F(StdLibListTest, TestReverse) {
+  ASSERT_TRUE(RunFail("(reverse (2) (3))"));
+  ASSERT_TRUE(RunSuccess("(reverse ())", "()"));
+  ASSERT_TRUE(RunSuccess("(reverse (1))", "(1)"));
+  ASSERT_TRUE(RunSuccess("(reverse (1 2))", "(2 1)"));
+  ASSERT_TRUE(RunSuccess("(reverse (1 2 3))", "(3 2 1)"));
+  ASSERT_TRUE(RunSuccess("(reverse (1 2 3 4))", "(4 3 2 1)"));
+  ASSERT_TRUE(RunSuccess("(reverse (1 2 3 4 5))", "(5 4 3 2 1)"));
 }
 
 class StdLibLogicalTest: public StdLibTest {

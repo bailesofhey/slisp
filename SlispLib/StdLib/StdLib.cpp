@@ -80,7 +80,10 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("abs", &StdLib::Abs, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("max", &StdLib::Max, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("min", &StdLib::Min, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
-  symbols.PutSymbolFunction("foreach", &StdLib::Foreach, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) });
+
+  FuncDef foreachDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) };
+  symbols.PutSymbolFunction("foreach", &StdLib::Foreach, foreachDef.Clone());
+  symbols.PutSymbolFunction("for", &StdLib::Foreach, foreachDef.Clone());
 
   // Float
 
@@ -126,7 +129,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   // Str 
 
-  symbols.PutSymbolFunction("reverse", &StdLib::Reverse, FuncDef { FuncDef::OneArg(Str::TypeInstance), FuncDef::OneArg(Str::TypeInstance) });
+  symbols.PutSymbolFunction("reverse", &StdLib::Reverse, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Str::TypeInstance) });
 
   // Logical
 
@@ -156,6 +159,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction("cons", &StdLib::Cons, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2), FuncDef::OneArg(Quote::TypeInstance) });
   symbols.PutSymbolFunction("range", &StdLib::Range, FuncDef { FuncDef::ManyArgs(Int::TypeInstance, 2, 3), FuncDef::OneArg(Quote::TypeInstance) });
+  symbols.PutSymbolFunction("..", &StdLib::Range, FuncDef { FuncDef::ManyArgs(Int::TypeInstance, 2), FuncDef::OneArg(Quote::TypeInstance) });
 
   // Logical
 
@@ -219,6 +223,8 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("str", &StdLib::StrFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Str::TypeInstance) });
 
   // Register infix operators by precedence (using C++ rules, where appropriate)
+  settings.RegisterInfixSymbol("..");
+
   settings.RegisterInfixSymbol("++");
   settings.RegisterInfixSymbol("--");
 
@@ -589,7 +595,7 @@ bool StdLib::Foreach(EvaluationContext &ctx) {
     else {
       if (nRemainingArgs > 1) {
         if (auto optionalInSym = TypeHelper::GetValue<Symbol>(secondArg)) {
-          if (optionalInSym->Value == "in") {
+          if (optionalInSym->Value == "in" || optionalInSym->Value == ":") {
             secondArg = std::move(ctx.Args.front());
             ctx.Args.pop_front();
           }
@@ -919,14 +925,20 @@ bool StdLib::AddStr(EvaluationContext &ctx) {
   return true;
 }
 
+template<class BeginIt, class EndIt>
+bool ReverseGeneric(EvaluationContext &ctx, ExpressionPtr &arg, BeginIt beginIt, EndIt endIt) {
+  std::reverse(beginIt, endIt);
+  ctx.Expr = std::move(arg);
+  return true;
+}
+
 bool StdLib::Reverse(EvaluationContext &ctx) {
   ExpressionPtr arg = std::move(ctx.Args.front());
   ctx.Args.pop_front();
-  if (auto argString = ctx.GetRequiredValue<Str>(arg)) {
-    std::reverse(argString->Value.begin(), argString->Value.end());
-    ctx.Expr = std::move(arg);
-    return true;
-  }
+  if (auto str = TypeHelper::GetValue<Str>(arg))
+    return ReverseGeneric(ctx, arg, begin(str->Value), end(str->Value));
+  else if (auto list = ctx.GetRequiredListValue(arg))
+    return ReverseGeneric(ctx, arg, begin(list->Args), end(list->Args));
   else
     return false;
 }
