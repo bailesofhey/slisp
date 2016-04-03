@@ -449,7 +449,10 @@ bool ArgListHelper::AreEqual(const ArgList &lhs, const ArgList &rhs) {
 
 void ArgListHelper::CopyTo(const ArgList &src, ArgList &dst) {
   for (auto &arg : src) {
-    dst.push_back(arg->Clone());
+    if (auto ref = dynamic_cast<Ref*>(arg.get()))
+      dst.push_back(ref->NewRef());
+    else
+      dst.push_back(arg->Clone());
   }
 }
 
@@ -549,6 +552,10 @@ Ref::Ref(ExpressionPtr &value):
 
 ExpressionPtr Ref::Clone() const {
   return Value->Clone();
+}
+
+ExpressionPtr Ref::NewRef() const {
+  return ExpressionPtr { new Ref(Value) }; 
 }
 
 void Ref::Print(std::ostream& out) const {

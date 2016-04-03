@@ -773,10 +773,17 @@ TEST_F(StdLibStrTest, TestForeach) {
 
   ASSERT_TRUE(RunSuccess("r = \"\"", ""));
   ASSERT_TRUE(RunSuccess("(foreach c s (r = c + r))", "cba"));
+  ASSERT_TRUE(RunSuccess("r", "cba"));
+
   ASSERT_TRUE(RunSuccess("r = \"\"", ""));
   ASSERT_TRUE(RunSuccess("(foreach c in s (r = c + r))", "cba"));
+  ASSERT_TRUE(RunSuccess("r", "cba"));
+
   ASSERT_TRUE(RunSuccess("r = \"\"", ""));
-  //ASSERT_TRUE(RunSuccess("(foreach s (fn (c) r = c + r))", "cba"));
+  ASSERT_TRUE(RunSuccess("(foreach s (fn (c) (print (+ c c))))", "\"aa\"\n\"bb\"\n\"cc\""));
+
+  //ASSERT_TRUE(RunSuccess("(foreach c in s (c = \"a\"))", "aaa"));
+  //ASSERT_TRUE(RunSuccess("s", "aaa"));
 }
 
 class StdLibListTest: public StdLibTest {
@@ -927,6 +934,11 @@ TEST_F(StdLibListTest, TestForeach) {
   ASSERT_TRUE(RunSuccess("lst", "(4 6 8)"));
 
   ASSERT_TRUE(RunSuccess("(foreach e in (1 2 3) (e *= 2))", "6"));
+
+  ASSERT_TRUE(RunSuccess("(foreach lst (fn (e) (e * 2)))", "16"));
+  ASSERT_TRUE(RunSuccess("lst", "(4 6 8)"));
+  ASSERT_TRUE(RunSuccess("(foreach lst (fn (e) (e *= 2)))", "16"));
+  ASSERT_TRUE(RunSuccess("lst", "(8 12 16)"));
 }
 
 class StdLibLogicalTest: public StdLibTest {

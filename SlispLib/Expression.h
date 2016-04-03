@@ -231,6 +231,7 @@ struct Ref: public Expression, IIterable {
 
   explicit Ref(ExpressionPtr &value);
   virtual ExpressionPtr Clone() const override;
+  ExpressionPtr NewRef() const;
   virtual void Print(std::ostream& out) const override;
   virtual IteratorPtr GetIterator();
   virtual bool operator==(const Expression &rhs) const override;

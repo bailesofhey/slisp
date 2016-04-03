@@ -121,14 +121,13 @@ Scope::~Scope() {
 
 void Scope::PutSymbol(const std::string &symbolName, ExpressionPtr &value) {
   ExpressionPtr oldValue;
-  // bug: need to only added to scoped symbols if not alread scoped
-  if (!IsScopedSymbol(symbolName)) {
-    if (Symbols.GetSymbol(symbolName, oldValue)) {
+  bool isScoped = IsScopedSymbol(symbolName);
+  if (!isScoped) {
+    if (Symbols.GetSymbol(symbolName, oldValue))
       ShadowedSymbols.PutSymbol(symbolName, std::move(oldValue));
-    }
+    ScopedSymbols.push_back(symbolName);
   }
   Symbols.PutSymbol(symbolName, std::move(value));
-  ScopedSymbols.push_back(symbolName);
 }
 
 bool Scope::IsScopedSymbol(const std::string &symbolName) const {

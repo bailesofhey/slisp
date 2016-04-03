@@ -80,7 +80,7 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("abs", &StdLib::Abs, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("max", &StdLib::Max, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
   symbols.PutSymbolFunction("min", &StdLib::Min, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
-  symbols.PutSymbolFunction("foreach", &StdLib::Foreach, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 3, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction("foreach", &StdLib::Foreach, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) });
 
   // Float
 
@@ -566,27 +566,46 @@ bool StdLib::Min(EvaluationContext &ctx) {
 // (foreach e in lst (print e))
 // (foreach lst print)
 bool StdLib::Foreach(EvaluationContext &ctx) {
-  auto first = std::move(ctx.Args.front());
+  auto firstArg = std::move(ctx.Args.front());
   ctx.Args.pop_front();
-  auto second = std::move(ctx.Args.front());
+  auto secondArg = std::move(ctx.Args.front());
   ctx.Args.pop_front();
-  if (auto sym = ctx.GetRequiredValue<Symbol>(first)) {
-    if (ctx.Args.size() > 1) {
-      if (auto optionalInSym = TypeHelper::GetValue<Symbol>(second)) {
-        if (optionalInSym->Value == "in") {
-          second = std::move(ctx.Args.front());
-          ctx.Args.pop_front();
+
+  if (auto firstSym = ctx.GetRequiredValue<Symbol>(firstArg)) {
+    Symbol* currElementSym = nullptr; 
+    ExpressionPtr iterableValueOrSym;
+    Function *fn = nullptr;
+    auto nRemainingArgs = ctx.Args.size();
+    if (nRemainingArgs == 0) {
+      iterableValueOrSym = std::move(firstArg);
+      if (ctx.Evaluate(secondArg, "fn")) {
+        fn = ctx.GetRequiredValue<Function>(secondArg);
+        if (!fn)
+          return false;
+      }
+      else
+        return false;
+    }
+    else {
+      if (nRemainingArgs > 1) {
+        if (auto optionalInSym = TypeHelper::GetValue<Symbol>(secondArg)) {
+          if (optionalInSym->Value == "in") {
+            secondArg = std::move(ctx.Args.front());
+            ctx.Args.pop_front();
+          }
         }
       }
+      iterableValueOrSym = std::move(secondArg);
+      currElementSym = firstSym;
     }
 
     Expression *iterableArg = nullptr;
-    if (auto iterableSym = TypeHelper::GetValue<Symbol>(second)) {
+    if (auto iterableSym = TypeHelper::GetValue<Symbol>(iterableValueOrSym)) {
       if (!ctx.GetSymbol(iterableSym->Value, iterableArg))
         return ctx.UnknownSymbolError(iterableSym->Value);
     }
     else
-      iterableArg = second.get();
+      iterableArg = iterableValueOrSym.get();
 
     if (auto *iterable = dynamic_cast<IIterable*>(iterableArg)) {
       if (IteratorPtr iterator = iterable->GetIterator()) {
@@ -597,12 +616,24 @@ bool StdLib::Foreach(EvaluationContext &ctx) {
           ExpressionPtr& curr = iterator->Next();
           more = curr.operator bool();
           if (more) {
-            Scope scope(ctx.Interp.GetCurrentStackFrame().GetLocalSymbols());
-            scope.PutSymbol(sym->Value, ExpressionPtr { new Ref(curr) }); 
-            ctx.Args.clear();
-            ArgListHelper::CopyTo(bodyCopy, ctx.Args);
-            if (!Begin(ctx))
-              return false;
+            if (currElementSym) {
+              Scope scope(ctx.Interp.GetCurrentStackFrame().GetLocalSymbols());
+              scope.PutSymbol(currElementSym->Value, ExpressionPtr { new Ref(curr) }); 
+              ctx.Args.clear();
+              ArgListHelper::CopyTo(bodyCopy, ctx.Args);
+              if (!Begin(ctx))
+                return false;
+            }
+            else {
+              ExpressionPtr fnEvalExpr { new Sexp };
+              Sexp &fnEvalSexp = static_cast<Sexp&>(*fnEvalExpr);
+              fnEvalSexp.Args.push_back(fn->Clone());
+              fnEvalSexp.Args.push_back(ExpressionPtr { new Ref(curr) });
+              if (ctx.Evaluate(fnEvalExpr, "function evaluation"))
+                ctx.Expr = std::move(fnEvalExpr);
+              else
+                return false;
+            }
           }
         } while (more);
         return true;
