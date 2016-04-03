@@ -914,11 +914,19 @@ TEST_F(StdLibListTest, TestForeach) {
   ASSERT_TRUE(RunFail("(foreach)"));
   ASSERT_TRUE(RunFail("(foreach lst)"));
   ASSERT_TRUE(RunFail("(foreach e lst)"));
+  ASSERT_TRUE(RunFail("(foreach e 3 (e *= 2))"));
+  ASSERT_TRUE(RunFail("(foreach e false (e *= 2))"));
+
 
   ASSERT_TRUE(RunSuccess("tsl = ()", ""));
   ASSERT_TRUE(RunSuccess("(foreach e lst (tsl = (e) + tsl))", "(4 3 2)"));
   ASSERT_TRUE(RunSuccess("tsl = ()", ""));
   ASSERT_TRUE(RunSuccess("(foreach e in lst (tsl = (e) + tsl))", "(4 3 2)"));
+
+  ASSERT_TRUE(RunSuccess("(foreach e in lst (e = (2 * e)))", "8"));
+  ASSERT_TRUE(RunSuccess("lst", "(4 6 8)"));
+
+  ASSERT_TRUE(RunSuccess("(foreach e in (1 2 3) (e *= 2))", "6"));
 }
 
 class StdLibLogicalTest: public StdLibTest {

@@ -15,8 +15,16 @@ EvalError::EvalError(const std::string &where, const std::string &what):
 
 void SymbolTable::PutSymbol(const std::string &symbolName, ExpressionPtr &value) {
   auto search = Symbols.find(symbolName);
-  if (search != Symbols.end())
-    search->second = std::move(value);
+  if (search != Symbols.end()) {
+    if (auto *ref = dynamic_cast<Ref*>(search->second.get())) {
+      if (auto *refValue = dynamic_cast<Ref*>(value.get()))
+        ref->Value = refValue->Clone();
+      else
+        ref->Value = std::move(value);
+    }
+    else
+      search->second = std::move(value);
+  }
   else
     Symbols.emplace(symbolName, std::move(value));
 }
@@ -52,17 +60,31 @@ void SymbolTable::PutSymbolFunction(const std::string &symbolName, SlipFunction 
   PutSymbol(symbolName, std::move(funcExpr));
 }
 
-bool SymbolTable::GetSymbol(const std::string &symbolName, ExpressionPtr &value) {
+bool SymbolTable::GetSymbol(const std::string &symbolName, ExpressionPtr &valueCopy) {
   auto it = Symbols.find(symbolName);
   if (it != Symbols.end()) {
     if (it->second)
-      value = ExpressionPtr { it->second->Clone() };
+      valueCopy = ExpressionPtr { it->second->Clone() };
     else
-      value = ExpressionPtr { };
+      valueCopy = ExpressionPtr { };
     return true;
   }
   else
     return false;
+}
+
+bool SymbolTable::GetSymbol(const std::string &symbolName, Expression *&value) {
+  auto it = Symbols.find(symbolName);
+  if (it != Symbols.end()) {
+    if (it->second)
+      value = it->second.get();
+    else
+      value = nullptr;
+    return true;
+  }
+  else
+    return false;
+
 }
 
 void SymbolTable::DeleteSymbol(const std::string &symbolName) {
@@ -75,9 +97,7 @@ void SymbolTable::ForEach(std::function<void(const std::string &, ExpressionPtr 
 }
 
 size_t SymbolTable::GetCount() const {
-  int count = 0;
-  const_cast<SymbolTable*>(this)->ForEach([&count](const std::string &, ExpressionPtr &) { ++count; });
-  return count;
+  return Symbols.size();
 }
 
 //=============================================================================
@@ -101,6 +121,7 @@ Scope::~Scope() {
 
 void Scope::PutSymbol(const std::string &symbolName, ExpressionPtr &value) {
   ExpressionPtr oldValue;
+  // bug: need to only added to scoped symbols if not alread scoped
   if (!IsScopedSymbol(symbolName)) {
     if (Symbols.GetSymbol(symbolName, oldValue)) {
       ShadowedSymbols.PutSymbol(symbolName, std::move(oldValue));

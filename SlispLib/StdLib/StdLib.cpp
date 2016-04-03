@@ -390,12 +390,11 @@ bool StdLib::Set(EvaluationContext &ctx) {
       if (ctx.Evaluate(value, "value")) {
         auto &currStackFrame = ctx.Interp.GetCurrentStackFrame();
         ExpressionPtr temp;
+        ctx.Expr = value->Clone();
         if (currStackFrame.GetLocalSymbols().GetSymbol(symToSetName, temp))
-          currStackFrame.PutLocalSymbol(symToSetName, value->Clone());
+          currStackFrame.PutLocalSymbol(symToSetName, std::move(value));
         else
-          currStackFrame.PutDynamicSymbol(symToSetName, value->Clone());
-
-        ctx.Expr = std::move(value);
+          currStackFrame.PutDynamicSymbol(symToSetName, std::move(value));
         return true;
       }
     }
@@ -429,7 +428,7 @@ bool StdLib::UnSet(EvaluationContext &ctx) {
 bool StdLib::InfixRegistrationFunction(EvaluationContext &ctx, const std::string &name, bool unregister) {
   auto sym = static_cast<Symbol&>(*ctx.Args.front());
   ExpressionPtr fnExpr;
-  if (ctx.Interp.GetDynamicSymbols().GetSymbol(sym.Value, fnExpr)) {
+  if (ctx.GetSymbol(sym.Value, fnExpr)) {
     if (auto fn = ctx.GetRequiredValue<Function>(fnExpr)) { 
       auto &settings = ctx.Interp.GetSettings();
       if (unregister)
@@ -581,31 +580,35 @@ bool StdLib::Foreach(EvaluationContext &ctx) {
       }
     }
 
-    if (ctx.Evaluate(second, "iterable")) {
-      if (auto *iterable = dynamic_cast<IIterable*>(second.get())) {
-        if (IteratorPtr iterator = iterable->GetIterator()) {
-          Scope scope(ctx.Interp.GetCurrentStackFrame().GetLocalSymbols());
-          ArgList bodyCopy;
-          ArgListHelper::CopyTo(ctx.Args, bodyCopy);
-          bool more = false;
-          do {
-            ExpressionPtr& curr = iterator->Next();
-            more = curr.operator bool();
-            if (more) {
-              scope.PutSymbol(sym->Value, curr); 
-              ctx.Args.clear();
-              ArgListHelper::CopyTo(bodyCopy, ctx.Args);
-              if (!Begin(ctx))
-                return false;
-            }
-          } while (more);
-          return true;
-        }
-      }
-      return ctx.TypeError("iterable", second);
+    Expression *iterableArg = nullptr;
+    if (auto iterableSym = TypeHelper::GetValue<Symbol>(second)) {
+      if (!ctx.GetSymbol(iterableSym->Value, iterableArg))
+        return ctx.UnknownSymbolError(iterableSym->Value);
     }
     else
-      return false;
+      iterableArg = second.get();
+
+    if (auto *iterable = dynamic_cast<IIterable*>(iterableArg)) {
+      if (IteratorPtr iterator = iterable->GetIterator()) {
+        ArgList bodyCopy;
+        ArgListHelper::CopyTo(ctx.Args, bodyCopy);
+        bool more = false;
+        do {
+          ExpressionPtr& curr = iterator->Next();
+          more = curr.operator bool();
+          if (more) {
+            Scope scope(ctx.Interp.GetCurrentStackFrame().GetLocalSymbols());
+            scope.PutSymbol(sym->Value, ExpressionPtr { new Ref(curr) }); 
+            ctx.Args.clear();
+            ArgListHelper::CopyTo(bodyCopy, ctx.Args);
+            if (!Begin(ctx))
+              return false;
+          }
+        } while (more);
+        return true;
+      }
+    }
+    return ctx.Error("argument is not iterable");
   }
   else
     return false;
@@ -1697,7 +1700,7 @@ bool StdLib::TypeFunc(EvaluationContext &ctx) {
     typeName = ctx.Args.front()->Type().Name();
 
   ExpressionPtr typeSymbol;
-  if (ctx.Interp.GetCurrentStackFrame().GetSymbol(typeName, typeSymbol)) {
+  if (ctx.GetSymbol(typeName, typeSymbol)) {
     ctx.Expr = std::move(typeSymbol);
     return true;
   }
@@ -1736,7 +1739,7 @@ bool StdLib::IsQuoteAList(EvaluationContext &ctx, Quote &quote) {
         auto &firstSexpArg = sexp->Args.front();
         if (auto sym = TypeHelper::GetValue<Symbol>(firstSexpArg)) {
           ExpressionPtr symValue;
-          if (ctx.Interp.GetCurrentStackFrame().GetSymbol(sym->Value, symValue)) {
+          if (ctx.GetSymbol(sym->Value, symValue)) {
             if (TypeHelper::IsA<Function>(symValue))
               return false;
             else

@@ -548,11 +548,10 @@ Ref::Ref(ExpressionPtr &value):
 }
 
 ExpressionPtr Ref::Clone() const {
-  return ExpressionPtr { new Ref(Value) };
+  return Value->Clone();
 }
 
 void Ref::Print(std::ostream& out) const {
-  out << *Value;
 }
 
 IteratorPtr Ref::GetIterator() {

@@ -20,7 +20,8 @@ class StackFrame {
     ~StackFrame();
     void PutLocalSymbol(const std::string &symbolName, ExpressionPtr &value);
     void PutDynamicSymbol(const std::string &symbolName, ExpressionPtr &value);
-    bool GetSymbol(const std::string &symbolName, ExpressionPtr &value);
+    bool GetSymbol(const std::string &symbolName, ExpressionPtr &valueCopy);
+    bool GetSymbol(const std::string &symbolName, Expression *&value);
     void DeleteSymbol(const std::string &symbolName);
     SymbolTable& GetLocalSymbols();
 
@@ -59,6 +60,9 @@ class EvaluationContext {
       TypeError(expectedType, expr);
       return nullptr;
     }
+
+    bool GetSymbol(const std::string &symName, ExpressionPtr &valueCopy);
+    bool GetSymbol(const std::string &symName, Expression *&value);
 
     Sexp* GetRequiredListValue(ExpressionPtr &expr);
     const std::string GetThisFunctionName();
@@ -138,6 +142,7 @@ class Interpreter {
     bool ReduceSexpInterpretedFunction(ExpressionPtr &expr, InterpretedFunction &function, ArgList &args);
     bool ReduceSexpList(ExpressionPtr &expr, ArgList &args);
     bool ReduceQuote(ExpressionPtr &expr);
+    bool ReduceRef(ExpressionPtr &expr);
 
     bool EvaluateArgs(ArgList &args);
     bool BuildListSexp(Sexp &wrappedSexp, ArgList &args);

@@ -26,7 +26,8 @@ class SymbolTable {
     void PutSymbolFunction(const std::string &symbolName, Function &&func);
     void PutSymbolFunction(const std::string &symbolName, SlipFunction fn, FuncDef &&def);
     void PutSymbolQuote(const std::string &symbolName, ExpressionPtr &&value);
-    bool GetSymbol(const std::string &symbolName, ExpressionPtr &value);
+    bool GetSymbol(const std::string &symbolName, ExpressionPtr &valueCopy);
+    bool GetSymbol(const std::string &symbolName, Expression *&value);
     void DeleteSymbol(const std::string &symbolName);
     void ForEach(std::function<void(const std::string &, ExpressionPtr &)>);
     size_t GetCount() const;

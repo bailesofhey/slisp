@@ -37,7 +37,14 @@ void StackFrame::PutDynamicSymbol(const std::string &symbolName, ExpressionPtr &
   DynamicScope.PutSymbol(symbolName, value);
 }
 
-bool StackFrame::GetSymbol(const std::string &symbolName, ExpressionPtr &value) {
+bool StackFrame::GetSymbol(const std::string &symbolName, ExpressionPtr &valueCopy) {
+  if (Locals.GetSymbol(symbolName, valueCopy))
+    return true;
+  else
+    return Dynamics.GetSymbol(symbolName, valueCopy);
+}
+
+bool StackFrame::GetSymbol(const std::string &symbolName, Expression *&value) {
   if (Locals.GetSymbol(symbolName, value))
     return true;
   else
@@ -76,6 +83,14 @@ bool EvaluationContext::Evaluate(ExpressionPtr &expr, int argNum) {
 
 bool EvaluationContext::Evaluate(ExpressionPtr &expr, const std::string &argName) {
   return EvaluateNoError(expr) ? true : EvaluateError(argName);
+}
+
+bool EvaluationContext::GetSymbol(const std::string &symName, ExpressionPtr &valueCopy) {
+  return Interp.GetCurrentStackFrame().GetSymbol(symName, valueCopy);
+}
+
+bool EvaluationContext::GetSymbol(const std::string &symName, Expression *&value) {
+  return Interp.GetCurrentStackFrame().GetSymbol(symName, value);
 }
 
 Sexp* EvaluationContext::GetRequiredListValue(ExpressionPtr &expr) {
@@ -217,6 +232,7 @@ void Interpreter::RegisterReducers() {
   TypeReducers[&Function::TypeInstance] = std::bind(&Interpreter::ReduceFunction,  this, _1);
   TypeReducers[&Sexp::TypeInstance]     = std::bind(&Interpreter::ReduceSexp,      this, _1);
   TypeReducers[&Quote::TypeInstance]    = std::bind(&Interpreter::ReduceQuote,     this, _1);
+  TypeReducers[&Ref::TypeInstance]      = std::bind(&Interpreter::ReduceRef,       this, _1);
 }
 
 bool Interpreter::ReduceBool(ExpressionPtr &expr) {
@@ -240,6 +256,10 @@ bool Interpreter::ReduceFunction(ExpressionPtr &expr) {
 }
 
 bool Interpreter::ReduceQuote(ExpressionPtr &expr) {
+  return true;
+}
+
+bool Interpreter::ReduceRef(ExpressionPtr &expr) {
   return true;
 }
 
