@@ -725,6 +725,27 @@ TEST_F(StdLibBitwiseTest, BitNot) {
 }
 
 class StdLibStrTest: public StdLibTest {
+protected:
+  void RunAtTest() {
+    ASSERT_TRUE(RunFail("(at)"));
+    ASSERT_TRUE(RunFail("(at 4)"));
+    ASSERT_TRUE(RunFail("(at (1 2 3))"));
+    ASSERT_TRUE(RunFail("(at \"\")"));
+    ASSERT_TRUE(RunFail("(at \"abc\")"));
+    ASSERT_TRUE(RunFail("(at \"abc\" 1.4)"));
+    ASSERT_TRUE(RunFail("(at \"abc\" \"0\")"));
+    ASSERT_TRUE(RunFail("(at \"\" 0)"));
+    ASSERT_TRUE(RunFail("(at \"\" 1)"));
+    ASSERT_TRUE(RunFail("(at \"\" -1)"));
+    ASSERT_TRUE(RunSuccess("(at \"abc\" 0)", "a"));
+    ASSERT_TRUE(RunSuccess("(at \"abc\" 1)", "b"));
+    ASSERT_TRUE(RunSuccess("(at \"abc\" 2)", "c"));
+    ASSERT_TRUE(RunFail("(at \"abc\" 3)"));
+    ASSERT_TRUE(RunSuccess("(at \"abc\" -1)", "c"));
+    ASSERT_TRUE(RunSuccess("(at \"abc\" -2)", "b"));
+    ASSERT_TRUE(RunSuccess("(at \"abc\" -3)", "a"));
+    ASSERT_TRUE(RunFail("(at \"abc\" -4)"));
+  }
 };
 
 TEST_F(StdLibStrTest, TestAdd) {
@@ -784,6 +805,15 @@ TEST_F(StdLibStrTest, TestForeach) {
 
   //ASSERT_TRUE(RunSuccess("(foreach c in s (c = \"a\"))", "aaa"));
   //ASSERT_TRUE(RunSuccess("s", "aaa"));
+}
+
+TEST_F(StdLibStrTest, TestAt) {
+  ASSERT_NO_FATAL_FAILURE(RunAtTest());
+}
+
+TEST_F(StdLibStrTest, TestNth) {
+  ASSERT_NO_FATAL_FAILURE(RunAtTest());
+  ASSERT_TRUE(RunSuccess("(nth \"abc\" 1)", "b"));
 }
 
 class StdLibListTest: public StdLibTest {

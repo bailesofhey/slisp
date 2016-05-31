@@ -85,6 +85,8 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("foreach", &StdLib::Foreach, foreachDef.Clone());
   symbols.PutSymbolFunction("for", &StdLib::Foreach, foreachDef.Clone());
 
+  symbols.PutSymbolFunction("reverse", &StdLib::Reverse, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Str::TypeInstance) });
+
   // Float
 
   symbols.PutSymbolFunction("exp", &StdLib::Exp, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
@@ -129,7 +131,14 @@ void StdLib::Load(Interpreter &interpreter) {
 
   // Str 
 
-  symbols.PutSymbolFunction("reverse", &StdLib::Reverse, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Str::TypeInstance) });
+  FuncDef atDef { FuncDef::Args({&Literal::TypeInstance, &Int::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance)};
+  symbols.PutSymbolFunction("at", &StdLib::At, atDef.Clone());
+  symbols.PutSymbolFunction("nth", &StdLib::At, atDef.Clone());
+  //TODO: Lists
+  //TODO: ("abc" 1) => "b" ??????????
+  //TODO: "abc"[1] => b
+  //TODO: ([] "abc" 1) => b ????
+  //TODO: ([1] "abc") => b ????
 
   // Logical
 
@@ -460,6 +469,24 @@ bool StdLib::InfixUnregister(EvaluationContext &ctx) {
 }
 
 // Generic Functions
+
+template<class BeginIt, class EndIt>
+bool ReverseGeneric(EvaluationContext &ctx, ExpressionPtr &arg, BeginIt beginIt, EndIt endIt) {
+  std::reverse(beginIt, endIt);
+  ctx.Expr = std::move(arg);
+  return true;
+}
+
+bool StdLib::Reverse(EvaluationContext &ctx) {
+  ExpressionPtr arg = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
+  if (auto str = TypeHelper::GetValue<Str>(arg))
+    return ReverseGeneric(ctx, arg, begin(str->Value), end(str->Value));
+  else if (auto list = ctx.GetRequiredListValue(arg))
+    return ReverseGeneric(ctx, arg, begin(list->Args), end(list->Args));
+  else
+    return false;
+}
 
 template <class I, class F>
 bool StdLib::GenericNumFunc(EvaluationContext &ctx, I iFn, F fFn) {
@@ -925,20 +952,32 @@ bool StdLib::AddStr(EvaluationContext &ctx) {
   return true;
 }
 
-template<class BeginIt, class EndIt>
-bool ReverseGeneric(EvaluationContext &ctx, ExpressionPtr &arg, BeginIt beginIt, EndIt endIt) {
-  std::reverse(beginIt, endIt);
-  ctx.Expr = std::move(arg);
-  return true;
-}
-
-bool StdLib::Reverse(EvaluationContext &ctx) {
-  ExpressionPtr arg = std::move(ctx.Args.front());
+bool StdLib::At(EvaluationContext &ctx) {
+  ExpressionPtr itArg = std::move(ctx.Args.front());
   ctx.Args.pop_front();
-  if (auto str = TypeHelper::GetValue<Str>(arg))
-    return ReverseGeneric(ctx, arg, begin(str->Value), end(str->Value));
-  else if (auto list = ctx.GetRequiredListValue(arg))
-    return ReverseGeneric(ctx, arg, begin(list->Args), end(list->Args));
+  ExpressionPtr idxArg = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
+
+  if (auto *idxInt = ctx.GetRequiredValue<Int>(idxArg)) {
+    if (auto *str = dynamic_cast<Str*>(itArg.get())) {
+      int64_t idx = idxInt->Value; 
+      if (idx < 0)
+        idx += str->Value.length();
+      try {
+        ctx.Expr = ExpressionPtr { new Str(std::string(1, str->Value.at(idx))) };
+        return true;
+      }
+      catch (std::out_of_range) {
+        return ctx.Error("index " + std::to_string(idx) + " is invalid");
+      }
+    }
+    else if (auto *iterable = dynamic_cast<IIterable*>(itArg.get())) {
+      if (IteratorPtr iterator = iterable->GetIterator()) {
+        return ctx.Error("iterables not supported yet");
+      }
+    }
+    return ctx.TypeError("iterable", itArg);
+  }
   else
     return false;
 }
