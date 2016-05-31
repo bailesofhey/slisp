@@ -729,7 +729,6 @@ protected:
   void RunAtTest() {
     ASSERT_TRUE(RunFail("(at)"));
     ASSERT_TRUE(RunFail("(at 4)"));
-    ASSERT_TRUE(RunFail("(at (1 2 3))"));
     ASSERT_TRUE(RunFail("(at \"\")"));
     ASSERT_TRUE(RunFail("(at \"abc\")"));
     ASSERT_TRUE(RunFail("(at \"abc\" 1.4)"));
@@ -817,6 +816,21 @@ TEST_F(StdLibStrTest, TestNth) {
 }
 
 class StdLibListTest: public StdLibTest {
+protected:
+  void RunAtTest() {
+    ASSERT_TRUE(RunFail("(at (10 20 30))"));
+    ASSERT_TRUE(RunFail("(at (10 20 30) 1.5)"));
+    ASSERT_TRUE(RunFail("(at () 0)"));
+    ASSERT_TRUE(RunFail("(at () 1)"));
+    ASSERT_TRUE(RunSuccess("(at (10 20 30) 0)", "10"));
+    ASSERT_TRUE(RunSuccess("(at (10 20 30) 1)", "20"));
+    ASSERT_TRUE(RunSuccess("(at (10 20 30) 2)", "30"));
+    ASSERT_TRUE(RunFail("(at (10 20 30) 3)"));
+    ASSERT_TRUE(RunSuccess("(at (10 20 30) -1)", "30"));
+    ASSERT_TRUE(RunSuccess("(at (10 20 30) -2)", "20"));
+    ASSERT_TRUE(RunSuccess("(at (10 20 30) -3)", "10"));
+    ASSERT_TRUE(RunFail("(at (10 20 30) -4)"));
+  }
 };
 
 TEST_F(StdLibListTest, TestAdd) {
@@ -985,6 +999,15 @@ TEST_F(StdLibListTest, TestReverse) {
   ASSERT_TRUE(RunSuccess("(reverse (1 2 3))", "(3 2 1)"));
   ASSERT_TRUE(RunSuccess("(reverse (1 2 3 4))", "(4 3 2 1)"));
   ASSERT_TRUE(RunSuccess("(reverse (1 2 3 4 5))", "(5 4 3 2 1)"));
+}
+
+TEST_F(StdLibListTest, TestAt) {
+  ASSERT_NO_FATAL_FAILURE(RunAtTest());
+}
+
+TEST_F(StdLibListTest, TestNth) {
+  ASSERT_NO_FATAL_FAILURE(RunAtTest());
+  ASSERT_TRUE(RunSuccess("(nth (10 20 30) 1)", "20"));
 }
 
 class StdLibLogicalTest: public StdLibTest {

@@ -959,8 +959,8 @@ bool StdLib::At(EvaluationContext &ctx) {
   ctx.Args.pop_front();
 
   if (auto *idxInt = ctx.GetRequiredValue<Int>(idxArg)) {
+    int64_t idx = idxInt->Value; 
     if (auto *str = dynamic_cast<Str*>(itArg.get())) {
-      int64_t idx = idxInt->Value; 
       if (idx < 0)
         idx += str->Value.length();
       try {
@@ -968,12 +968,31 @@ bool StdLib::At(EvaluationContext &ctx) {
         return true;
       }
       catch (std::out_of_range) {
-        return ctx.Error("index " + std::to_string(idx) + " is invalid");
+        return ctx.Error("index " + std::to_string(idx) + " is out of bounds");
       }
     }
     else if (auto *iterable = dynamic_cast<IIterable*>(itArg.get())) {
       if (IteratorPtr iterator = iterable->GetIterator()) {
-        return ctx.Error("iterables not supported yet");
+        if (idx < 0) {
+          int64_t length = iterator->GetLength();
+          if (length == IIterator::LENGTH_UNKNOWN)
+            return ctx.Error("Negative indexes require iterator to support GetLength");
+          idx += length;
+        }
+        int64_t currIdx = 0;
+        bool more = false;
+        do {
+          ExpressionPtr& curr = iterator->Next();
+          more = curr.operator bool();
+          if (more) {
+            if (currIdx == idx) {
+              ctx.Expr = curr->Clone();
+              return true;
+            }
+          }
+          ++currIdx;
+        } while (more);
+        return ctx.Error("index " + std::to_string(idx) + " is out of bounds");
       }
     }
     return ctx.TypeError("iterable", itArg);

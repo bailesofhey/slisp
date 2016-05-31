@@ -48,8 +48,10 @@ struct Expression {
 
 class IIterator {
 public:
+  static const int64_t LENGTH_UNKNOWN = -1;
   virtual ~IIterator();
   virtual ExpressionPtr& Next() = 0;
+  virtual int64_t GetLength() = 0;
 protected:
   ExpressionPtr Null;
 };
@@ -150,7 +152,8 @@ struct Str: public Literal, IIterable {
 class StrIterator: public IIterator {
 public:
   explicit StrIterator(Str &str);
-  virtual ExpressionPtr& Next();
+  virtual ExpressionPtr& Next() override;
+  virtual int64_t GetLength() override;
 private:
   ExpressionPtr Curr;
   Str &Value;
@@ -218,10 +221,12 @@ struct Sexp: public Expression, IIterable {
 class SexpIterator: public IIterator {
 public:
   explicit SexpIterator(Sexp &sexp);
-  virtual ExpressionPtr& Next();
+  virtual ExpressionPtr& Next() override;
+  virtual int64_t GetLength() override;
 private:
   ArgList::iterator Curr;
   ArgList::iterator End;
+  int64_t           Length;
 };
 
 struct Ref: public Expression, IIterable {

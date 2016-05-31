@@ -339,6 +339,10 @@ ExpressionPtr& StrIterator::Next() {
     return Null;
 }
 
+int64_t StrIterator::GetLength() {
+  return Value.Value.length();
+}
+
 //=============================================================================
 
 const TypeInfo Quote::TypeInstance("quote", Quote::New);
@@ -529,7 +533,8 @@ ExpressionPtr Sexp::New() {
 
 SexpIterator::SexpIterator(Sexp &sexp):
   Curr(sexp.Args.begin()),
-  End(sexp.Args.end())
+  End(sexp.Args.end()),
+  Length(sexp.Args.size())
 {
 }
 
@@ -538,6 +543,10 @@ ExpressionPtr& SexpIterator::Next() {
     return *(Curr++); 
   else
     return Null; 
+}
+
+int64_t SexpIterator::GetLength() {
+  return Length;
 }
 
 //=============================================================================
