@@ -80,7 +80,7 @@ void Tokenizer::TokenizeNumber(char &currChar) {
     curr += 2;
     pred = base == 16 ? std::isxdigit : IsBinaryDigit;
   }
-  else if (NumConverter::IsFloat(CurrToken.Value)) {
+  else if (NumConverter::IsBase10NumberFloat(CurrToken.Value)) {
     pred = IsFloatDigit; 
   }
 

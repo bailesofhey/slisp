@@ -75,9 +75,26 @@ TEST_F(ParserTest, TestSingleUnknown) {
 
 TEST_F(ParserTest, TestSingleHexInt) {
   ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0x0") }, { new Int(0) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0x1") }, { new Int(1) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0x2") }, { new Int(2) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0x3") }, { new Int(3) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0x4") }, { new Int(4) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0x5") }, { new Int(5) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0x6") }, { new Int(6) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0x7") }, { new Int(7) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0x8") }, { new Int(8) });
   ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0x9") }, { new Int(9) });
   ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0xa") }, { new Int(10) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0xb") }, { new Int(11) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0xc") }, { new Int(12) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0xd") }, { new Int(13) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0xe") }, { new Int(14) }); //#104
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0xf") }, { new Int(15) });
   ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0x10") }, { new Int(16) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0x07f") }, { new Int(127) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0x000080") }, { new Int(128) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0xfe") }, { new Int(254) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0xff") }, { new Int(255) });
   ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0x103") }, { new Int(259) });
 }
 

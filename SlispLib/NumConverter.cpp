@@ -1,6 +1,6 @@
 #include "NumConverter.h"
 
-bool NumConverter::IsFloat(const std::string &str) {
+bool NumConverter::IsBase10NumberFloat(const std::string &str) {
   return str.find(".") != std::string::npos
       || str.find("e") != std::string::npos;
 }

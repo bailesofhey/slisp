@@ -1615,6 +1615,9 @@ TEST_F(StdLibOperatorsTest, TestType) {
 
   ASSERT_TRUE(RunSuccess("a = 3.14", "3.14"));
   ASSERT_TRUE(RunSuccess("(type a)", "float"));
+
+  ASSERT_TRUE(RunSuccess("(type 0xa)", "int"));
+  ASSERT_TRUE(RunSuccess("(type 0xe)", "int")); //#104
 }
 
 TEST_F(StdLibOperatorsTest, TestTypeQ) {

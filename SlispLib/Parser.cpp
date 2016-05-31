@@ -231,7 +231,8 @@ bool ParseNum(const std::string &val, ExpressionPtr &numExpr, Sexp &root, std::s
 bool Parser::ParseNumber(Sexp &root) {
   auto &val = (*Tokenizer_).Value;
   if (!val.empty()) {
-    if (NumConverter::IsFloat(val)) {
+    int base = NumConverter::GetNumberBase(val);
+    if (base == 10 && NumConverter::IsBase10NumberFloat(val)) {
       ExpressionPtr numExpr { new Float() };
       return ParseNum<Float>(val, numExpr, root, Error_);
     }
