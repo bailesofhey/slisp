@@ -726,25 +726,8 @@ TEST_F(StdLibBitwiseTest, BitNot) {
 
 class StdLibStrTest: public StdLibTest {
 protected:
-  void RunAtTest() {
-    ASSERT_TRUE(RunFail("(at)"));
-    ASSERT_TRUE(RunFail("(at 4)"));
-    ASSERT_TRUE(RunFail("(at \"\")"));
-    ASSERT_TRUE(RunFail("(at \"abc\")"));
-    ASSERT_TRUE(RunFail("(at \"abc\" 1.4)"));
-    ASSERT_TRUE(RunFail("(at \"abc\" \"0\")"));
-    ASSERT_TRUE(RunFail("(at \"\" 0)"));
-    ASSERT_TRUE(RunFail("(at \"\" 1)"));
-    ASSERT_TRUE(RunFail("(at \"\" -1)"));
-    ASSERT_TRUE(RunSuccess("(at \"abc\" 0)", "a"));
-    ASSERT_TRUE(RunSuccess("(at \"abc\" 1)", "b"));
-    ASSERT_TRUE(RunSuccess("(at \"abc\" 2)", "c"));
-    ASSERT_TRUE(RunFail("(at \"abc\" 3)"));
-    ASSERT_TRUE(RunSuccess("(at \"abc\" -1)", "c"));
-    ASSERT_TRUE(RunSuccess("(at \"abc\" -2)", "b"));
-    ASSERT_TRUE(RunSuccess("(at \"abc\" -3)", "a"));
-    ASSERT_TRUE(RunFail("(at \"abc\" -4)"));
-  }
+  void RunAtTest();
+  void RunHeadTest();
 };
 
 TEST_F(StdLibStrTest, TestAdd) {
@@ -806,6 +789,26 @@ TEST_F(StdLibStrTest, TestForeach) {
   //ASSERT_TRUE(RunSuccess("s", "aaa"));
 }
 
+void StdLibStrTest::RunAtTest() {
+  ASSERT_TRUE(RunFail("(at)"));
+  ASSERT_TRUE(RunFail("(at 4)"));
+  ASSERT_TRUE(RunFail("(at \"\")"));
+  ASSERT_TRUE(RunFail("(at \"abc\")"));
+  ASSERT_TRUE(RunFail("(at \"abc\" 1.4)"));
+  ASSERT_TRUE(RunFail("(at \"abc\" \"0\")"));
+  ASSERT_TRUE(RunFail("(at \"\" 0)"));
+  ASSERT_TRUE(RunFail("(at \"\" 1)"));
+  ASSERT_TRUE(RunFail("(at \"\" -1)"));
+  ASSERT_TRUE(RunSuccess("(at \"abc\" 0)", "a"));
+  ASSERT_TRUE(RunSuccess("(at \"abc\" 1)", "b"));
+  ASSERT_TRUE(RunSuccess("(at \"abc\" 2)", "c"));
+  ASSERT_TRUE(RunFail("(at \"abc\" 3)"));
+  ASSERT_TRUE(RunSuccess("(at \"abc\" -1)", "c"));
+  ASSERT_TRUE(RunSuccess("(at \"abc\" -2)", "b"));
+  ASSERT_TRUE(RunSuccess("(at \"abc\" -3)", "a"));
+  ASSERT_TRUE(RunFail("(at \"abc\" -4)"));
+}
+
 TEST_F(StdLibStrTest, TestAt) {
   ASSERT_NO_FATAL_FAILURE(RunAtTest());
 }
@@ -813,6 +816,39 @@ TEST_F(StdLibStrTest, TestAt) {
 TEST_F(StdLibStrTest, TestNth) {
   ASSERT_NO_FATAL_FAILURE(RunAtTest());
   ASSERT_TRUE(RunSuccess("(nth \"abc\" 1)", "b"));
+}
+
+void StdLibStrTest::RunHeadTest() {
+  ASSERT_TRUE(RunFail("(head)"));
+  ASSERT_TRUE(RunFail("(head 4)"));
+  ASSERT_TRUE(RunSuccess("(head \"\")", ""));
+  ASSERT_TRUE(RunSuccess("(head \"a\")", "a"));
+  ASSERT_TRUE(RunSuccess("(head \"abc\")", "a"));
+}
+
+TEST_F(StdLibStrTest, TestHead) {
+  ASSERT_NO_FATAL_FAILURE(RunHeadTest());
+}
+
+TEST_F(StdLibStrTest, TestFirst) {
+  ASSERT_NO_FATAL_FAILURE(RunHeadTest());
+  ASSERT_TRUE(RunSuccess("(first \"abc\")", "a"));
+}
+
+TEST_F(StdLibStrTest, TestTail) {
+  ASSERT_TRUE(RunFail("(tail)"));
+  ASSERT_TRUE(RunFail("(tail 4)"));
+  ASSERT_TRUE(RunSuccess("(tail \"\")", ""));
+  ASSERT_TRUE(RunSuccess("(tail \"a\")", ""));
+  ASSERT_TRUE(RunSuccess("(tail \"abc\")", "bc"));
+}
+
+TEST_F(StdLibStrTest, TestLast) {
+  ASSERT_TRUE(RunFail("(last)"));
+  ASSERT_TRUE(RunFail("(last 4)"));
+  ASSERT_TRUE(RunSuccess("(last \"\")", ""));
+  ASSERT_TRUE(RunSuccess("(last \"a\")", "a"));
+  ASSERT_TRUE(RunSuccess("(last \"abc\")", "c"));
 }
 
 class StdLibListTest: public StdLibTest {
@@ -878,7 +914,6 @@ TEST_F(StdLibListTest, TestHead) {
   ASSERT_TRUE(RunFail("(head)"));
   ASSERT_TRUE(RunFail("(head 3)"));
   ASSERT_TRUE(RunFail("(head a)"));
-  ASSERT_TRUE(RunFail("(head \"foo\")"));
   ASSERT_TRUE(RunFail("(head true)"));
   ASSERT_TRUE(RunSuccess("(head ())", "()"));
   ASSERT_TRUE(RunSuccess("(head (1))", "1"));
@@ -895,7 +930,6 @@ TEST_F(StdLibListTest, TestTail) {
   ASSERT_TRUE(RunFail("(tail)"));
   ASSERT_TRUE(RunFail("(tail 3)"));
   ASSERT_TRUE(RunFail("(tail a)"));
-  ASSERT_TRUE(RunFail("(tail \"foo\")"));
   ASSERT_TRUE(RunFail("(tail true)"));
   ASSERT_TRUE(RunSuccess("(tail ())", "()"));
   ASSERT_TRUE(RunSuccess("(tail (1))", "()"));
@@ -906,6 +940,14 @@ TEST_F(StdLibListTest, TestTail) {
   ASSERT_TRUE(RunSuccess("(tail ((1 2)) )", "()"));
   ASSERT_TRUE(RunSuccess("(tail (tail ((1 2)) ))", "()"));
   ASSERT_TRUE(RunSuccess("(tail (tail (tail ((1 2)) )))", "()"));
+}
+
+TEST_F(StdLibListTest, TestLast) {
+  ASSERT_TRUE(RunFail("(last)"));
+  ASSERT_TRUE(RunFail("(last 4)"));
+  ASSERT_TRUE(RunSuccess("(last ())", "()"));
+  ASSERT_TRUE(RunSuccess("(last (1))", "1"));
+  ASSERT_TRUE(RunSuccess("(last (1 2 3))", "3"));
 }
 
 TEST_F(StdLibListTest, TestCons) {

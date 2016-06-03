@@ -36,6 +36,10 @@ class StdLib: public Library {
     static bool Min(EvaluationContext &ctx);
     static bool Foreach(EvaluationContext &ctx);
     static bool Reverse(EvaluationContext &ctx);
+    static bool At(EvaluationContext &ctx);
+    static bool Head(EvaluationContext &ctx);
+    static bool Tail(EvaluationContext &ctx);
+    static bool Last(EvaluationContext &ctx);
 
     // Int
     static bool AddInt(EvaluationContext &ctx);
@@ -101,14 +105,11 @@ class StdLib: public Library {
 
     // Str
     static bool AddStr(EvaluationContext &ctx);
-    static bool At(EvaluationContext &ctx);
 
     // Lists
     static bool AddList(EvaluationContext &ctx);
     static bool List(EvaluationContext &ctx);
     static bool Map(EvaluationContext &ctx);
-    static bool Head(EvaluationContext &ctx);
-    static bool Tail(EvaluationContext &ctx);
     static bool Cons(EvaluationContext &ctx);
     static bool Range(EvaluationContext &ctx);
 

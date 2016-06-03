@@ -85,7 +85,18 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("foreach", &StdLib::Foreach, foreachDef.Clone());
   symbols.PutSymbolFunction("for", &StdLib::Foreach, foreachDef.Clone());
 
-  symbols.PutSymbolFunction("reverse", &StdLib::Reverse, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Str::TypeInstance) });
+  symbols.PutSymbolFunction("reverse", &StdLib::Reverse, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+
+  FuncDef headDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) };
+  symbols.PutSymbolFunction("head", &StdLib::Head, headDef.Clone());
+  symbols.PutSymbolFunction("car", &StdLib::Head, headDef.Clone());
+  symbols.PutSymbolFunction("first", &StdLib::Head, headDef.Clone());
+
+  symbols.PutSymbolFunction("tail", &StdLib::Tail, headDef.Clone());
+  symbols.PutSymbolFunction("cdr", &StdLib::Tail, headDef.Clone());
+  symbols.PutSymbolFunction("rest", &StdLib::Tail, headDef.Clone());
+
+  symbols.PutSymbolFunction("last", &StdLib::Last, headDef.Clone());
 
   // Float
 
@@ -158,13 +169,6 @@ void StdLib::Load(Interpreter &interpreter) {
   });
   symbols.PutSymbolFunction("map", &StdLib::Map, FuncDef { FuncDef::Args({&Function::TypeInstance, &Quote::TypeInstance}), FuncDef::OneArg(Quote::TypeInstance) });
 
-  symbols.PutSymbolFunction("head", &StdLib::Head, FuncDef { FuncDef::OneArg(Quote::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
-  symbols.PutSymbolFunction("car", &StdLib::Head, FuncDef { FuncDef::OneArg(Quote::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
-  symbols.PutSymbolFunction("first", &StdLib::Head, FuncDef { FuncDef::OneArg(Quote::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
-
-  symbols.PutSymbolFunction("tail", &StdLib::Tail, FuncDef { FuncDef::OneArg(Quote::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
-  symbols.PutSymbolFunction("cdr", &StdLib::Tail, FuncDef { FuncDef::OneArg(Quote::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
-  symbols.PutSymbolFunction("rest", &StdLib::Tail, FuncDef { FuncDef::OneArg(Quote::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
 
   symbols.PutSymbolFunction("cons", &StdLib::Cons, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2), FuncDef::OneArg(Quote::TypeInstance) });
   symbols.PutSymbolFunction("range", &StdLib::Range, FuncDef { FuncDef::ManyArgs(Int::TypeInstance, 2, 3), FuncDef::OneArg(Quote::TypeInstance) });
@@ -228,7 +232,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction("bool", &StdLib::BoolFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
   symbols.PutSymbolFunction("int", &StdLib::IntFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Int::TypeInstance) });
-  symbols.PutSymbolFunction("float", &StdLib::FloatFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Int::TypeInstance) });
+  symbols.PutSymbolFunction("float", &StdLib::FloatFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
   symbols.PutSymbolFunction("str", &StdLib::StrFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Str::TypeInstance) });
 
   // Register infix operators by precedence (using C++ rules, where appropriate)
@@ -1095,8 +1099,15 @@ bool StdLib::AddList(EvaluationContext &ctx) {
 }
 
 bool StdLib::Head(EvaluationContext &ctx) {
-  ExpressionPtr listExpr { std::move(ctx.Args.front()) };
-  if (auto list = ctx.GetRequiredListValue(listExpr)) {
+  ExpressionPtr seqArg { std::move(ctx.Args.front()) };
+  if (auto str = TypeHelper::GetValue<Str>(seqArg)) {
+    if (str->Value.empty())
+      ctx.Expr.reset(new Str());
+    else 
+      ctx.Expr.reset(new Str(std::string(1, str->Value[0])));
+    return true;
+  }
+  else if (auto list = ctx.GetRequiredListValue(seqArg)) {
     if (list->Args.empty())
       ctx.Expr = StdLib::GetNil();
     else {
@@ -1110,8 +1121,15 @@ bool StdLib::Head(EvaluationContext &ctx) {
 }
 
 bool StdLib::Tail(EvaluationContext &ctx) {
-  ExpressionPtr listExpr { std::move(ctx.Args.front()) };
-  if (auto list = ctx.GetRequiredListValue(listExpr)) {
+  ExpressionPtr seqArg { std::move(ctx.Args.front()) };
+  if (auto str = TypeHelper::GetValue<Str>(seqArg)) {
+    if (str->Value.empty())
+      ctx.Expr.reset(new Str());
+    else
+      ctx.Expr.reset(new Str(str->Value.substr(1)));
+    return true;
+  }
+  else if (auto list = ctx.GetRequiredListValue(seqArg)) {
     if (list->Args.empty())
       ctx.Expr = StdLib::GetNil();
     else {
@@ -1124,6 +1142,26 @@ bool StdLib::Tail(EvaluationContext &ctx) {
       }
       ctx.Expr = ExpressionPtr { new Quote { std::move(tail) } };
     }
+    return true;
+  }
+  else
+    return false;
+}
+
+bool StdLib::Last(EvaluationContext &ctx) {
+  ExpressionPtr seqArg { std::move(ctx.Args.front()) };
+  if (auto str = TypeHelper::GetValue<Str>(seqArg)) {
+    if (str->Value.empty())
+      ctx.Expr.reset(new Str());
+    else
+      ctx.Expr.reset(new Str(std::string(1, str->Value.back())));
+    return true;
+  }
+  else if (auto list = ctx.GetRequiredListValue(seqArg)) {
+    if (list->Args.empty())
+      ctx.Expr = StdLib::GetNil();
+    else
+      ctx.Expr = list->Args.back()->Clone();
     return true;
   }
   else
