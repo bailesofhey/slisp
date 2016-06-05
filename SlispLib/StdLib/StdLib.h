@@ -109,6 +109,10 @@ class StdLib: public Library {
     static bool Upper(EvaluationContext &ctx);
     static bool Lower(EvaluationContext &ctx);
     static bool SubStr(EvaluationContext &ctx);
+    static bool Contains(EvaluationContext &ctx);
+    static bool Compare(EvaluationContext &ctx);
+    static bool StartsWith(EvaluationContext &ctx);
+    static bool EndsWith(EvaluationContext &ctx);
 
     // Lists
     static bool AddList(EvaluationContext &ctx);

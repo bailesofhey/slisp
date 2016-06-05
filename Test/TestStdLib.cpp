@@ -879,6 +879,95 @@ TEST_F(StdLibStrTest, TestSubStr) {
   ASSERT_TRUE(RunFail("(substr \"abc\" 4)"));
 }
 
+TEST_F(StdLibStrTest, TestCompare) {
+  ASSERT_TRUE(RunFail("(compare)"));
+  ASSERT_TRUE(RunFail("(compare 3 3)"));
+  ASSERT_TRUE(RunFail("(compare \"aa\")"));
+  ASSERT_TRUE(RunFail("(compare \"aa\" \"bb\" \"cc\")"));
+  ASSERT_TRUE(RunSuccess("(compare \"\" \"\")", "0"));
+  ASSERT_TRUE(RunSuccess("(compare \"a\" \"\")", "1"));
+  ASSERT_TRUE(RunSuccess("(compare \"\" \"b\")", "-1"));
+  ASSERT_TRUE(RunSuccess("(compare \"a\" \"a\")", "0"));
+}
+
+TEST_F(StdLibStrTest, TestContains) {
+  ASSERT_TRUE(RunFail("(contains)"));
+  ASSERT_TRUE(RunFail("(contains 3 3)"));
+  ASSERT_TRUE(RunFail("(contains \"aa\")"));
+  ASSERT_TRUE(RunFail("(contains \"aa\" \"bb\" \"cc\")"));
+  ASSERT_TRUE(RunSuccess("(contains \"\" \"\")", "true"));
+  ASSERT_TRUE(RunSuccess("(contains \"a\" \"\")", "true"));
+  ASSERT_TRUE(RunSuccess("(contains \"\" \"a\")", "false"));
+  ASSERT_TRUE(RunSuccess("(contains \"a\" \"a\")", "true"));
+  ASSERT_TRUE(RunSuccess("(contains \"b\" \"a\")", "false"));
+  ASSERT_TRUE(RunSuccess("(contains \"a\" \"b\")", "false"));
+  ASSERT_TRUE(RunSuccess("(contains \"ab\" \"b\")", "true"));
+  ASSERT_TRUE(RunSuccess("(contains \"a\" \"ab\")", "false"));
+
+  ASSERT_TRUE(RunSuccess("(contains \"abc\" \"a\")", "true"));
+  ASSERT_TRUE(RunSuccess("(contains \"abc\" \"b\")", "true"));
+  ASSERT_TRUE(RunSuccess("(contains \"abc\" \"c\")", "true"));
+  ASSERT_TRUE(RunSuccess("(contains \"abc\" \"ab\")", "true"));
+  ASSERT_TRUE(RunSuccess("(contains \"abc\" \"bc\")", "true"));
+  ASSERT_TRUE(RunSuccess("(contains \"abc\" \"ac\")", "false"));
+  ASSERT_TRUE(RunSuccess("(contains \"abc\" \"abc\")", "true"));
+  ASSERT_TRUE(RunSuccess("(contains \"abc\" \"abcd\")", "false"));
+
+  ASSERT_TRUE(RunSuccess("(contains \"abab\" \"ab\")", "true"));
+}
+
+TEST_F(StdLibStrTest, TestStartsWith) {
+  ASSERT_TRUE(RunFail("(startswith)"));
+  ASSERT_TRUE(RunFail("(startswith 3 3)"));
+  ASSERT_TRUE(RunFail("(startswith \"aa\")"));
+  ASSERT_TRUE(RunFail("(startswith \"aa\" \"bb\" \"cc\")"));
+  ASSERT_TRUE(RunSuccess("(startswith \"\" \"\")", "true"));
+  ASSERT_TRUE(RunSuccess("(startswith \"a\" \"\")", "true"));
+  ASSERT_TRUE(RunSuccess("(startswith \"\" \"a\")", "false"));
+  ASSERT_TRUE(RunSuccess("(startswith \"a\" \"a\")", "true"));
+  ASSERT_TRUE(RunSuccess("(startswith \"b\" \"a\")", "false"));
+  ASSERT_TRUE(RunSuccess("(startswith \"a\" \"b\")", "false"));
+  ASSERT_TRUE(RunSuccess("(startswith \"ab\" \"b\")", "false"));
+  ASSERT_TRUE(RunSuccess("(startswith \"a\" \"ab\")", "false"));
+
+  ASSERT_TRUE(RunSuccess("(startswith \"abc\" \"a\")", "true"));
+  ASSERT_TRUE(RunSuccess("(startswith \"abc\" \"b\")", "false"));
+  ASSERT_TRUE(RunSuccess("(startswith \"abc\" \"c\")", "false"));
+  ASSERT_TRUE(RunSuccess("(startswith \"abc\" \"ab\")", "true"));
+  ASSERT_TRUE(RunSuccess("(startswith \"abc\" \"bc\")", "false"));
+  ASSERT_TRUE(RunSuccess("(startswith \"abc\" \"ac\")", "false"));
+  ASSERT_TRUE(RunSuccess("(startswith \"abc\" \"abc\")", "true"));
+  ASSERT_TRUE(RunSuccess("(startswith \"abc\" \"abcd\")", "false"));
+
+  ASSERT_TRUE(RunSuccess("(startswith \"abab\" \"ab\")", "true"));
+}
+
+TEST_F(StdLibStrTest, TestEndsWith) {
+  ASSERT_TRUE(RunFail("(endswith)"));
+  ASSERT_TRUE(RunFail("(endswith 3 3)"));
+  ASSERT_TRUE(RunFail("(endswith \"aa\")"));
+  ASSERT_TRUE(RunFail("(endswith \"aa\" \"bb\" \"cc\")"));
+  ASSERT_TRUE(RunSuccess("(endswith \"\" \"\")", "true"));
+  ASSERT_TRUE(RunSuccess("(endswith \"a\" \"\")", "true"));
+  ASSERT_TRUE(RunSuccess("(endswith \"\" \"a\")", "false"));
+  ASSERT_TRUE(RunSuccess("(endswith \"a\" \"a\")", "true"));
+  ASSERT_TRUE(RunSuccess("(endswith \"b\" \"a\")", "false"));
+  ASSERT_TRUE(RunSuccess("(endswith \"a\" \"b\")", "false"));
+  ASSERT_TRUE(RunSuccess("(endswith \"ab\" \"b\")", "true"));
+  ASSERT_TRUE(RunSuccess("(endswith \"a\" \"ab\")", "false"));
+
+  ASSERT_TRUE(RunSuccess("(endswith \"abc\" \"a\")", "false"));
+  ASSERT_TRUE(RunSuccess("(endswith \"abc\" \"b\")", "false"));
+  ASSERT_TRUE(RunSuccess("(endswith \"abc\" \"c\")", "true"));
+  ASSERT_TRUE(RunSuccess("(endswith \"abc\" \"ab\")", "false"));
+  ASSERT_TRUE(RunSuccess("(endswith \"abc\" \"bc\")", "true"));
+  ASSERT_TRUE(RunSuccess("(endswith \"abc\" \"ac\")", "false"));
+  ASSERT_TRUE(RunSuccess("(endswith \"abc\" \"abc\")", "true"));
+  ASSERT_TRUE(RunSuccess("(endswith \"abc\" \"abcd\")", "false"));
+
+  ASSERT_TRUE(RunSuccess("(endswith \"abab\" \"ab\")", "true"));
+}
+
 void StdLibStrTest::RunHeadTest() {
   ASSERT_TRUE(RunFail("(head)"));
   ASSERT_TRUE(RunFail("(head 4)"));

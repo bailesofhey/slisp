@@ -162,6 +162,12 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("lower", StdLib::Lower, trimDef.Clone());
 
   symbols.PutSymbolFunction("substr", StdLib::SubStr, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2, 3), FuncDef::OneArg(Str::TypeInstance) });
+  symbols.PutSymbolFunction("compare", StdLib::Compare, FuncDef { FuncDef::ManyArgs(Str::TypeInstance, 2), FuncDef::OneArg(Int::TypeInstance) });
+
+  FuncDef containsDef { FuncDef::ManyArgs(Str::TypeInstance, 2), FuncDef::OneArg(Bool::TypeInstance) };
+  symbols.PutSymbolFunction("contains", StdLib::Contains, containsDef.Clone()); 
+  symbols.PutSymbolFunction("startswith", StdLib::StartsWith, containsDef.Clone());
+  symbols.PutSymbolFunction("endswith", StdLib::EndsWith, containsDef.Clone());
 
   // Logical
 
@@ -1073,6 +1079,50 @@ bool StdLib::SubStr(EvaluationContext &ctx) {
   }
   else
     return false;
+}
+
+
+template<class F>
+bool BinaryStrFunction(EvaluationContext &ctx, F fn) {
+  auto arg1 = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
+  auto arg2 = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
+  if (auto str1 = ctx.GetRequiredValue<Str>(arg1)) {
+    if (auto str2 = ctx.GetRequiredValue<Str>(arg2)) {
+      fn(str1->Value, str2->Value);
+      return true;
+    }
+    else
+      return false;
+  }
+  else
+    return false;
+}
+
+bool StdLib::Compare(EvaluationContext &ctx) {
+  return BinaryStrFunction(ctx, [&ctx](const std::string &haystack, const std::string &needle) {
+    ctx.Expr.reset(new Int(haystack.compare(needle)));
+  });
+}
+
+bool StdLib::Contains(EvaluationContext &ctx) {
+  return BinaryStrFunction(ctx, [&ctx](const std::string &haystack, const std::string &needle) {
+    ctx.Expr.reset(new Bool(haystack.find(needle) != std::string::npos));
+  });
+}
+
+bool StdLib::StartsWith(EvaluationContext &ctx) {
+  return BinaryStrFunction(ctx, [&ctx](const std::string &haystack, const std::string &needle) {
+    ctx.Expr.reset(new Bool(haystack.find(needle) == 0));
+  });
+}
+
+bool StdLib::EndsWith(EvaluationContext &ctx) {
+  return BinaryStrFunction(ctx, [&ctx](const std::string &haystack, const std::string &needle) {
+    size_t pos = haystack.rfind(needle); 
+    ctx.Expr.reset(new Bool(pos != std::string::npos && pos == (haystack.length() - needle.length())));
+  });
 }
 
 bool StdLib::AddStr(EvaluationContext &ctx) {
