@@ -819,6 +819,66 @@ TEST_F(StdLibStrTest, TestNth) {
   ASSERT_TRUE(RunSuccess("(nth \"abc\" 1)", "b"));
 }
 
+TEST_F(StdLibStrTest, TestSubStr) {
+  ASSERT_TRUE(RunFail("(substr)"));
+  ASSERT_TRUE(RunFail("(substr 3)"));
+  ASSERT_TRUE(RunFail("(substr \"abc\")"));
+  ASSERT_TRUE(RunFail("(substr \"abc\" -1)"));
+  ASSERT_TRUE(RunSuccess("(substr \"abc\" 0 -1)", "abc"));
+  ASSERT_TRUE(RunFail("(substr \"abc\" 0 1 0)"));
+
+  ASSERT_TRUE(RunSuccess("(substr \"\" 0)", ""));
+  ASSERT_TRUE(RunFail("(substr \"\" 1)"));
+  ASSERT_TRUE(RunSuccess("(substr \"\" 0 -1)", ""));
+
+  ASSERT_TRUE(RunSuccess("(substr \"a\" 0)", "a"));
+  ASSERT_TRUE(RunSuccess("(substr \"a\" 0 0)", ""));
+  ASSERT_TRUE(RunSuccess("(substr \"a\" 0 1)", "a"));
+  ASSERT_TRUE(RunSuccess("(substr \"a\" 0 2)", "a"));
+  ASSERT_TRUE(RunSuccess("(substr \"a\" 1)", ""));
+  ASSERT_TRUE(RunSuccess("(substr \"a\" 1 0)", ""));
+  ASSERT_TRUE(RunSuccess("(substr \"a\" 1 1)", ""));
+  ASSERT_TRUE(RunSuccess("(substr \"a\" 1 2)", ""));
+  ASSERT_TRUE(RunFail("(substr \"a\" 2 0)"));
+
+  ASSERT_TRUE(RunSuccess("(substr \"ab\" 0)", "ab"));
+  ASSERT_TRUE(RunSuccess("(substr \"ab\" 0 0)", ""));
+  ASSERT_TRUE(RunSuccess("(substr \"ab\" 0 1)", "a"));
+  ASSERT_TRUE(RunSuccess("(substr \"ab\" 0 2)", "ab"));
+  ASSERT_TRUE(RunSuccess("(substr \"ab\" 0 3)", "ab"));
+  ASSERT_TRUE(RunSuccess("(substr \"ab\" 1)", "b"));
+  ASSERT_TRUE(RunSuccess("(substr \"ab\" 1 0)", ""));
+  ASSERT_TRUE(RunSuccess("(substr \"ab\" 1 1)", "b"));
+  ASSERT_TRUE(RunSuccess("(substr \"ab\" 1 2)", "b"));
+  ASSERT_TRUE(RunSuccess("(substr \"ab\" 2 0)", ""));
+  ASSERT_TRUE(RunSuccess("(substr \"ab\" 2 1)", ""));
+  ASSERT_TRUE(RunSuccess("(substr \"ab\" 2 2)", ""));
+  ASSERT_TRUE(RunFail("(substr \"ab\" 3 0)"));
+
+  ASSERT_TRUE(RunSuccess("(substr \"abc\" 0)", "abc"));
+  ASSERT_TRUE(RunSuccess("(substr \"abc\" 0 0)", ""));
+  ASSERT_TRUE(RunSuccess("(substr \"abc\" 0 1)", "a"));
+  ASSERT_TRUE(RunSuccess("(substr \"abc\" 0 2)", "ab"));
+  ASSERT_TRUE(RunSuccess("(substr \"abc\" 0 3)", "abc"));
+  ASSERT_TRUE(RunSuccess("(substr \"abc\" 0 4)", "abc"));
+  ASSERT_TRUE(RunSuccess("(substr \"abc\" 1)", "bc"));
+  ASSERT_TRUE(RunSuccess("(substr \"abc\" 1 0)", ""));
+  ASSERT_TRUE(RunSuccess("(substr \"abc\" 1 1)", "b"));
+  ASSERT_TRUE(RunSuccess("(substr \"abc\" 1 2)", "bc"));
+  ASSERT_TRUE(RunSuccess("(substr \"abc\" 1 3)", "bc"));
+  ASSERT_TRUE(RunSuccess("(substr \"abc\" 2)", ""));
+  ASSERT_TRUE(RunSuccess("(substr \"abc\" 2 0)", ""));
+  ASSERT_TRUE(RunSuccess("(substr \"abc\" 2 1)", "c"));
+  ASSERT_TRUE(RunSuccess("(substr \"abc\" 2 2)", "c"));
+  ASSERT_TRUE(RunSuccess("(substr \"abc\" 2 3)", "c"));
+  ASSERT_TRUE(RunSuccess("(substr \"abc\" 3)", ""));
+  ASSERT_TRUE(RunSuccess("(substr \"abc\" 3 0)", ""));
+  ASSERT_TRUE(RunSuccess("(substr \"abc\" 3 1)", ""));
+  ASSERT_TRUE(RunSuccess("(substr \"abc\" 3 2)", ""));
+  ASSERT_TRUE(RunSuccess("(substr \"abc\" 3 3)", ""));
+  ASSERT_TRUE(RunFail("(substr \"abc\" 4)"));
+}
+
 void StdLibStrTest::RunHeadTest() {
   ASSERT_TRUE(RunFail("(head)"));
   ASSERT_TRUE(RunFail("(head 4)"));

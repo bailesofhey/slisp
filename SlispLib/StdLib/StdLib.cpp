@@ -161,6 +161,8 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("upper", StdLib::Upper, trimDef.Clone());
   symbols.PutSymbolFunction("lower", StdLib::Lower, trimDef.Clone());
 
+  symbols.PutSymbolFunction("substr", StdLib::SubStr, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2, 3), FuncDef::OneArg(Str::TypeInstance) });
+
   // Logical
 
   symbols.PutSymbolBool("true", true);
@@ -1039,6 +1041,38 @@ bool StdLib::Upper(EvaluationContext &ctx) {
 
 bool StdLib::Lower(EvaluationContext &ctx) {
   return CharTransform(ctx, std::tolower);
+}
+
+bool StdLib::SubStr(EvaluationContext &ctx) {
+  auto strArg = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
+  if (auto str = ctx.GetRequiredValue<Str>(strArg)) {
+    auto startArg = std::move(ctx.Args.front());
+    ctx.Args.pop_front();
+    if (auto startIdx = ctx.GetRequiredValue<Int>(startArg)) {
+      size_t count = std::string::npos;
+      if (!ctx.Args.empty()) {
+        auto countArg = std::move(ctx.Args.front());
+        ctx.Args.pop_front();
+        if (auto countValue = ctx.GetRequiredValue<Int>(countArg))
+          count = countValue->Value;
+        else
+          return false;
+      }
+
+      try {
+        ctx.Expr.reset(new Str(str->Value.substr(startIdx->Value, count)));
+        return true;
+      }
+      catch (std::out_of_range) {
+        return ctx.Error("index " + std::to_string(startIdx->Value) + " is out of range");
+      }
+    }
+    else
+      return false;
+  }
+  else
+    return false;
 }
 
 bool StdLib::AddStr(EvaluationContext &ctx) {
