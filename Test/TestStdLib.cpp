@@ -992,6 +992,14 @@ TEST_F(StdLibStrTest, TestFind) {
   ASSERT_TRUE(RunSuccess("(find \"abc\" \"abcd\")", "-1"));
 
   ASSERT_TRUE(RunSuccess("(find \"abab\" \"ab\")", "0"));
+
+  // start
+  ASSERT_TRUE(RunSuccess("(find \"abab\" \"ab\" -1)", "-1"));
+  ASSERT_TRUE(RunSuccess("(find \"abab\" \"ab\" 0)", "0"));
+  ASSERT_TRUE(RunSuccess("(find \"abab\" \"ab\" 1)", "2"));
+  ASSERT_TRUE(RunSuccess("(find \"abab\" \"ab\" 2)", "2"));
+  ASSERT_TRUE(RunSuccess("(find \"abab\" \"ab\" 3)", "-1"));
+  ASSERT_TRUE(RunSuccess("(find \"abab\" \"ab\" 4)", "-1"));
 }
 
 TEST_F(StdLibStrTest, TestRFind) {
@@ -1018,6 +1026,43 @@ TEST_F(StdLibStrTest, TestRFind) {
   ASSERT_TRUE(RunSuccess("(rfind \"abc\" \"abcd\")", "-1"));
 
   ASSERT_TRUE(RunSuccess("(rfind \"abab\" \"ab\")", "2"));
+
+  // start
+  ASSERT_TRUE(RunSuccess("(rfind \"abab\" \"ab\" -1)", "2"));
+  ASSERT_TRUE(RunSuccess("(rfind \"abab\" \"ab\" 0)", "0"));
+  ASSERT_TRUE(RunSuccess("(rfind \"abab\" \"ab\" 1)", "0"));
+  ASSERT_TRUE(RunSuccess("(rfind \"abab\" \"ab\" 2)", "2"));
+  ASSERT_TRUE(RunSuccess("(rfind \"abab\" \"ab\" 3)", "2"));
+  ASSERT_TRUE(RunSuccess("(rfind \"abab\" \"ab\" 4)", "2"));
+}
+
+TEST_F(StdLibStrTest, TestReplace) {
+  ASSERT_TRUE(RunFail("(replace)"));
+  ASSERT_TRUE(RunFail("(replace 3)"));
+
+  ASSERT_TRUE(RunSuccess("(replace \"\" \"\" \"\" 0)", ""));
+  ASSERT_TRUE(RunSuccess("(replace \"\" \"\" \"\" 1)", ""));
+  ASSERT_TRUE(RunSuccess("(replace \"\" \"\" \"a\" 1)", "a"));
+  ASSERT_TRUE(RunSuccess("(replace \"a\" \"\" \"a\" 1)", "a"));
+  ASSERT_TRUE(RunSuccess("(replace \"a\" \"\" \"b\" 1)", "a"));
+  ASSERT_TRUE(RunSuccess("(replace \"a\" \"a\" \"\" 1)", ""));
+  ASSERT_TRUE(RunSuccess("(replace \"ab\" \"a\" \"\" 1)", "b"));
+  ASSERT_TRUE(RunSuccess("(replace \"ab\" \"a\" \"bc\" 1)", "bcb"));
+
+  ASSERT_TRUE(RunSuccess("(replace \"abYab\" \"ab\" \"Z\" -1)", "ZYZ"));
+  ASSERT_TRUE(RunSuccess("(replace \"abYab\" \"ab\" \"Z\" 0)", "abYab"));
+  ASSERT_TRUE(RunSuccess("(replace \"abYab\" \"ab\" \"Z\" 1)", "ZYab"));
+  ASSERT_TRUE(RunSuccess("(replace \"abYab\" \"ab\" \"Z\" 2)", "ZYZ"));
+  ASSERT_TRUE(RunSuccess("(replace \"abYab\" \"ab\" \"Z\" 3)", "ZYZ"));
+
+  ASSERT_TRUE(RunSuccess("(replace \"abYab\" \"ab\" \"Z\")", "ZYZ"));
+  ASSERT_TRUE(RunSuccess("(replace \"abYab\" \"ab\" \"\")", "Y"));
+
+  ASSERT_TRUE(RunSuccess("(replace \"abYab\" \"ab\" \"\")", "Y"));
+
+  ASSERT_TRUE(RunSuccess("(replace \"abab\" \"ab\" \"Z\")", "ZZ"));
+  ASSERT_TRUE(RunSuccess("(replace \"abYYab\" \"ab\" \"Z\")", "ZYYZ"));
+  ASSERT_TRUE(RunSuccess("(replace \"abab\" \"ab\" \"ab\")", "abab"));
 }
 
 void StdLibStrTest::RunHeadTest() {

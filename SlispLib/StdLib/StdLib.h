@@ -115,6 +115,7 @@ class StdLib: public Library {
     static bool EndsWith(EvaluationContext &ctx);
     static bool Find(EvaluationContext &ctx);
     static bool RFind(EvaluationContext &ctx);
+    static bool Replace(EvaluationContext &ctx);
 
     // Lists
     static bool AddList(EvaluationContext &ctx);

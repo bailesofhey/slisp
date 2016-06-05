@@ -165,13 +165,17 @@ void StdLib::Load(Interpreter &interpreter) {
 
   FuncDef compareDef { FuncDef::ManyArgs(Str::TypeInstance, 2), FuncDef::OneArg(Int::TypeInstance) };
   symbols.PutSymbolFunction("compare", StdLib::Compare, compareDef.Clone());
-  symbols.PutSymbolFunction("find", StdLib::Find, compareDef.Clone());
-  symbols.PutSymbolFunction("rfind", StdLib::RFind, compareDef.Clone());
+
+  FuncDef findDef { FuncDef::ManyArgs(Literal::TypeInstance, 2, 3), FuncDef::OneArg(Int::TypeInstance) };
+  symbols.PutSymbolFunction("find", StdLib::Find, findDef.Clone());
+  symbols.PutSymbolFunction("rfind", StdLib::RFind, findDef.Clone());
 
   FuncDef containsDef { FuncDef::ManyArgs(Str::TypeInstance, 2), FuncDef::OneArg(Bool::TypeInstance) };
   symbols.PutSymbolFunction("contains", StdLib::Contains, containsDef.Clone()); 
   symbols.PutSymbolFunction("startswith", StdLib::StartsWith, containsDef.Clone());
   symbols.PutSymbolFunction("endswith", StdLib::EndsWith, containsDef.Clone());
+
+  symbols.PutSymbolFunction("replace", StdLib::Replace, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2, 4), FuncDef::OneArg(Str::TypeInstance) });
 
   // Logical
 
@@ -1093,8 +1097,7 @@ bool BinaryStrFunction(EvaluationContext &ctx, F fn) {
   ctx.Args.pop_front();
   if (auto str1 = ctx.GetRequiredValue<Str>(arg1)) {
     if (auto str2 = ctx.GetRequiredValue<Str>(arg2)) {
-      fn(str1->Value, str2->Value);
-      return true;
+      return fn(str1->Value, str2->Value);
     }
     else
       return false;
@@ -1103,33 +1106,48 @@ bool BinaryStrFunction(EvaluationContext &ctx, F fn) {
     return false;
 }
 
-bool StdLib::Find(EvaluationContext &ctx) {
-  return BinaryStrFunction(ctx, [&ctx](const std::string &haystack, const std::string &needle) {
-    ctx.Expr.reset(new Int(haystack.find(needle)));
+bool FindFunction(EvaluationContext &ctx, bool reverse) {
+  return BinaryStrFunction(ctx, [&ctx, &reverse](const std::string &haystack, const std::string &needle) {
+    size_t start = reverse ? std::string::npos : 0;
+    if (!ctx.Args.empty()) {
+      auto startArg = std::move(ctx.Args.front());
+      ctx.Args.pop_front();
+      if (auto startValue = ctx.GetRequiredValue<Int>(startArg))
+        start = startValue->Value;
+      else
+        return false;
+    }
+    ctx.Expr.reset(new Int(reverse ? haystack.rfind(needle, start) : haystack.find(needle, start)));
+    return true;
   });
 }
 
+bool StdLib::Find(EvaluationContext &ctx) {
+  return FindFunction(ctx, false);
+}
+
 bool StdLib::RFind(EvaluationContext &ctx) {
-  return BinaryStrFunction(ctx, [&ctx](const std::string &haystack, const std::string &needle) {
-    ctx.Expr.reset(new Int(haystack.rfind(needle)));
-  });
+  return FindFunction(ctx, true);
 }
 
 bool StdLib::Compare(EvaluationContext &ctx) {
   return BinaryStrFunction(ctx, [&ctx](const std::string &haystack, const std::string &needle) {
     ctx.Expr.reset(new Int(haystack.compare(needle)));
+    return true;
   });
 }
 
 bool StdLib::Contains(EvaluationContext &ctx) {
   return BinaryStrFunction(ctx, [&ctx](const std::string &haystack, const std::string &needle) {
     ctx.Expr.reset(new Bool(haystack.find(needle) != std::string::npos));
+    return true;
   });
 }
 
 bool StdLib::StartsWith(EvaluationContext &ctx) {
   return BinaryStrFunction(ctx, [&ctx](const std::string &haystack, const std::string &needle) {
     ctx.Expr.reset(new Bool(haystack.find(needle) == 0));
+    return true;
   });
 }
 
@@ -1137,6 +1155,51 @@ bool StdLib::EndsWith(EvaluationContext &ctx) {
   return BinaryStrFunction(ctx, [&ctx](const std::string &haystack, const std::string &needle) {
     size_t pos = haystack.rfind(needle); 
     ctx.Expr.reset(new Bool(pos != std::string::npos && pos == (haystack.length() - needle.length())));
+    return true;
+  });
+}
+
+bool StdLib::Replace(EvaluationContext &ctx) {
+  return BinaryStrFunction(ctx, [&ctx](std::string &haystack, const std::string &needle) {
+    std::string replacement = "";
+    int64_t maxReplacements = std::numeric_limits<int64_t>::max();
+    if (!ctx.Args.empty()) {
+      auto replacementArg = std::move(ctx.Args.front());
+      ctx.Args.pop_front();
+      if (auto replacementValue = ctx.GetRequiredValue<Str>(replacementArg))
+        replacement = replacementValue->Value;
+      else
+        return false;
+
+      if (!ctx.Args.empty()) {
+        auto maxReplacementsArg = std::move(ctx.Args.front());
+        ctx.Args.pop_front();
+        if (auto maxReplacementsValue = ctx.GetRequiredValue<Int>(maxReplacementsArg)) {
+          if (maxReplacementsValue->Value != -1)
+            maxReplacements = maxReplacementsValue->Value;
+        }
+        else
+          return false;
+      }
+    }
+
+    size_t offset = 0;
+    size_t lastFind = 0;
+    size_t needleCount = needle.length();
+    size_t replacementCount = replacement.length();
+    int64_t nReplacements = 0;
+    while (nReplacements < maxReplacements) {
+      lastFind = haystack.find(needle, offset);
+      if (lastFind == std::string::npos)
+        break;
+
+      haystack.replace(lastFind, needleCount, replacement);
+      offset = lastFind + replacementCount;
+      ++nReplacements;
+    } 
+
+    ctx.Expr.reset(new Str(haystack));
+    return true;
   });
 }
 
