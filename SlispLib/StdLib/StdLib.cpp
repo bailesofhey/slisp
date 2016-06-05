@@ -176,6 +176,8 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("endswith", StdLib::EndsWith, containsDef.Clone());
 
   symbols.PutSymbolFunction("replace", StdLib::Replace, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2, 4), FuncDef::OneArg(Str::TypeInstance) });
+  symbols.PutSymbolFunction("split", StdLib::Split, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2, 3), FuncDef::OneArg(Quote::TypeInstance) });
+  symbols.PutSymbolFunction("join", StdLib::Join, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2, 3), FuncDef::OneArg(Str::TypeInstance) });
 
   // Logical
 
@@ -1201,6 +1203,90 @@ bool StdLib::Replace(EvaluationContext &ctx) {
     ctx.Expr.reset(new Str(haystack));
     return true;
   });
+}
+
+bool StdLib::Split(EvaluationContext &ctx) {
+  return BinaryStrFunction(ctx, [&ctx](const std::string &haystack, const std::string &needle) {
+    bool flattenEmptyValues = true;
+    if (!ctx.Args.empty()) {
+      auto flattenArg = std::move(ctx.Args.front());
+      if (auto flattenValue = ctx.GetRequiredValue<Bool>(flattenArg))
+        flattenEmptyValues = flattenValue->Value;
+      else
+        return false;
+    }
+
+    ExpressionPtr result { new Sexp() };
+    Sexp &list = static_cast<Sexp&>(*result);
+
+    if (!haystack.empty()) {
+      if (!needle.empty()) {
+        size_t offset = 0;
+        size_t lastFind = 0;
+        size_t needleLength = needle.length();
+        bool more = true;
+        while (more) {
+          lastFind = haystack.find(needle, offset);
+          if (lastFind == std::string::npos) {
+            lastFind = haystack.length();
+            more = false;
+          }
+
+          std::string newElem(haystack, offset, lastFind - offset);
+          if (!flattenEmptyValues || !newElem.empty())
+            list.Args.emplace_back(new Str(std::move(newElem)));
+          offset = lastFind + needle.length();
+        } 
+      }
+      else
+        list.Args.emplace_back(new Str(haystack));
+    }
+
+    ctx.Expr = ExpressionPtr { new Quote(std::move(result)) };
+    return true;
+  });
+}
+
+bool StdLib::Join(EvaluationContext &ctx) {
+  auto listArg = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
+  if (auto list = ctx.GetRequiredListValue(listArg)) {
+    auto delimArg = std::move(ctx.Args.front());
+    ctx.Args.pop_front();
+    if (auto delim = ctx.GetRequiredValue<Str>(delimArg)) {
+      bool flattenEmptyValues = true;
+      if (!ctx.Args.empty()) {
+        auto flattenArg = std::move(ctx.Args.front());
+        ctx.Args.pop_front();
+        if (auto flatten = ctx.GetRequiredValue<Bool>(flattenArg))
+          flattenEmptyValues = flatten->Value;
+        else
+          return false;
+      }
+
+      std::stringstream ss;
+      size_t i = 0;
+      for (auto &elemExpr : list->Args) {
+        if (auto elem = TypeHelper::GetValue<Str>(elemExpr)) {
+          if (!flattenEmptyValues || !elem->Value.empty()) {
+            if (i)
+              ss << delim->Value;
+            ss << elem->Value;
+          }
+        }
+        else
+          return ctx.Error("Element " + std::to_string(i) + " is not a " + Str::TypeInstance.Name());
+        ++i;
+      }
+
+      ctx.Expr.reset(new Str(ss.str()));
+      return true;
+    }
+    else
+      return false;
+  }
+  else
+     return false;
 }
 
 bool StdLib::AddStr(EvaluationContext &ctx) {

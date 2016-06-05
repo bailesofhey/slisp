@@ -1065,6 +1065,56 @@ TEST_F(StdLibStrTest, TestReplace) {
   ASSERT_TRUE(RunSuccess("(replace \"abab\" \"ab\" \"ab\")", "abab"));
 }
 
+TEST_F(StdLibStrTest, TestSplit) {
+  ASSERT_TRUE(RunFail("(split)"));
+  ASSERT_TRUE(RunFail("(split 3)"));
+  ASSERT_TRUE(RunFail("(split \"foo\")"));
+  ASSERT_TRUE(RunFail("(split \"foo\" 3)"));
+
+  ASSERT_TRUE(RunSuccess("(split \"\" \"\")", "()"));
+  ASSERT_TRUE(RunSuccess("(split \"a\" \"\")", "(\"a\")"));
+  ASSERT_TRUE(RunSuccess("(split \"\" \"a\")", "()"));
+
+  ASSERT_TRUE(RunSuccess("(split \"a\" \":\")", "(\"a\")"));
+  ASSERT_TRUE(RunSuccess("(split \":\" \":\")", "()"));
+  ASSERT_TRUE(RunSuccess("(split \"a:\" \":\")", "(\"a\")"));
+  ASSERT_TRUE(RunSuccess("(split \":a\" \":\")", "(\"a\")"));
+  ASSERT_TRUE(RunSuccess("(split \"a:b\" \":\")", "(\"a\" \"b\")"));
+  ASSERT_TRUE(RunSuccess("(split \":a:b:\" \":\")", "(\"a\" \"b\")"));
+  ASSERT_TRUE(RunSuccess("(split \":::a::b::::\" \":\")", "(\"a\" \"b\")"));
+
+  ASSERT_TRUE(RunSuccess("(split \"a\" \":\") false", "(\"a\")"));
+  ASSERT_TRUE(RunSuccess("(split \":\" \":\" false)", "(\"\" \"\")"));
+  ASSERT_TRUE(RunSuccess("(split \"a:\" \":\" false)", "(\"a\" \"\")"));
+  ASSERT_TRUE(RunSuccess("(split \":a\" \":\" false)", "(\"\" \"a\")"));
+  ASSERT_TRUE(RunSuccess("(split \"a:b\" \":\" false)", "(\"a\" \"b\")"));
+  ASSERT_TRUE(RunSuccess("(split \":a:b:\" \":\" false)", "(\"\" \"a\" \"b\" \"\")"));
+  ASSERT_TRUE(RunSuccess("(split \":::a::b::::\" \":\" false)", "(\"\" \"\" \"\" \"a\" \"\" \"b\" \"\" \"\" \"\" \"\")"));
+}
+
+TEST_F(StdLibStrTest, TestJoin) {
+  ASSERT_TRUE(RunFail("(join)"));
+  ASSERT_TRUE(RunFail("(join 3)"));
+  ASSERT_TRUE(RunFail("(join \"foo\")"));
+  ASSERT_TRUE(RunFail("(join \"foo\" 3)"));
+
+  ASSERT_TRUE(RunSuccess("(join () \"\")", "\"\""));
+  ASSERT_TRUE(RunSuccess("(join (\"a\") \"\")", "\"a\""));
+  ASSERT_TRUE(RunSuccess("(join () \"a\")", "\"\""));
+
+  ASSERT_TRUE(RunSuccess("(join (\"a\") \":\")", "\"a\""));
+  ASSERT_TRUE(RunSuccess("(join () \":\")", "\"\""));
+  ASSERT_TRUE(RunSuccess("(join (\"a\" \"b\") \":\")", "\"a:b\""));
+
+  ASSERT_TRUE(RunSuccess("(join (\"a\") \":\") false", "\"a\""));
+  ASSERT_TRUE(RunSuccess("(join (\"\" \"\") \":\" false)", "\":\""));
+  ASSERT_TRUE(RunSuccess("(join (\"a\" \"\") \":\" false)", "\"a:\""));
+  ASSERT_TRUE(RunSuccess("(join (\"\" \"a\") \":\" false)", "\":a\""));
+  ASSERT_TRUE(RunSuccess("(join (\"a\" \"b\") \":\" false)", "\"a:b\""));
+  ASSERT_TRUE(RunSuccess("(join (\"\" \"a\" \"b\" \"\") \":\" false)", "\":a:b:\""));
+  ASSERT_TRUE(RunSuccess("(join (\"\" \"\" \"\" \"a\" \"\" \"b\" \"\" \"\" \"\" \"\") \":\" false)", "\":::a::b::::\""));
+}
+
 void StdLibStrTest::RunHeadTest() {
   ASSERT_TRUE(RunFail("(head)"));
   ASSERT_TRUE(RunFail("(head 4)"));

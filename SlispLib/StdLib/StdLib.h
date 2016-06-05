@@ -116,6 +116,8 @@ class StdLib: public Library {
     static bool Find(EvaluationContext &ctx);
     static bool RFind(EvaluationContext &ctx);
     static bool Replace(EvaluationContext &ctx);
+    static bool Split(EvaluationContext &ctx);
+    static bool Join(EvaluationContext &ctx);
 
     // Lists
     static bool AddList(EvaluationContext &ctx);
