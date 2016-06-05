@@ -2,7 +2,9 @@
 #include <memory>
 #include <sstream>
 #include <algorithm>
+#include <iterator>
 #include <iomanip>
+#include <cctype>
 
 #include "StdLib.h"
 #include "../Interpreter.h"
@@ -91,12 +93,24 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("head", &StdLib::Head, headDef.Clone());
   symbols.PutSymbolFunction("car", &StdLib::Head, headDef.Clone());
   symbols.PutSymbolFunction("first", &StdLib::Head, headDef.Clone());
+  symbols.PutSymbolFunction("front", &StdLib::Head, headDef.Clone());
 
   symbols.PutSymbolFunction("tail", &StdLib::Tail, headDef.Clone());
   symbols.PutSymbolFunction("cdr", &StdLib::Tail, headDef.Clone());
   symbols.PutSymbolFunction("rest", &StdLib::Tail, headDef.Clone());
 
   symbols.PutSymbolFunction("last", &StdLib::Last, headDef.Clone());
+  symbols.PutSymbolFunction("back", &StdLib::Last, headDef.Clone());
+
+  FuncDef atDef { FuncDef::Args({&Literal::TypeInstance, &Int::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance)};
+  symbols.PutSymbolFunction("at", &StdLib::At, atDef.Clone());
+  symbols.PutSymbolFunction("nth", &StdLib::At, atDef.Clone());
+  //TODO: Lists
+  //TODO: ("abc" 1) => "b" ??????????
+  //TODO: "abc"[1] => b
+  //TODO: ([] "abc" 1) => b ????
+  //TODO: ([1] "abc") => b ????
+
 
   // Float
 
@@ -142,14 +156,10 @@ void StdLib::Load(Interpreter &interpreter) {
 
   // Str 
 
-  FuncDef atDef { FuncDef::Args({&Literal::TypeInstance, &Int::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance)};
-  symbols.PutSymbolFunction("at", &StdLib::At, atDef.Clone());
-  symbols.PutSymbolFunction("nth", &StdLib::At, atDef.Clone());
-  //TODO: Lists
-  //TODO: ("abc" 1) => "b" ??????????
-  //TODO: "abc"[1] => b
-  //TODO: ([] "abc" 1) => b ????
-  //TODO: ([1] "abc") => b ????
+  FuncDef trimDef { FuncDef::OneArg(Str::TypeInstance), FuncDef::OneArg(Str::TypeInstance) };
+  symbols.PutSymbolFunction("trim", StdLib::Trim, trimDef.Clone());
+  symbols.PutSymbolFunction("upper", StdLib::Upper, trimDef.Clone());
+  symbols.PutSymbolFunction("lower", StdLib::Lower, trimDef.Clone());
 
   // Logical
 
@@ -509,6 +519,55 @@ bool StdLib::GenericNumFunc(EvaluationContext &ctx, I iFn, F fFn) {
   }
   else
     return ctx.ArgumentExpectedError();
+}
+
+bool StdLib::At(EvaluationContext &ctx) {
+  ExpressionPtr itArg = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
+  ExpressionPtr idxArg = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
+
+  if (auto *idxInt = ctx.GetRequiredValue<Int>(idxArg)) {
+    int64_t idx = idxInt->Value; 
+    if (auto *str = dynamic_cast<Str*>(itArg.get())) {
+      if (idx < 0)
+        idx += str->Value.length();
+      try {
+        ctx.Expr = ExpressionPtr { new Str(std::string(1, str->Value.at(idx))) };
+        return true;
+      }
+      catch (std::out_of_range) {
+        return ctx.Error("index " + std::to_string(idx) + " is out of bounds");
+      }
+    }
+    else if (auto *iterable = dynamic_cast<IIterable*>(itArg.get())) {
+      if (IteratorPtr iterator = iterable->GetIterator()) {
+        if (idx < 0) {
+          int64_t length = iterator->GetLength();
+          if (length == IIterator::LENGTH_UNKNOWN)
+            return ctx.Error("Negative indexes require iterator to support GetLength");
+          idx += length;
+        }
+        int64_t currIdx = 0;
+        bool more = false;
+        do {
+          ExpressionPtr& curr = iterator->Next();
+          more = curr.operator bool();
+          if (more) {
+            if (currIdx == idx) {
+              ctx.Expr = curr->Clone();
+              return true;
+            }
+          }
+          ++currIdx;
+        } while (more);
+        return ctx.Error("index " + std::to_string(idx) + " is out of bounds");
+      }
+    }
+    return ctx.TypeError("iterable", itArg);
+  }
+  else
+    return false;
 }
 
 bool StdLib::Add(EvaluationContext &ctx) {
@@ -942,6 +1001,46 @@ bool StdLib::BitNot(EvaluationContext &ctx) {
 
 // Str functions
 
+bool StdLib::Trim(EvaluationContext &ctx) {
+  ExpressionPtr firstArg = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
+  if (auto str = ctx.GetRequiredValue<Str>(firstArg)) {
+    ExpressionPtr result { new Str() };
+    std::string &resultValue = static_cast<Str*>(result.get())->Value;
+    std::string &val = str->Value;
+    size_t firstNonSpace = val.find_first_not_of(' ');
+    size_t lastNonSpace = val.find_last_not_of(' ');
+
+    if (firstNonSpace != std::string::npos) 
+      resultValue.assign(val.begin() + firstNonSpace, val.begin() + lastNonSpace + 1);
+
+    ctx.Expr = std::move(result);
+    return true;
+  }
+  else
+    return false;
+}
+
+
+template<class F>
+bool CharTransform(EvaluationContext &ctx, F fn) {
+  if (auto str = ctx.GetRequiredValue<Str>(ctx.Args.front())) {
+    std::for_each(str->Value.begin(), str->Value.end(), [&fn](char &ch) { ch = fn(ch); });
+    ctx.Expr = str->Clone();
+    return true;
+  }
+  else
+    return false;
+}
+
+bool StdLib::Upper(EvaluationContext &ctx) {
+  return CharTransform(ctx, std::toupper);
+}
+
+bool StdLib::Lower(EvaluationContext &ctx) {
+  return CharTransform(ctx, std::tolower);
+}
+
 bool StdLib::AddStr(EvaluationContext &ctx) {
   std::stringstream ss;
   while (!ctx.Args.empty()) {
@@ -956,54 +1055,6 @@ bool StdLib::AddStr(EvaluationContext &ctx) {
   return true;
 }
 
-bool StdLib::At(EvaluationContext &ctx) {
-  ExpressionPtr itArg = std::move(ctx.Args.front());
-  ctx.Args.pop_front();
-  ExpressionPtr idxArg = std::move(ctx.Args.front());
-  ctx.Args.pop_front();
-
-  if (auto *idxInt = ctx.GetRequiredValue<Int>(idxArg)) {
-    int64_t idx = idxInt->Value; 
-    if (auto *str = dynamic_cast<Str*>(itArg.get())) {
-      if (idx < 0)
-        idx += str->Value.length();
-      try {
-        ctx.Expr = ExpressionPtr { new Str(std::string(1, str->Value.at(idx))) };
-        return true;
-      }
-      catch (std::out_of_range) {
-        return ctx.Error("index " + std::to_string(idx) + " is out of bounds");
-      }
-    }
-    else if (auto *iterable = dynamic_cast<IIterable*>(itArg.get())) {
-      if (IteratorPtr iterator = iterable->GetIterator()) {
-        if (idx < 0) {
-          int64_t length = iterator->GetLength();
-          if (length == IIterator::LENGTH_UNKNOWN)
-            return ctx.Error("Negative indexes require iterator to support GetLength");
-          idx += length;
-        }
-        int64_t currIdx = 0;
-        bool more = false;
-        do {
-          ExpressionPtr& curr = iterator->Next();
-          more = curr.operator bool();
-          if (more) {
-            if (currIdx == idx) {
-              ctx.Expr = curr->Clone();
-              return true;
-            }
-          }
-          ++currIdx;
-        } while (more);
-        return ctx.Error("index " + std::to_string(idx) + " is out of bounds");
-      }
-    }
-    return ctx.TypeError("iterable", itArg);
-  }
-  else
-    return false;
-}
 
 // Lists
 

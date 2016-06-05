@@ -728,6 +728,7 @@ class StdLibStrTest: public StdLibTest {
 protected:
   void RunAtTest();
   void RunHeadTest();
+  void RunLastTest();
 };
 
 TEST_F(StdLibStrTest, TestAdd) {
@@ -835,6 +836,11 @@ TEST_F(StdLibStrTest, TestFirst) {
   ASSERT_TRUE(RunSuccess("(first \"abc\")", "a"));
 }
 
+TEST_F(StdLibStrTest, TestFront) {
+  ASSERT_NO_FATAL_FAILURE(RunHeadTest());
+  ASSERT_TRUE(RunSuccess("(front \"abc\")", "a"));
+}
+
 TEST_F(StdLibStrTest, TestTail) {
   ASSERT_TRUE(RunFail("(tail)"));
   ASSERT_TRUE(RunFail("(tail 4)"));
@@ -843,12 +849,58 @@ TEST_F(StdLibStrTest, TestTail) {
   ASSERT_TRUE(RunSuccess("(tail \"abc\")", "bc"));
 }
 
-TEST_F(StdLibStrTest, TestLast) {
+void StdLibStrTest::RunLastTest() {
   ASSERT_TRUE(RunFail("(last)"));
   ASSERT_TRUE(RunFail("(last 4)"));
   ASSERT_TRUE(RunSuccess("(last \"\")", ""));
   ASSERT_TRUE(RunSuccess("(last \"a\")", "a"));
   ASSERT_TRUE(RunSuccess("(last \"abc\")", "c"));
+}
+
+TEST_F(StdLibStrTest, TestLast) {
+  ASSERT_NO_FATAL_FAILURE(RunLastTest());
+}
+
+TEST_F(StdLibStrTest, TestBack) {
+  ASSERT_NO_FATAL_FAILURE(RunLastTest());
+  ASSERT_TRUE(RunSuccess("(back \"abc\")", "c"));
+}
+
+TEST_F(StdLibStrTest, TestTrim) {
+  ASSERT_TRUE(RunFail("(trim)"));
+  ASSERT_TRUE(RunFail("(trim 2)"));
+  ASSERT_TRUE(RunFail("(trim (1))"));
+  ASSERT_TRUE(RunSuccess("(trim \"\")", ""));
+  ASSERT_TRUE(RunSuccess("(trim \"a\")", "a"));
+  ASSERT_TRUE(RunSuccess("(trim \" \")", ""));
+  ASSERT_TRUE(RunSuccess("(trim \"a \")", "a"));
+  ASSERT_TRUE(RunSuccess("(trim \" a\")", "a"));
+  ASSERT_TRUE(RunSuccess("(trim \"a b\")", "a b"));
+  ASSERT_TRUE(RunSuccess("(trim \"   a b c   \")", "a b"));
+}
+
+TEST_F(StdLibStrTest, TestUpper) {
+  ASSERT_TRUE(RunFail("(upper)"));
+  ASSERT_TRUE(RunFail("(upper 2)"));
+  ASSERT_TRUE(RunFail("(upper (1))"));
+  ASSERT_TRUE(RunSuccess("(upper \"\")", ""));
+  ASSERT_TRUE(RunSuccess("(upper \"a\")", "A"));
+  ASSERT_TRUE(RunSuccess("(upper \"z\")", "Z"));
+  ASSERT_TRUE(RunSuccess("(upper \"A\")", "A"));
+  ASSERT_TRUE(RunSuccess("(upper \"1\")", "1"));
+  ASSERT_TRUE(RunSuccess("(upper \"1a2b3C4,\")", "1A2B3C4"));
+}
+
+TEST_F(StdLibStrTest, TestLower) {
+  ASSERT_TRUE(RunFail("(lower)"));
+  ASSERT_TRUE(RunFail("(lower 2)"));
+  ASSERT_TRUE(RunFail("(lower (1))"));
+  ASSERT_TRUE(RunSuccess("(lower \"\")", ""));
+  ASSERT_TRUE(RunSuccess("(lower \"A\")", "a"));
+  ASSERT_TRUE(RunSuccess("(lower \"Z\")", "z"));
+  ASSERT_TRUE(RunSuccess("(lower \"a\")", "a"));
+  ASSERT_TRUE(RunSuccess("(lower \"1\")", "1"));
+  ASSERT_TRUE(RunSuccess("(lower \"1A2B3c4,\")", "1a2b3c4"));
 }
 
 class StdLibListTest: public StdLibTest {

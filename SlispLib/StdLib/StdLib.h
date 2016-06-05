@@ -105,6 +105,9 @@ class StdLib: public Library {
 
     // Str
     static bool AddStr(EvaluationContext &ctx);
+    static bool Trim(EvaluationContext &ctx);
+    static bool Upper(EvaluationContext &ctx);
+    static bool Lower(EvaluationContext &ctx);
 
     // Lists
     static bool AddList(EvaluationContext &ctx);
