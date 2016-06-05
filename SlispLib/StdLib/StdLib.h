@@ -113,6 +113,8 @@ class StdLib: public Library {
     static bool Compare(EvaluationContext &ctx);
     static bool StartsWith(EvaluationContext &ctx);
     static bool EndsWith(EvaluationContext &ctx);
+    static bool Find(EvaluationContext &ctx);
+    static bool RFind(EvaluationContext &ctx);
 
     // Lists
     static bool AddList(EvaluationContext &ctx);

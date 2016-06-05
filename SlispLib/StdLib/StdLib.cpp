@@ -162,7 +162,11 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("lower", StdLib::Lower, trimDef.Clone());
 
   symbols.PutSymbolFunction("substr", StdLib::SubStr, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2, 3), FuncDef::OneArg(Str::TypeInstance) });
-  symbols.PutSymbolFunction("compare", StdLib::Compare, FuncDef { FuncDef::ManyArgs(Str::TypeInstance, 2), FuncDef::OneArg(Int::TypeInstance) });
+
+  FuncDef compareDef { FuncDef::ManyArgs(Str::TypeInstance, 2), FuncDef::OneArg(Int::TypeInstance) };
+  symbols.PutSymbolFunction("compare", StdLib::Compare, compareDef.Clone());
+  symbols.PutSymbolFunction("find", StdLib::Find, compareDef.Clone());
+  symbols.PutSymbolFunction("rfind", StdLib::RFind, compareDef.Clone());
 
   FuncDef containsDef { FuncDef::ManyArgs(Str::TypeInstance, 2), FuncDef::OneArg(Bool::TypeInstance) };
   symbols.PutSymbolFunction("contains", StdLib::Contains, containsDef.Clone()); 
@@ -1081,7 +1085,6 @@ bool StdLib::SubStr(EvaluationContext &ctx) {
     return false;
 }
 
-
 template<class F>
 bool BinaryStrFunction(EvaluationContext &ctx, F fn) {
   auto arg1 = std::move(ctx.Args.front());
@@ -1098,6 +1101,18 @@ bool BinaryStrFunction(EvaluationContext &ctx, F fn) {
   }
   else
     return false;
+}
+
+bool StdLib::Find(EvaluationContext &ctx) {
+  return BinaryStrFunction(ctx, [&ctx](const std::string &haystack, const std::string &needle) {
+    ctx.Expr.reset(new Int(haystack.find(needle)));
+  });
+}
+
+bool StdLib::RFind(EvaluationContext &ctx) {
+  return BinaryStrFunction(ctx, [&ctx](const std::string &haystack, const std::string &needle) {
+    ctx.Expr.reset(new Int(haystack.rfind(needle)));
+  });
 }
 
 bool StdLib::Compare(EvaluationContext &ctx) {

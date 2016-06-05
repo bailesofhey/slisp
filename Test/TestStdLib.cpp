@@ -968,6 +968,58 @@ TEST_F(StdLibStrTest, TestEndsWith) {
   ASSERT_TRUE(RunSuccess("(endswith \"abab\" \"ab\")", "true"));
 }
 
+TEST_F(StdLibStrTest, TestFind) {
+  ASSERT_TRUE(RunFail("(find)"));
+  ASSERT_TRUE(RunFail("(find 3 3)"));
+  ASSERT_TRUE(RunFail("(find \"aa\")"));
+  ASSERT_TRUE(RunFail("(find \"aa\" \"bb\" \"cc\")"));
+  ASSERT_TRUE(RunSuccess("(find \"\" \"\")", "0"));
+  ASSERT_TRUE(RunSuccess("(find \"a\" \"\")", "0"));
+  ASSERT_TRUE(RunSuccess("(find \"\" \"a\")", "-1"));
+  ASSERT_TRUE(RunSuccess("(find \"a\" \"a\")", "0"));
+  ASSERT_TRUE(RunSuccess("(find \"b\" \"a\")", "-1"));
+  ASSERT_TRUE(RunSuccess("(find \"a\" \"b\")", "-1"));
+  ASSERT_TRUE(RunSuccess("(find \"ab\" \"b\")", "1"));
+  ASSERT_TRUE(RunSuccess("(find \"a\" \"ab\")", "-1"));
+
+  ASSERT_TRUE(RunSuccess("(find \"abc\" \"a\")", "0"));
+  ASSERT_TRUE(RunSuccess("(find \"abc\" \"b\")", "1"));
+  ASSERT_TRUE(RunSuccess("(find \"abc\" \"c\")", "2"));
+  ASSERT_TRUE(RunSuccess("(find \"abc\" \"ab\")", "0"));
+  ASSERT_TRUE(RunSuccess("(find \"abc\" \"bc\")", "1"));
+  ASSERT_TRUE(RunSuccess("(find \"abc\" \"ac\")", "-1"));
+  ASSERT_TRUE(RunSuccess("(find \"abc\" \"abc\")", "0"));
+  ASSERT_TRUE(RunSuccess("(find \"abc\" \"abcd\")", "-1"));
+
+  ASSERT_TRUE(RunSuccess("(find \"abab\" \"ab\")", "0"));
+}
+
+TEST_F(StdLibStrTest, TestRFind) {
+  ASSERT_TRUE(RunFail("(rfind)"));
+  ASSERT_TRUE(RunFail("(rfind 3 3)"));
+  ASSERT_TRUE(RunFail("(rfind \"aa\")"));
+  ASSERT_TRUE(RunFail("(rfind \"aa\" \"bb\" \"cc\")"));
+  ASSERT_TRUE(RunSuccess("(rfind \"\" \"\")", "0"));
+  ASSERT_TRUE(RunSuccess("(rfind \"a\" \"\")", "1"));
+  ASSERT_TRUE(RunSuccess("(rfind \"\" \"a\")", "-1"));
+  ASSERT_TRUE(RunSuccess("(rfind \"a\" \"a\")", "0"));
+  ASSERT_TRUE(RunSuccess("(rfind \"b\" \"a\")", "-1"));
+  ASSERT_TRUE(RunSuccess("(rfind \"a\" \"b\")", "-1"));
+  ASSERT_TRUE(RunSuccess("(rfind \"ab\" \"b\")", "1"));
+  ASSERT_TRUE(RunSuccess("(rfind \"a\" \"ab\")", "-1"));
+
+  ASSERT_TRUE(RunSuccess("(rfind \"abc\" \"a\")", "0"));
+  ASSERT_TRUE(RunSuccess("(rfind \"abc\" \"b\")", "1"));
+  ASSERT_TRUE(RunSuccess("(rfind \"abc\" \"c\")", "2"));
+  ASSERT_TRUE(RunSuccess("(rfind \"abc\" \"ab\")", "0"));
+  ASSERT_TRUE(RunSuccess("(rfind \"abc\" \"bc\")", "1"));
+  ASSERT_TRUE(RunSuccess("(rfind \"abc\" \"ac\")", "-1"));
+  ASSERT_TRUE(RunSuccess("(rfind \"abc\" \"abc\")", "0"));
+  ASSERT_TRUE(RunSuccess("(rfind \"abc\" \"abcd\")", "-1"));
+
+  ASSERT_TRUE(RunSuccess("(rfind \"abab\" \"ab\")", "2"));
+}
+
 void StdLibStrTest::RunHeadTest() {
   ASSERT_TRUE(RunFail("(head)"));
   ASSERT_TRUE(RunFail("(head 4)"));
