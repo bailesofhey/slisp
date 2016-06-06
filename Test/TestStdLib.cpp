@@ -1113,6 +1113,37 @@ TEST_F(StdLibStrTest, TestJoin) {
   ASSERT_TRUE(RunSuccess("(join (\"a\" \"b\") \":\" false)", "\"a:b\""));
   ASSERT_TRUE(RunSuccess("(join (\"\" \"a\" \"b\" \"\") \":\" false)", "\":a:b:\""));
   ASSERT_TRUE(RunSuccess("(join (\"\" \"\" \"\" \"a\" \"\" \"b\" \"\" \"\" \"\" \"\") \":\" false)", "\":::a::b::::\""));
+
+  ASSERT_TRUE(RunFail("(join (1) \":\")"));
+}
+
+TEST_F(StdLibStrTest, TestFormat) {
+  ASSERT_TRUE(RunFail("(format)"));
+  ASSERT_TRUE(RunFail("(format 3)"));
+
+  ASSERT_TRUE(RunSuccess("(format \"\")", "\"\""));
+  ASSERT_TRUE(RunSuccess("(format \"foo\")", "\"foo\""));
+  ASSERT_TRUE(RunFail("(format \"{\")"));
+  ASSERT_TRUE(RunSuccess("(format \"{{\")", "\"{\""));
+  ASSERT_TRUE(RunFail("(format \"}\")"));
+  ASSERT_TRUE(RunSuccess("(format \"}}\")", "\"}\""));
+  ASSERT_TRUE(RunSuccess("(format \"foo}}\")", "\"foo}\""));
+  ASSERT_TRUE(RunSuccess("(format \"foo}}bar\")", "\"foo}bar\""));
+  ASSERT_TRUE(RunSuccess("(format \"{{}}\")", "\"{}\""));
+  ASSERT_TRUE(RunSuccess("(format \"{}\" \"bar\")", "\"bar\""));
+  ASSERT_TRUE(RunSuccess("(format \"{{}}\" \"bar\")", "\"{}\""));
+  ASSERT_TRUE(RunSuccess("(format \"{{{}}}\" \"bar\")", "\"{bar}\""));
+
+  ASSERT_TRUE(RunSuccess("(format \"{{this should be enclosed in curlies}}\")", "\"{this should be enclosed in curlies}\""));
+  ASSERT_TRUE(RunSuccess("(format \"hello, {} {}!\" \"john\" \"doe\")", "\"hello, john doe!\""));
+
+  ASSERT_TRUE(RunSuccess("(format \"hello, {{{} {}}}!\" \"john\" \"doe\")", "\"hello, {john doe}!\""));
+
+
+  ASSERT_TRUE(RunSuccess("(format \"hello, {0} {1}!\" \"john\" \"doe\")", "\"hello, john doe!\""));
+  ASSERT_TRUE(RunSuccess("firstName = \"john\"", "john"));
+  ASSERT_TRUE(RunSuccess("lastName = \"doe\"", "doe"));
+  ASSERT_TRUE(RunSuccess("(format \"hello, {firstName} {lastName}!\")", "\"hello, john doe!\""));
 }
 
 void StdLibStrTest::RunHeadTest() {

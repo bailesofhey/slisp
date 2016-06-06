@@ -118,6 +118,7 @@ class StdLib: public Library {
     static bool Replace(EvaluationContext &ctx);
     static bool Split(EvaluationContext &ctx);
     static bool Join(EvaluationContext &ctx);
+    static bool Format(EvaluationContext &ctx);
 
     // Lists
     static bool AddList(EvaluationContext &ctx);

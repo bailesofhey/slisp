@@ -5,6 +5,8 @@
 #include <iterator>
 #include <iomanip>
 #include <cctype>
+#include <cstdio>
+#include <cstdarg>
 
 #include "StdLib.h"
 #include "../Interpreter.h"
@@ -179,6 +181,8 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("split", StdLib::Split, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2, 3), FuncDef::OneArg(Quote::TypeInstance) });
   symbols.PutSymbolFunction("join", StdLib::Join, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2, 3), FuncDef::OneArg(Str::TypeInstance) });
 
+  symbols.PutSymbolFunction("format", StdLib::Format, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 1, ArgDef::ANY_ARGS), FuncDef::OneArg(Str::TypeInstance) });
+  
   // Logical
 
   symbols.PutSymbolBool("true", true);
@@ -1287,6 +1291,99 @@ bool StdLib::Join(EvaluationContext &ctx) {
   }
   else
      return false;
+}
+
+bool StdLib::Format(EvaluationContext &ctx) {
+  auto patternArg = std::move(ctx.Args.front());
+  ctx.Args.pop_front();
+  if (auto patternValue = ctx.GetRequiredValue<Str>(patternArg)) {
+    std::vector<ExpressionPtr> formatValues;
+    std::string &pattern = patternValue->Value;
+    std::stringstream ss;
+    size_t offset = 0;
+    size_t lastOpenCurly = std::string::npos;
+    size_t lastCloseCurly = std::string::npos;
+    size_t lastCharIdx = pattern.length() - 1;
+    size_t lastFormatValueIdx = 0;
+    bool more = true;
+
+    while (!ctx.Args.empty()) {
+      formatValues.push_back(std::move(ctx.Args.front()));
+      ctx.Args.pop_front();
+    }
+
+    while (more) {
+      lastOpenCurly = pattern.find("{", offset);
+      if (lastOpenCurly == std::string::npos) {
+        do {
+          lastCloseCurly = pattern.find("}", offset);
+          if (lastCloseCurly == std::string::npos)
+            break;
+
+          if (lastCloseCurly == lastCharIdx || pattern[lastCloseCurly + 1] != '}')
+            return ctx.Error("pattern has unmatched }");
+
+          ss << pattern.substr(offset, (lastCloseCurly - offset) + 1);
+          offset = lastCloseCurly + 2;
+        } while (lastCloseCurly != std::string::npos);
+
+        lastOpenCurly = lastCharIdx + 1;
+        more = false;
+      }
+      else if (lastOpenCurly == lastCharIdx)
+        return ctx.Error("pattern has unmatched {");
+
+      ss << pattern.substr(offset, lastOpenCurly - offset);
+      if (more) {
+        char afterCurly = pattern[lastOpenCurly + 1];
+        if (afterCurly == '{') {
+          ss << "{";
+          offset = lastOpenCurly + 2;
+        }
+        else {
+          lastCloseCurly = pattern.find("}", lastOpenCurly);
+          if (lastCloseCurly == std::string::npos)
+            return ctx.Error("pattern has matched {");
+
+          std::string specifier = "";
+          if ((lastCloseCurly - lastOpenCurly) > 1)
+            specifier.assign(pattern, lastOpenCurly + 1, (lastCloseCurly - lastOpenCurly - 1));
+
+          size_t formatValueIdx = -1;
+          ExpressionPtr formatValue;
+          if (specifier.empty()) {
+            formatValueIdx = lastFormatValueIdx;
+            ++lastFormatValueIdx; 
+          }
+          else if (std::isdigit(specifier[0])) {
+            formatValueIdx = std::atoi(specifier.c_str());
+          }
+
+          if (formatValueIdx != -1) {
+            if (formatValueIdx >= formatValues.size()) 
+              return ctx.Error("format value index " + std::to_string(formatValueIdx) + " is out of range");
+            formatValue = formatValues[formatValueIdx]->Clone();
+          }
+          else {
+            if (!ctx.Interp.GetCurrentStackFrame().GetSymbol(specifier, formatValue))
+              return ctx.Error("format specifier \"" + specifier + "\" not found");
+          }
+
+          if (auto strFormatValue = TypeHelper::GetValue<Str>(formatValue))
+            ss << strFormatValue->Value;
+          else
+            formatValue->Print(ss);
+
+          offset = lastCloseCurly + 1;
+        }
+      }
+    }
+
+    ctx.Expr.reset(new Str(ss.str()));
+    return true;
+  }
+  else
+    return false;
 }
 
 bool StdLib::AddStr(EvaluationContext &ctx) {
