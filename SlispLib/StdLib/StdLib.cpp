@@ -1293,6 +1293,59 @@ bool StdLib::Join(EvaluationContext &ctx) {
      return false;
 }
 
+bool FormatSpecifier(EvaluationContext &ctx, std::stringstream &ss, const std::string &pattern, std::vector<ExpressionPtr> &formatValues, size_t &lastOpenCurly, size_t &lastCloseCurly, size_t &lastFormatValueIdx) {
+  lastCloseCurly = pattern.find("}", lastOpenCurly);
+  if (lastCloseCurly == std::string::npos)
+    return ctx.Error("pattern has matched {");
+
+  std::string specifier = "";
+  if ((lastCloseCurly - lastOpenCurly) > 1)
+    specifier.assign(pattern, lastOpenCurly + 1, (lastCloseCurly - lastOpenCurly - 1));
+
+  size_t formatValueIdx = -1;
+  ExpressionPtr formatValue;
+  if (specifier.empty()) {
+    formatValueIdx = lastFormatValueIdx;
+    ++lastFormatValueIdx; 
+  }
+  else if (std::isdigit(specifier[0])) {
+    formatValueIdx = std::atoi(specifier.c_str());
+  }
+
+  if (formatValueIdx != -1) {
+    if (formatValueIdx >= formatValues.size()) 
+      return ctx.Error("format value index " + std::to_string(formatValueIdx) + " is out of range");
+    formatValue = formatValues[formatValueIdx]->Clone();
+  }
+  else {
+    if (!ctx.Interp.GetCurrentStackFrame().GetSymbol(specifier, formatValue))
+      return ctx.Error("format specifier \"" + specifier + "\" not found");
+  }
+
+  if (auto strFormatValue = TypeHelper::GetValue<Str>(formatValue))
+    ss << strFormatValue->Value;
+  else
+    formatValue->Print(ss);
+
+  return true;
+}
+
+bool HandleRemainingCloseCurlies(EvaluationContext &ctx, std::stringstream &ss, const std::string &pattern, size_t &offset, size_t &lastCloseCurly, size_t &lastCharIdx) {
+  do {
+    lastCloseCurly = pattern.find("}", offset);
+    if (lastCloseCurly == std::string::npos)
+      break;
+
+    if (lastCloseCurly == lastCharIdx || pattern[lastCloseCurly + 1] != '}')
+      return ctx.Error("pattern has unmatched }");
+
+    ss << pattern.substr(offset, (lastCloseCurly - offset) + 1);
+    offset = lastCloseCurly + 2;
+  } while (lastCloseCurly != std::string::npos);
+
+  return true;
+}
+
 bool StdLib::Format(EvaluationContext &ctx) {
   auto patternArg = std::move(ctx.Args.front());
   ctx.Args.pop_front();
@@ -1315,18 +1368,8 @@ bool StdLib::Format(EvaluationContext &ctx) {
     while (more) {
       lastOpenCurly = pattern.find("{", offset);
       if (lastOpenCurly == std::string::npos) {
-        do {
-          lastCloseCurly = pattern.find("}", offset);
-          if (lastCloseCurly == std::string::npos)
-            break;
-
-          if (lastCloseCurly == lastCharIdx || pattern[lastCloseCurly + 1] != '}')
-            return ctx.Error("pattern has unmatched }");
-
-          ss << pattern.substr(offset, (lastCloseCurly - offset) + 1);
-          offset = lastCloseCurly + 2;
-        } while (lastCloseCurly != std::string::npos);
-
+        if (!HandleRemainingCloseCurlies(ctx, ss, pattern, offset, lastCloseCurly, lastCharIdx))
+          return false;
         lastOpenCurly = lastCharIdx + 1;
         more = false;
       }
@@ -1341,39 +1384,8 @@ bool StdLib::Format(EvaluationContext &ctx) {
           offset = lastOpenCurly + 2;
         }
         else {
-          lastCloseCurly = pattern.find("}", lastOpenCurly);
-          if (lastCloseCurly == std::string::npos)
-            return ctx.Error("pattern has matched {");
-
-          std::string specifier = "";
-          if ((lastCloseCurly - lastOpenCurly) > 1)
-            specifier.assign(pattern, lastOpenCurly + 1, (lastCloseCurly - lastOpenCurly - 1));
-
-          size_t formatValueIdx = -1;
-          ExpressionPtr formatValue;
-          if (specifier.empty()) {
-            formatValueIdx = lastFormatValueIdx;
-            ++lastFormatValueIdx; 
-          }
-          else if (std::isdigit(specifier[0])) {
-            formatValueIdx = std::atoi(specifier.c_str());
-          }
-
-          if (formatValueIdx != -1) {
-            if (formatValueIdx >= formatValues.size()) 
-              return ctx.Error("format value index " + std::to_string(formatValueIdx) + " is out of range");
-            formatValue = formatValues[formatValueIdx]->Clone();
-          }
-          else {
-            if (!ctx.Interp.GetCurrentStackFrame().GetSymbol(specifier, formatValue))
-              return ctx.Error("format specifier \"" + specifier + "\" not found");
-          }
-
-          if (auto strFormatValue = TypeHelper::GetValue<Str>(formatValue))
-            ss << strFormatValue->Value;
-          else
-            formatValue->Print(ss);
-
+          if (!FormatSpecifier(ctx, ss, pattern, formatValues, lastOpenCurly, lastCloseCurly, lastFormatValueIdx))
+            return false;
           offset = lastCloseCurly + 1;
         }
       }
