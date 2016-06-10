@@ -172,28 +172,28 @@ TEST_F(StdLibDefaultFunctionTest, TestInfix_InsideBegin) {
 class StdLibInterpreterTest: public StdLibTest {
 };
 
-TEST_F(StdLibInterpreterTest, TestPrint) {
-  ASSERT_TRUE(RunSuccess("(print)", ""));
-  ASSERT_TRUE(RunFail("(print a)"));
-  ASSERT_TRUE(RunSuccess("(print 42)", "42"));
+TEST_F(StdLibInterpreterTest, TestDisplay) {
+  ASSERT_TRUE(RunSuccess("(display)", ""));
+  ASSERT_TRUE(RunFail("(display a)"));
+  ASSERT_TRUE(RunSuccess("(display 42)", "42"));
   ASSERT_EQ(2, NOutputLines);
-  ASSERT_TRUE(RunSuccess("(print \"\")", "\"\""));
-  ASSERT_TRUE(RunSuccess("(print \"foo\")", "\"foo\""));
-  ASSERT_TRUE(RunSuccess("(print +)", "Function"));
+  ASSERT_TRUE(RunSuccess("(display \"\")", "\"\""));
+  ASSERT_TRUE(RunSuccess("(display \"foo\")", "\"foo\""));
+  ASSERT_TRUE(RunSuccess("(display +)", "Function"));
 
-  const char *list = "(print (1 2 3))";
+  const char *list = "(display (1 2 3))";
   ASSERT_TRUE(RunSuccess(list, "1"));
   ASSERT_EQ(2, NOutputLines);
   ASSERT_TRUE(RunSuccess(list, "2"));
   ASSERT_TRUE(RunSuccess(list, "3"));
 
-  const char *unWrappedList = "(print 1 2 3)";
+  const char *unWrappedList = "(display 1 2 3)";
   ASSERT_TRUE(RunSuccess(unWrappedList, "1"));
   ASSERT_EQ(4, NOutputLines);
   ASSERT_TRUE(RunSuccess(unWrappedList, "2"));
   ASSERT_TRUE(RunSuccess(unWrappedList, "3"));
 
-  const char *variadic = "(print 42 \"foo\" + (1 2 3))"; 
+  const char *variadic = "(display 42 \"foo\" + (1 2 3))"; 
   ASSERT_TRUE(RunSuccess(variadic, "42"));
   ASSERT_EQ(5, NOutputLines);
   ASSERT_TRUE(RunSuccess(variadic, "\"foo\""));
@@ -784,7 +784,7 @@ TEST_F(StdLibStrTest, TestForeach) {
   ASSERT_TRUE(RunSuccess("r", "cba"));
 
   ASSERT_TRUE(RunSuccess("r = \"\"", ""));
-  ASSERT_TRUE(RunSuccess("(foreach s (fn (c) (print (+ c c))))", "\"aa\"\n\"bb\"\n\"cc\""));
+  ASSERT_TRUE(RunSuccess("(foreach s (fn (c) (display (+ c c))))", "\"aa\"\n\"bb\"\n\"cc\""));
 
   //ASSERT_TRUE(RunSuccess("(foreach c in s (c = \"a\"))", "aaa"));
   //ASSERT_TRUE(RunSuccess("s", "aaa"));

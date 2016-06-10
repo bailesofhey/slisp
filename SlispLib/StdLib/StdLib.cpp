@@ -39,7 +39,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   // Interpreter
 
-  symbols.PutSymbolFunction("print", &StdLib::Print, FuncDef { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() });
+  symbols.PutSymbolFunction("display", &StdLib::Display, FuncDef { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() });
   symbols.PutSymbolFunction("quit", &StdLib::Quit, FuncDef { FuncDef::NoArgs(), FuncDef::NoArgs() });
   symbols.PutSymbolFunction("help", &StdLib::Help, FuncDef { FuncDef::AnyArgs(Symbol::TypeInstance), FuncDef::NoArgs() });
 
@@ -334,7 +334,7 @@ bool StdLib::EvaluateListSexp(EvaluationContext &ctx) {
   if (ctx.Evaluate(listExpr, "list")) {
     ctx.Args.clear();
     ctx.Args.push_back(std::move(listExpr));
-    return Print(ctx);
+    return Display(ctx);
   }
   else
     return false; 
@@ -343,10 +343,10 @@ bool StdLib::EvaluateListSexp(EvaluationContext &ctx) {
 bool StdLib::DefaultFunction(EvaluationContext &ctx) {
   if (ctx.Args.size() > 1)
     return EvaluateListSexp(ctx);
-  return Print(ctx);
+  return Display(ctx);
 }
 
-bool StdLib::Print(EvaluationContext &ctx) {
+bool StdLib::Display(EvaluationContext &ctx) {
   ExpressionPtr curr;
   auto &cmdInterface = ctx.Interp.GetCommandInterface();
   int argNum = 1;
@@ -680,9 +680,9 @@ bool StdLib::Min(EvaluationContext &ctx) {
   return GenericNumFunc(ctx, StdLib::MinInt, StdLib::MinFloat);
 }
 
-// (foreach e lst (print e))
-// (foreach e in lst (print e))
-// (foreach lst print)
+// (foreach e lst (display e))
+// (foreach e in lst (display e))
+// (foreach lst display)
 bool StdLib::Foreach(EvaluationContext &ctx) {
   auto firstArg = std::move(ctx.Args.front());
   ctx.Args.pop_front();
