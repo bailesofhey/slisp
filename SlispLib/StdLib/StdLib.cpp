@@ -41,6 +41,7 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("display", &StdLib::Display, dispDef.Clone());
   symbols.PutSymbolFunction("print", &StdLib::Print, dispDef.Clone());
 
+  symbols.PutSymbolFunction("prompt", &StdLib::Prompt, FuncDef { FuncDef::ManyArgs(Str::TypeInstance, 0, 1), FuncDef::OneArg(Str::TypeInstance) });
   symbols.PutSymbolFunction("quit", &StdLib::Quit, FuncDef { FuncDef::NoArgs(), FuncDef::NoArgs() });
   symbols.PutSymbolFunction("help", &StdLib::Help, FuncDef { FuncDef::AnyArgs(Symbol::TypeInstance), FuncDef::NoArgs() });
 
@@ -378,6 +379,25 @@ bool StdLib::Display(EvaluationContext &ctx) {
 
 bool StdLib::Print(EvaluationContext &ctx) {
   return Render(ctx, false);
+}
+
+bool StdLib::Prompt(EvaluationContext &ctx) {
+  std::string prefix; 
+  if (!ctx.Args.empty()) {
+    if (auto *prefixValue = ctx.GetRequiredValue<Str>(ctx.Args.front()))
+      prefix = prefixValue->Value; 
+    else
+      return false;
+  }
+
+  auto &cmdInt = ctx.Interp.GetCommandInterface();
+  std::string inputLine;
+  if (cmdInt.ReadLine(prefix, inputLine)) {
+    ctx.Expr.reset(new Str(inputLine));
+    return true;
+  }
+  else
+    return ctx.Error("ReadLine failed");
 }
 
 bool StdLib::Quit(EvaluationContext &ctx) {

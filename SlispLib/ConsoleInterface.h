@@ -16,8 +16,7 @@ class ConsoleInterface: public CommandInterface {
     virtual bool HasMore() const override;
     virtual void Reset() override;
 
-    virtual bool ReadInputLine(std::string &input) override;
-    virtual bool ReadContinuedInputLine(std::string &input) override;
+    virtual bool ReadLine(const std::string &prefix, std::string &input) override;
     virtual bool WriteOutputLine(const std::string &output) override;
     virtual bool WriteError(const std::string &error) override;
 
@@ -30,6 +29,4 @@ class ConsoleInterface: public CommandInterface {
     std::istream *In;
     std::ostream *Out;
     bool HasMore_;
-
-    bool ReadLine(const std::string &prefix, std::string &input);
 };

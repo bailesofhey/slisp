@@ -14,14 +14,13 @@ class TestCommandInterface: public CommandInterface {
     bool Result;
     bool HasMore_;
 
-    TestCommandInterface(): Result(true)                             { Reset(); }
-    virtual ~TestCommandInterface() override                         {}
-    virtual void Reset()                                             { HasMore_ = true;}
-    virtual bool HasMore() const override                            { return HasMore_; }
-    virtual bool ReadInputLine(std::string &input) override          {input = Input; HasMore_ = false; return Result; }
-    virtual bool ReadContinuedInputLine(std::string &input) override { return ReadInputLine(input); }
-    virtual bool WriteOutputLine(const std::string &output) override { Output = output; return Result; }
-    virtual bool WriteError(const std::string &error)       override { Error = error; return Result; }
+    TestCommandInterface(): Result(true)                                          { Reset(); }
+    virtual ~TestCommandInterface() override                                      { }
+    virtual void Reset()                                                          { HasMore_ = true;}
+    virtual bool HasMore() const override                                         { return HasMore_; }
+    virtual bool ReadLine(const std::string &prefix, std::string &input) override { input = Input; HasMore_ = false; return Result; }
+    virtual bool WriteOutputLine(const std::string &output) override              { Output = output; return Result; }
+    virtual bool WriteError(const std::string &error)       override              { Error = error; return Result; }
 };
 
 class TestTokenizer: public ITokenizer {

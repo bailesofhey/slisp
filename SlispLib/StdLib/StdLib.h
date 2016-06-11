@@ -15,6 +15,7 @@ class StdLib: public Library {
     static bool DefaultFunction(EvaluationContext &ctx);
     static bool Display(EvaluationContext &ctx);
     static bool Print(EvaluationContext &ctx);
+    static bool Prompt(EvaluationContext &ctx);
     static bool Quit(EvaluationContext &ctx);
     static bool Help(EvaluationContext &ctx);
     static bool InfixRegister(EvaluationContext &ctx);

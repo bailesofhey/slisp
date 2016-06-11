@@ -178,6 +178,12 @@ TEST_F(StdLibInterpreterTest, TestPrint) {
   ASSERT_TRUE(RunSuccess("(print \"foo\")", "foo"));
 }
 
+TEST_F(StdLibInterpreterTest, TestPrompt) {
+  ASSERT_TRUE(RunSuccess("(prompt)\nfoo\n", "\"foo\""));
+  ASSERT_TRUE(RunSuccess("(prompt \"name: \")\nJohn\n", "name: "));
+  ASSERT_TRUE(RunSuccess("(prompt \"name: \")\nJohn\n", "\"John\""));
+}
+
 TEST_F(StdLibInterpreterTest, TestDisplay) {
   ASSERT_TRUE(RunSuccess("(display)", ""));
   ASSERT_TRUE(RunFail("(display a)"));

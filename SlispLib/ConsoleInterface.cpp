@@ -24,12 +24,13 @@ bool ConsoleInterface::HasMore() const {
   return HasMore_;
 }
 
-bool ConsoleInterface::ReadInputLine(string &input) {
-  return ReadLine(">>> ", input);
-}
-
-bool ConsoleInterface::ReadContinuedInputLine(string &input) {
-  return ReadLine("... ", input);
+bool ConsoleInterface::ReadLine(const string &prefix, string &input) {
+  *Out << prefix;
+  getline(*In, input);
+  HasMore_ = !In->eof();
+  if (!HasMore_)
+    In->clear();
+  return true;
 }
 
 bool ConsoleInterface::WriteOutputLine(const string &output) {
@@ -57,13 +58,4 @@ void ConsoleInterface::SetOutput() {
 
 void ConsoleInterface::SetOutput(std::ostream &out) {
   Out = &out;
-}
-
-bool ConsoleInterface::ReadLine(const string &prefix, string &input) {
-  *Out << prefix;
-  getline(*In, input);
-  HasMore_ = !In->eof();
-  if (!HasMore_)
-    In->clear();
-  return true;
 }
