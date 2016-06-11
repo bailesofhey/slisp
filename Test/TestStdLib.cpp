@@ -172,6 +172,12 @@ TEST_F(StdLibDefaultFunctionTest, TestInfix_InsideBegin) {
 class StdLibInterpreterTest: public StdLibTest {
 };
 
+TEST_F(StdLibInterpreterTest, TestPrint) {
+  ASSERT_TRUE(RunSuccess("(print)", ""));
+  ASSERT_TRUE(RunSuccess("(print 42)", "42"));
+  ASSERT_TRUE(RunSuccess("(print \"foo\")", "foo"));
+}
+
 TEST_F(StdLibInterpreterTest, TestDisplay) {
   ASSERT_TRUE(RunSuccess("(display)", ""));
   ASSERT_TRUE(RunFail("(display a)"));
@@ -2064,7 +2070,7 @@ TEST_F(StdLibOperatorsTest, TestStr) {
   ASSERT_TRUE(RunSuccess("(str 0)", "\"0\""));
   ASSERT_TRUE(RunSuccess("(str 1)", "\"1\""));
   ASSERT_TRUE(RunSuccess("(str 3)", "\"3\""));
-  ASSERT_TRUE(RunSuccess("(str 3.14)", "\"3.14\""));
+  ASSERT_TRUE(RunSuccess("(str 3.14)", "\"3.1400000000000001\""));
 
   ASSERT_TRUE(RunSuccess("(str \"\")", "\"\""));
   ASSERT_TRUE(RunSuccess("(str \"foo\")", "\"foo\""));

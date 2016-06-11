@@ -3,7 +3,6 @@
 #include <sstream>
 #include <algorithm>
 #include <iterator>
-#include <iomanip>
 #include <cctype>
 #include <cstdio>
 #include <cstdarg>
@@ -38,8 +37,10 @@ void StdLib::Load(Interpreter &interpreter) {
   }); 
 
   // Interpreter
+  FuncDef dispDef { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() };
+  symbols.PutSymbolFunction("display", &StdLib::Display, dispDef.Clone());
+  symbols.PutSymbolFunction("print", &StdLib::Print, dispDef.Clone());
 
-  symbols.PutSymbolFunction("display", &StdLib::Display, FuncDef { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() });
   symbols.PutSymbolFunction("quit", &StdLib::Quit, FuncDef { FuncDef::NoArgs(), FuncDef::NoArgs() });
   symbols.PutSymbolFunction("help", &StdLib::Help, FuncDef { FuncDef::AnyArgs(Symbol::TypeInstance), FuncDef::NoArgs() });
 
@@ -346,17 +347,20 @@ bool StdLib::DefaultFunction(EvaluationContext &ctx) {
   return Display(ctx);
 }
 
-bool StdLib::Display(EvaluationContext &ctx) {
+bool StdLib::Render(EvaluationContext &ctx, bool isDisplay) {
   ExpressionPtr curr;
   auto &cmdInterface = ctx.Interp.GetCommandInterface();
   int argNum = 1;
   while (!ctx.Args.empty()) {
     std::stringstream out;
-    out << std::setprecision(17);
     curr = std::move(ctx.Args.front());
     ctx.Args.pop_front();
     if (ctx.Evaluate(curr, argNum)) {
-      out << *curr << std::endl;
+      if (isDisplay)
+        out << *curr; 
+      else
+        curr->Print(out);
+      out << std::endl;
       cmdInterface.WriteOutputLine(out.str());
     }
     else
@@ -366,6 +370,14 @@ bool StdLib::Display(EvaluationContext &ctx) {
 
   ctx.Expr = GetNil();
   return true;
+}
+
+bool StdLib::Display(EvaluationContext &ctx) {
+  return Render(ctx, true);
+}
+
+bool StdLib::Print(EvaluationContext &ctx) {
+  return Render(ctx, false);
 }
 
 bool StdLib::Quit(EvaluationContext &ctx) {
@@ -1322,10 +1334,7 @@ bool FormatSpecifier(EvaluationContext &ctx, std::stringstream &ss, const std::s
       return ctx.Error("format specifier \"" + specifier + "\" not found");
   }
 
-  if (auto strFormatValue = TypeHelper::GetValue<Str>(formatValue))
-    ss << strFormatValue->Value;
-  else
-    formatValue->Print(ss);
+  formatValue->Print(ss);
 
   return true;
 }

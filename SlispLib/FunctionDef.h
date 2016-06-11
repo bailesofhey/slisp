@@ -108,7 +108,7 @@ struct Function: public Literal {
   explicit Function(FuncDef &&func);
   explicit Function(FuncDef &&func, ExpressionPtr &sym);
   explicit Function(const Function &rhs);
-  virtual void Print(std::ostream &out) const override;
+  virtual void Display(std::ostream &out) const override;
   bool operator==(const Function &rhs) const;
 };
 using FunctionPtr = std::unique_ptr<Function>;

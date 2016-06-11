@@ -349,7 +349,7 @@ Function::Function(const Function &rhs):
     Symbol = rhs.Symbol->Clone();
 }
 
-void Function::Print(std::ostream &out) const {
+void Function::Display(std::ostream &out) const {
   out << "<Function";
   if (Symbol) {
     if (auto *sym = dynamic_cast<::Symbol*>(Symbol.get()))

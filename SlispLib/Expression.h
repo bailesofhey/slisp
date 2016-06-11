@@ -36,7 +36,8 @@ struct Expression {
   virtual ~Expression();
   virtual ExpressionPtr Clone() const = 0;
   virtual ExpressionPtr New() const;
-  virtual void Print(std::ostream& out) const = 0;
+  virtual void Display(std::ostream& out) const = 0;
+  virtual void Print(std::ostream& out) const;
   const std::string ToString() const;
   virtual bool operator==(const Expression &rhs) const = 0;
   bool operator!=(const Expression &rhs) const;
@@ -80,7 +81,7 @@ struct Bool: public Literal {
   explicit Bool();
   explicit Bool(bool value);
   virtual ExpressionPtr Clone() const override;
-  virtual void Print(std::ostream& out) const override;
+  virtual void Display(std::ostream& out) const override;
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Bool &rhs) const;
   bool operator!=(const Bool &rhs) const;
@@ -99,7 +100,7 @@ struct Int: public Literal {
   explicit Int();
   explicit Int(int64_t value);
   virtual ExpressionPtr Clone() const override;
-  virtual void Print(std::ostream& out) const override;
+  virtual void Display(std::ostream& out) const override;
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Int &rhs) const;
   bool operator!=(const Int &rhs) const;
@@ -118,7 +119,7 @@ struct Float: public Literal {
   explicit Float();
   explicit Float(double value);
   virtual ExpressionPtr Clone() const override;
-  virtual void Print(std::ostream& out) const override;
+  virtual void Display(std::ostream& out) const override;
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Float &rhs) const;
   bool operator!=(const Float &rhs) const;
@@ -137,7 +138,8 @@ struct Str: public Literal, IIterable {
   explicit Str();
   explicit Str(const std::string& value);
   virtual ExpressionPtr Clone() const override;
-  virtual void Print(std::ostream& out) const;
+  virtual void Display(std::ostream& out) const override;
+  virtual void Print(std::ostream& out) const override;
   virtual IteratorPtr GetIterator();
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Str &rhs) const;
@@ -167,6 +169,7 @@ struct Quote: public Literal, IIterable {
 
   explicit Quote(ExpressionPtr &&expr);
   virtual ExpressionPtr Clone() const override;
+  virtual void Display(std::ostream& out) const override;
   virtual void Print(std::ostream& out) const override;
   virtual IteratorPtr GetIterator();
   virtual bool operator==(const Expression &rhs) const override;
@@ -182,7 +185,7 @@ struct Symbol: public Expression {
 
   explicit Symbol(const std::string& value);
   virtual ExpressionPtr Clone() const override;
-  virtual void Print(std::ostream& out) const override;
+  virtual void Display(std::ostream& out) const override;
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Symbol& rhs) const;
   bool operator!=(const Symbol& rhs) const;
@@ -209,7 +212,7 @@ struct Sexp: public Expression, IIterable {
   explicit Sexp();
   explicit Sexp(ArgList &&args);
   explicit Sexp(std::initializer_list<ExpressionPtr> &&args);
-  virtual void Print(std::ostream& out) const override;
+  virtual void Display(std::ostream& out) const override;
   virtual ExpressionPtr Clone() const override;
   virtual IteratorPtr GetIterator();
   virtual bool operator==(const Expression &rhs) const override;
@@ -237,7 +240,7 @@ struct Ref: public Expression, IIterable {
   explicit Ref(ExpressionPtr &value);
   virtual ExpressionPtr Clone() const override;
   ExpressionPtr NewRef() const;
-  virtual void Print(std::ostream& out) const override;
+  virtual void Display(std::ostream& out) const override;
   virtual IteratorPtr GetIterator();
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Ref &rhs) const;

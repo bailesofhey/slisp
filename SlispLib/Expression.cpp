@@ -3,6 +3,7 @@
 #include <memory>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
 
 #include "Expression.h"
 
@@ -61,8 +62,12 @@ const std::string Expression::ToString() const {
   return ss.str();
 }
 
+void Expression::Print(std::ostream& out) const {
+  Display(out);
+}
+
 std::ostream& operator<<(std::ostream &out, const Expression &expr) {
-  expr.Print(out);
+  expr.Display(out);
   return out;
 };
 
@@ -133,7 +138,7 @@ void Bool::Swap(Bool &rhs) {
   Value = rhs.Value;
 }
 
-void Bool::Print(std::ostream &out) const {
+void Bool::Display(std::ostream &out) const {
   if (Value)
     out << "true";
   else
@@ -193,7 +198,7 @@ void Int::Swap(Int &rhs) {
   Value = rhs.Value;
 }
 
-void Int::Print(std::ostream &out) const {
+void Int::Display(std::ostream &out) const {
   out << Value;
 }
 
@@ -250,8 +255,8 @@ void Float::Swap(Float &rhs) {
   Value = rhs.Value;
 }
 
-void Float::Print(std::ostream &out) const {
-  out << Value;
+void Float::Display(std::ostream &out) const {
+  out << std::setprecision(17) << Value;
 }
 
 ExpressionPtr Float::New() {
@@ -312,8 +317,12 @@ void Str::Swap(Str &rhs) {
   Value = rhs.Value;
 }
 
-void Str::Print(std::ostream &out) const {
+void Str::Display(std::ostream &out) const {
   out << "\"" << Value << "\"";
+}
+
+void Str::Print(std::ostream &out) const {
+  out << Value;
 }
 
 ExpressionPtr Str::New() {
@@ -378,8 +387,12 @@ bool Quote::operator!=(const Quote &rhs) const {
   return !(rhs == *this);
 }
 
-void Quote::Print(std::ostream &out) const {
+void Quote::Display(std::ostream &out) const {
   out << *Value;
+}
+
+void Quote::Print(std::ostream &out) const {
+  Value->Print(out);
 }
 
 ExpressionPtr Quote::New() {
@@ -430,7 +443,7 @@ void Symbol::Swap(Symbol &rhs) {
   Value = rhs.Value;
 }
 
-void Symbol::Print(std::ostream &out) const {
+void Symbol::Display(std::ostream &out) const {
   out << Value;
 }
 
@@ -511,7 +524,7 @@ bool Sexp::operator!=(const Sexp &rhs) const {
   return !(rhs == *this);
 }
 
-void Sexp::Print(std::ostream &out) const {
+void Sexp::Display(std::ostream &out) const {
   out << "(";
   auto argBegin = begin(Args);
   auto argEnd = end(Args);
@@ -567,7 +580,7 @@ ExpressionPtr Ref::NewRef() const {
   return ExpressionPtr { new Ref(Value) }; 
 }
 
-void Ref::Print(std::ostream& out) const {
+void Ref::Display(std::ostream& out) const {
 }
 
 IteratorPtr Ref::GetIterator() {
