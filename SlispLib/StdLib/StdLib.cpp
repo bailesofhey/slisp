@@ -219,6 +219,7 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("map", StdLib::Map, lstTransformDef.Clone());
   symbols.PutSymbolFunction("filter", StdLib::Filter, lstTransformDef.Clone());
   symbols.PutSymbolFunction("reduce", StdLib::Reduce, FuncDef { FuncDef::Args({&Function::TypeInstance, &Quote::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction("zip", StdLib::Zip, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 1, ArgDef::ANY_ARGS), FuncDef::OneArg(Quote::TypeInstance) });
 
   symbols.PutSymbolFunction("cons", StdLib::Cons, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2), FuncDef::OneArg(Quote::TypeInstance) });
   symbols.PutSymbolFunction("range", StdLib::Range, FuncDef { FuncDef::ManyArgs(Int::TypeInstance, 2, 3), FuncDef::OneArg(Quote::TypeInstance) });
@@ -1599,6 +1600,9 @@ bool TransformList(EvaluationContext &ctx, ListTransforms transform) {
   int i = -1;
   if (auto fn = ctx.GetRequiredValue<Function>(fnExpr)) {
     if (auto list = ctx.GetRequiredListValue(listExpr)) {
+      if (transform == Reduce && list->Args.empty())
+        return ctx.Error("reduce requires list to have at least one element");
+
       for (auto &item : list->Args) {
         ++i;
         ExpressionPtr evalExpr { new Sexp { } };
@@ -1652,6 +1656,79 @@ bool StdLib::Filter(EvaluationContext &ctx) {
 
 bool StdLib::Reduce(EvaluationContext &ctx) {
   return TransformList(ctx, ListTransforms::Reduce);
+}
+
+bool StdLib::Zip(EvaluationContext &ctx) {
+  int ctxArgNum = 1;
+
+  ExpressionPtr resultExpr { new Sexp() };
+  Sexp &resultList = static_cast<Sexp&>(*resultExpr);
+  
+  bool evalArg = true;
+  ExpressionPtr fnArg;
+  if (ctx.Evaluate(ctx.Args.front(), ctxArgNum)) {
+    if (TypeHelper::IsA<Function>(ctx.Args.front())) {
+      fnArg = std::move(ctx.Args.front());
+      ctx.Args.pop_front();
+    }
+    else {
+      fnArg.reset(new Symbol("list"));
+      evalArg = false; // don't eval first arg twice
+    }
+  }
+  else
+    return false;
+  
+  std::vector<Sexp*> lists;
+  for (auto &listArg : ctx.Args) {
+    if (evalArg) {
+      if (!ctx.Evaluate(listArg, ctxArgNum++))
+        return false;
+    }
+    evalArg = true;
+
+    if (auto listValue = ctx.GetRequiredListValue(listArg))
+      lists.push_back(listValue);
+    else
+      return false;
+  }
+
+  if (lists.empty())
+    return ctx.Error("expected at least one list");
+
+  int elementNum = 1;
+  bool more = true;
+  while (more) {
+    ExpressionPtr evalExpr { new Sexp() };
+    Sexp &evalSexp = static_cast<Sexp&>(*evalExpr);
+    evalSexp.Args.push_back(fnArg->Clone());
+
+    int listNum = 1;
+    for (auto &list : lists) {
+      if (listNum > 1) {
+        if (list->Args.empty() == more)
+          return ctx.Error("list " + std::to_string(listNum) + " has a different length than list 1");
+      }
+      else
+        more = !list->Args.empty();
+
+      if (more) {
+        evalSexp.Args.push_back(std::move(list->Args.front()));
+        list->Args.pop_front();
+      }
+      ++listNum;
+    }
+
+    if (more) {
+      if (ctx.Evaluate(evalExpr, "element " + std::to_string(elementNum++)))
+        resultList.Args.emplace_back(std::move(evalExpr));
+      else
+        return false;
+    }
+  }
+
+  ctx.Expr.reset(new Quote(std::move(resultExpr)));
+  return true;
 }
 
 bool StdLib::Cons(EvaluationContext &ctx) {

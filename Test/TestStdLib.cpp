@@ -1401,15 +1401,50 @@ TEST_F(StdLibListTest, TestFilter) {
   ASSERT_TRUE(RunSuccess("(filter even? (0))", "(0)"));
   ASSERT_TRUE(RunSuccess("(filter even? (1))", "()"));
   ASSERT_TRUE(RunSuccess("(filter even? (0 1 2 3))", "(0 2)"));
+  ASSERT_TRUE(RunFail("(filter even? (0 1 \"foo\" 3))"));
   ASSERT_TRUE(RunSuccess("(filter even? (0 .. 4))", "(0 2 4)"));
+  ASSERT_TRUE(RunFail("(filter (fn () true) (0 .. 4))"));
+  ASSERT_TRUE(RunSuccess("(filter (fn (a) true) (0 .. 4))", "(0 1 2 3 4)"));
+  ASSERT_TRUE(RunSuccess("(filter (fn (a) false) (0 .. 4))", "()"));
+  ASSERT_TRUE(RunSuccess("(filter (fn (a) (a == 3)) (0 .. 4))", "(3)"));
+  ASSERT_TRUE(RunFail("(filter (fn (a b) true) (0 .. 4))"));
 }
 
 TEST_F(StdLibListTest, TestReduce) {
   ASSERT_TRUE(RunFail("(reduce)"));
   ASSERT_TRUE(RunFail("(reduce +))"));
+  ASSERT_TRUE(RunFail("(reduce + ())"));
+  ASSERT_TRUE(RunSuccess("(reduce - (\"foo\"))", "\"foo\""));
+  ASSERT_TRUE(RunSuccess("(reduce + (1))", "1"));
+  ASSERT_TRUE(RunSuccess("(reduce + (1 2))", "3"));
   ASSERT_TRUE(RunSuccess("(reduce + (1 2 3))", "6"));
+  ASSERT_TRUE(RunFail("(reduce + (1 2 \"foo\"))"));
   ASSERT_TRUE(RunSuccess("(reduce (fn (a b) (a + b)) (1 2 3))", "6"));
   ASSERT_TRUE(RunSuccess("(reduce + (1 .. 100))", "5050"));
+}
+
+TEST_F(StdLibListTest, TestZip) {
+  ASSERT_TRUE(RunFail("(zip)"));
+  ASSERT_TRUE(RunFail("(zip +)"));
+
+  // 1 list
+  ASSERT_TRUE(RunSuccess("(zip (1 2))", "((1) (2))"));
+  ASSERT_TRUE(RunSuccess("(zip + (1 2))", "(1 2)"));
+  ASSERT_TRUE(RunSuccess("(zip (fn (a) (+ a 2)) (1 2))", "(3 4)"));
+  ASSERT_TRUE(RunFail("(zip (fn (a b) (+ a b)) (1 2))"));
+
+  // 2 lists
+  ASSERT_TRUE(RunSuccess("(zip (1 2) (3 4))", "((1 3) (2 4))"));
+  ASSERT_TRUE(RunSuccess("(zip + (1 2) (3 4))", "(4 6)"));
+  ASSERT_TRUE(RunFail("(zip + (1 2) (3 \"foo\"))"));
+  ASSERT_TRUE(RunFail("(zip + (1 2) (3))"));
+  ASSERT_TRUE(RunSuccess("(zip (fn (a b) (+ a b)) (1 2) (3 4))", "(4 6)"));
+  ASSERT_TRUE(RunFail("(zip (fn () 2) (1 2) (3 4))"));
+  ASSERT_TRUE(RunFail("(zip (fn (a) (+ a 2)) (1 2) (3 4))"));
+  ASSERT_TRUE(RunFail("(zip (fn (a b c) (+ a b c)) (1 2) (3 4))"));
+
+  // 3 lists
+  ASSERT_TRUE(RunSuccess("(zip (fn (a b c) (+ a b c)) (1 2) (3 4) (4 5))", "(8 11)"));
 }
 
 TEST_F(StdLibListTest, TestHead) {
