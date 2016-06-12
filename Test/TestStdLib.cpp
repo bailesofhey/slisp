@@ -1523,7 +1523,7 @@ TEST_F(StdLibListTest, TestSkip) {
   ASSERT_TRUE(RunFail("(skip + (1))"));
   ASSERT_TRUE(RunSuccess("(skip even? ())", "()"));
   ASSERT_TRUE(RunSuccess("(skip even? (1))", "(1)"));
-  ASSERT_TRUE(RunSuccess("(skip even? (1 2))", "(1)"));
+  ASSERT_TRUE(RunSuccess("(skip even? (1 2))", "(1 2)"));
   ASSERT_TRUE(RunSuccess("(skip even? (2))", "()"));
   ASSERT_TRUE(RunSuccess("(skip even? (2 1))", "(1)"));
   ASSERT_TRUE(RunSuccess("(skip even? (2 1 4))", "(1 4)"));

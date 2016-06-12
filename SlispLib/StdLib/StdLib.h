@@ -179,6 +179,7 @@ class StdLib: public Library {
     static bool StrFunc(EvaluationContext &ctx);
 
     // Helpers
+    static bool TakeSkip(EvaluationContext &ctx, bool isTake);
     static bool Render(EvaluationContext &ctx, bool isDisplay);
     static bool ForeachIterate(EvaluationContext &ctx, Expression *iterableArg, Symbol *currElementSym, Function *fn);
     template <class S, class L>

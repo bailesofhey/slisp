@@ -1596,7 +1596,10 @@ bool StdLib::TransformList(EvaluationContext &ctx, ListTransforms transform) {
   ctx.Args.pop_front();
 
   ExpressionPtr resultExpr { };
-  if (transform == ListTransforms::Map || transform == ListTransforms::Filter || transform == ListTransforms::Take)
+  if (transform == ListTransforms::Map ||
+      transform == ListTransforms::Filter ||
+      transform == ListTransforms::Take ||
+      transform == ListTransforms::Skip)
     resultExpr.reset(new Sexp());
   else if (transform == ListTransforms::Any)
     resultExpr.reset(new Bool(false));
@@ -1608,11 +1611,16 @@ bool StdLib::TransformList(EvaluationContext &ctx, ListTransforms transform) {
   int i = -1;
   if (auto fn = ctx.GetRequiredValue<Function>(fnExpr)) {
     if (auto list = ctx.GetRequiredListValue(listExpr)) {
-      if ((transform == ListTransforms::Reduce || transform == ListTransforms::Any || transform == ListTransforms::All) && list->Args.empty())
+      if ((transform == ListTransforms::Reduce ||
+           transform == ListTransforms::Any ||
+           transform == ListTransforms::All)
+          && list->Args.empty())
         return ctx.Error("empty list not allowed");
 
-      for (auto &item : list->Args) {
+      while (!list->Args.empty()) {
         ++i;
+        ExpressionPtr item = std::move(list->Args.front());
+        list->Args.pop_front();
         ExpressionPtr evalExpr { new Sexp { } };
         auto evalSexp = static_cast<Sexp*>(evalExpr.get());
         evalSexp->Args.push_back(fn->Clone());
@@ -1632,12 +1640,24 @@ bool StdLib::TransformList(EvaluationContext &ctx, ListTransforms transform) {
 
         if (transform == ListTransforms::Map)
           resultList->Args.push_back(std::move(evalExpr));
-        else if (transform == ListTransforms::Filter || transform == ListTransforms::Any || transform == ListTransforms::All || transform == ListTransforms::Take) {
+        else if (transform == ListTransforms::Filter ||
+                 transform == ListTransforms::Any ||
+                 transform == ListTransforms::All ||
+                 transform == ListTransforms::Take ||
+                 transform == ListTransforms::Skip) {
           if (auto predResult = ctx.GetRequiredValue<Bool>(evalExpr)) {
             if (transform == ListTransforms::Filter || transform == ListTransforms::Take) {
               if (predResult->Value)
                 resultList->Args.push_back(item->Clone());
               else if (transform == ListTransforms::Take) {
+                ctx.Expr.reset(new Quote(std::move(resultExpr)));
+                return true;
+              }
+            }
+            else if (transform == ListTransforms::Skip) {
+              if (!predResult->Value) {
+                resultList->Args.push_back(item->Clone());
+                ArgListHelper::CopyTo(list->Args, resultList->Args);
                 ctx.Expr.reset(new Quote(std::move(resultExpr)));
                 return true;
               }
@@ -1692,7 +1712,7 @@ bool StdLib::All(EvaluationContext &ctx) {
   return TransformList(ctx, ListTransforms::All);
 }
 
-bool StdLib::Take(EvaluationContext &ctx) {
+bool StdLib::TakeSkip(EvaluationContext &ctx, bool isTake) {
   ExpressionPtr &firstArg = ctx.Args.front();
   if (ctx.Evaluate(firstArg, 1)) {
     if (TypeHelper::IsA<Int>(firstArg)) {
@@ -1706,10 +1726,19 @@ bool StdLib::Take(EvaluationContext &ctx) {
       if (auto list = ctx.GetRequiredListValue(listExpr)) {
         ExpressionPtr newListExpr { new Sexp() };
         Sexp &newList = static_cast<Sexp&>(*newListExpr);
-        while (!list->Args.empty() && count.Value--) {
-          newList.Args.push_back(std::move(list->Args.front()));
-          list->Args.pop_front();
+
+        if (isTake) {
+          while (!list->Args.empty() && count.Value--) {
+            newList.Args.push_back(std::move(list->Args.front()));
+            list->Args.pop_front();
+          }
         }
+        else {
+          while (!list->Args.empty() && count.Value--)
+            list->Args.pop_front();
+          ArgListHelper::CopyTo(list->Args, newList.Args);
+        }
+
         ctx.Expr.reset(new Quote(std::move(newListExpr)));
         return true;
       }
@@ -1717,7 +1746,7 @@ bool StdLib::Take(EvaluationContext &ctx) {
         return false;
     }
     else if (TypeHelper::IsA<Function>(ctx.Args.front()))
-      return TransformList(ctx, ListTransforms::Take);
+      return TransformList(ctx, isTake ? ListTransforms::Take : ListTransforms::Skip);
     else
       return ctx.TypeError("int/function", firstArg);
   }
@@ -1725,8 +1754,12 @@ bool StdLib::Take(EvaluationContext &ctx) {
     return false;
 }
 
+bool StdLib::Take(EvaluationContext &ctx) {
+  return TakeSkip(ctx, true);
+}
+
 bool StdLib::Skip(EvaluationContext &ctx) {
-  return false;
+  return TakeSkip(ctx, false);
 }
 
 bool StdLib::Zip(EvaluationContext &ctx) {
