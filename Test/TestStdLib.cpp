@@ -1392,6 +1392,18 @@ TEST_F(StdLibListTest, TestMap) {
   ASSERT_TRUE(RunSuccess("(map (fn (x) (* x 10)) (1 2 3))", "(10 20 30)"));
 }
 
+TEST_F(StdLibListTest, TestFilter) {
+  ASSERT_TRUE(RunFail("(filter)"));
+  ASSERT_TRUE(RunFail("(filter even?)"));
+  ASSERT_TRUE(RunFail("(filter even? 42)"));
+  ASSERT_TRUE(RunFail("(filter even? (\"foo\"))"));
+  ASSERT_TRUE(RunSuccess("(filter even? ())", "()"));
+  ASSERT_TRUE(RunSuccess("(filter even? (0))", "(0)"));
+  ASSERT_TRUE(RunSuccess("(filter even? (1))", "()"));
+  ASSERT_TRUE(RunSuccess("(filter even? (0 1 2 3))", "(0 2)"));
+  ASSERT_TRUE(RunSuccess("(filter even? (0 .. 4))", "(0 2 4)"));
+}
+
 TEST_F(StdLibListTest, TestHead) {
   ASSERT_TRUE(RunFail("(head)"));
   ASSERT_TRUE(RunFail("(head 3)"));

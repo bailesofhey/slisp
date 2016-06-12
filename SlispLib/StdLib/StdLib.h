@@ -134,6 +134,7 @@ class StdLib: public Library {
     static bool AddList(EvaluationContext &ctx);
     static bool List(EvaluationContext &ctx);
     static bool Map(EvaluationContext &ctx);
+    static bool Filter(EvaluationContext &ctx);
     static bool Cons(EvaluationContext &ctx);
     static bool Range(EvaluationContext &ctx);
 

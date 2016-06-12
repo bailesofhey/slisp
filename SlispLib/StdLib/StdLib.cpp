@@ -214,8 +214,10 @@ void StdLib::Load(Interpreter &interpreter) {
     FuncDef { FuncDef::AnyArgs(), FuncDef::OneArg(Quote::TypeInstance) },
     StdLib::List
   });
-  symbols.PutSymbolFunction("map", StdLib::Map, FuncDef { FuncDef::Args({&Function::TypeInstance, &Quote::TypeInstance}), FuncDef::OneArg(Quote::TypeInstance) });
 
+  FuncDef lstTransformDef { FuncDef::Args({&Function::TypeInstance, &Quote::TypeInstance}), FuncDef::OneArg(Quote::TypeInstance) };
+  symbols.PutSymbolFunction("map", StdLib::Map, lstTransformDef.Clone());
+  symbols.PutSymbolFunction("filter", StdLib::Filter, lstTransformDef.Clone());
 
   symbols.PutSymbolFunction("cons", StdLib::Cons, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2), FuncDef::OneArg(Quote::TypeInstance) });
   symbols.PutSymbolFunction("range", StdLib::Range, FuncDef { FuncDef::ManyArgs(Int::TypeInstance, 2, 3), FuncDef::OneArg(Quote::TypeInstance) });
@@ -1575,7 +1577,7 @@ bool StdLib::List(EvaluationContext &ctx) {
   return true;
 }
 
-bool StdLib::Map(EvaluationContext &ctx) {
+bool MapFilter(EvaluationContext &ctx, bool isMap) {
   ExpressionPtr fnExpr { std::move(ctx.Args.front()) };
   ctx.Args.pop_front();
 
@@ -1594,7 +1596,16 @@ bool StdLib::Map(EvaluationContext &ctx) {
         evalSexp->Args.push_back(item->Clone());
         if (!ctx.EvaluateNoError(evalExpr))
           return ctx.Error("Failed to call " +  fn->ToString() + " on item " + std::to_string(i));
-        resultList->Args.push_back(std::move(evalExpr));
+
+        if (isMap)
+          resultList->Args.push_back(std::move(evalExpr));
+        else if (auto predResult = ctx.GetRequiredValue<Bool>(evalExpr)) {
+          if (predResult->Value)
+            resultList->Args.push_back(item->Clone());
+        }
+        else
+          return false;
+
         ++i;
       }
     }
@@ -1606,6 +1617,14 @@ bool StdLib::Map(EvaluationContext &ctx) {
 
   ctx.Expr = ExpressionPtr { new Quote { std::move(resultExpr) } };
   return true;
+}
+
+bool StdLib::Map(EvaluationContext &ctx) {
+  return MapFilter(ctx, true);
+}
+
+bool StdLib::Filter(EvaluationContext &ctx) {
+  return MapFilter(ctx, false);
 }
 
 bool StdLib::Cons(EvaluationContext &ctx) {
