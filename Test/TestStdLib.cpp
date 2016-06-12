@@ -1474,6 +1474,62 @@ TEST_F(StdLibListTest, TestAll) {
   ASSERT_TRUE(RunSuccess("(all even? (1 thisShouldNotGetEvaluated))", "false"));
 }
 
+TEST_F(StdLibListTest, TestTake) {
+  ASSERT_TRUE(RunFail("(take)"));
+
+  // Numeric form
+  ASSERT_TRUE(RunFail("(take 1)"));
+  ASSERT_TRUE(RunFail("(take -1 ())"));
+  ASSERT_TRUE(RunSuccess("(take 0 ())", "()"));
+  ASSERT_TRUE(RunSuccess("(take 1 ())", "()"));
+  ASSERT_TRUE(RunSuccess("(take 1 (42))", "(42)"));
+  ASSERT_TRUE(RunSuccess("(take 1 (42 57))", "(42)"));
+  ASSERT_TRUE(RunSuccess("(take 2 (42 57))", "(42 57)"));
+  ASSERT_TRUE(RunSuccess("(take 3 (42 57))", "(42 57)"));
+  ASSERT_TRUE(RunSuccess("(take 2 (42 57 62))", "(42 57)"));
+
+  // Predicate form
+  ASSERT_TRUE(RunFail("(take even?)"));
+  ASSERT_TRUE(RunSuccess("(take + ())", "()"));
+  ASSERT_TRUE(RunFail("(take + (1))"));
+  ASSERT_TRUE(RunSuccess("(take even? ())", "()"));
+  ASSERT_TRUE(RunSuccess("(take even? (1))", "()"));
+  ASSERT_TRUE(RunSuccess("(take even? (1 2))", "()"));
+  ASSERT_TRUE(RunSuccess("(take even? (2))", "(2)"));
+  ASSERT_TRUE(RunSuccess("(take even? (2 1))", "(2)"));
+  ASSERT_TRUE(RunSuccess("(take even? (2 1 4))", "(2)"));
+  ASSERT_TRUE(RunSuccess("(take even? (2 4 1 6))", "(2 4)"));
+}
+
+TEST_F(StdLibListTest, TestSkip) {
+  ASSERT_TRUE(RunFail("(skip)"));
+
+  // Numeric form
+  ASSERT_TRUE(RunFail("(skip 1)"));
+  ASSERT_TRUE(RunFail("(skip -1 ())"));
+  ASSERT_TRUE(RunSuccess("(skip 0 ())", "()"));
+  ASSERT_TRUE(RunSuccess("(skip 0 (1))", "(1)"));
+  ASSERT_TRUE(RunSuccess("(skip 1 ())", "()"));
+  ASSERT_TRUE(RunSuccess("(skip 1 (42))", "()"));
+  ASSERT_TRUE(RunSuccess("(skip 1 (42 57))", "(57)"));
+  ASSERT_TRUE(RunSuccess("(skip 2 (42 57))", "()"));
+  ASSERT_TRUE(RunSuccess("(skip 3 (42 57))", "()"));
+  ASSERT_TRUE(RunSuccess("(skip 2 (42 57 62))", "(62)"));
+  ASSERT_TRUE(RunSuccess("(skip 1 (42 57 62))", "(57 62)"));
+
+  // Predicate form
+  ASSERT_TRUE(RunFail("(skip even?)"));
+  ASSERT_TRUE(RunSuccess("(skip + ())", "()"));
+  ASSERT_TRUE(RunFail("(skip + (1))"));
+  ASSERT_TRUE(RunSuccess("(skip even? ())", "()"));
+  ASSERT_TRUE(RunSuccess("(skip even? (1))", "(1)"));
+  ASSERT_TRUE(RunSuccess("(skip even? (1 2))", "(1)"));
+  ASSERT_TRUE(RunSuccess("(skip even? (2))", "()"));
+  ASSERT_TRUE(RunSuccess("(skip even? (2 1))", "(1)"));
+  ASSERT_TRUE(RunSuccess("(skip even? (2 1 4))", "(1 4)"));
+  ASSERT_TRUE(RunSuccess("(skip even? (2 4 1 6))", "(1 6)"));
+}
+
 TEST_F(StdLibListTest, TestHead) {
   ASSERT_TRUE(RunFail("(head)"));
   ASSERT_TRUE(RunFail("(head 3)"));

@@ -139,6 +139,8 @@ class StdLib: public Library {
     static bool Zip(EvaluationContext &ctx);
     static bool Any(EvaluationContext &ctx);
     static bool All(EvaluationContext &ctx);
+    static bool Take(EvaluationContext &ctx);
+    static bool Skip(EvaluationContext &ctx);
     static bool Cons(EvaluationContext &ctx);
     static bool Range(EvaluationContext &ctx);
 
@@ -182,8 +184,6 @@ class StdLib: public Library {
     template <class S, class L>
     static bool SequenceFn(EvaluationContext &ctx, S strFn, L listFn);
 
-    static bool IsSexpAList(EvaluationContext &ctx, Sexp &sexp);
-    static bool IsQuoteAList(EvaluationContext &ctx, Quote &quote);
     static bool EvaluateListSexp(EvaluationContext &ctx); 
 
     static bool InfixRegistrationFunction(EvaluationContext &ctx, const std::string &name, bool unregister);
@@ -224,7 +224,9 @@ class StdLib: public Library {
       Filter,
       Reduce,
       Any,
-      All
+      All,
+      Take,
+      Skip
     };
     static bool TransformList(EvaluationContext &ctx, ListTransforms transform);
 };

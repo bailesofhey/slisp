@@ -93,14 +93,65 @@ bool EvaluationContext::GetSymbol(const std::string &symName, Expression *&value
   return Interp.GetCurrentStackFrame().GetSymbol(symName, value);
 }
 
-Sexp* EvaluationContext::GetRequiredListValue(ExpressionPtr &expr) {
-  if (auto quote = TypeHelper::GetValue<Quote>(expr)) {
-    if (auto list = TypeHelper::GetValue<Sexp>(quote->Value))
-      return list;
+bool EvaluationContext::IsSexpAList(Sexp &sexp) {
+  if (sexp.Args.empty())
+    return true;
+  else {
+    auto &firstSexpArg = sexp.Args.front();
+    if (auto sym = TypeHelper::GetValue<Symbol>(firstSexpArg)) {
+      ExpressionPtr symValue;
+      if (GetSymbol(sym->Value, symValue)) {
+        if (TypeHelper::IsA<Function>(symValue))
+          return false;
+        else
+          return true;
+      }
+    }
+    return true;
   }
-  else if (auto unquotedList = TypeHelper::GetValue<Sexp>(expr))
-    return unquotedList;
-  TypeError("list", expr);
+}
+
+bool EvaluationContext::IsQuoteAList(Quote &quote) {
+  auto &quoteValue = quote.Value;
+  if (quoteValue) {
+    if (auto sexp = TypeHelper::GetValue<Sexp>(quoteValue))
+      return IsSexpAList(*sexp);
+    else
+      return false;
+  }
+  else
+    return false;
+}
+
+Sexp* EvaluationContext::GetRequiredListValue(ExpressionPtr &expr) {
+  Sexp* result = GetList(expr);
+  if (!result) {
+    if (!Evaluate(expr, "list"))
+      return nullptr;
+    result = GetList(expr);
+  }
+
+  if (!result)
+    TypeError("list", expr);
+  return result;
+}
+
+Sexp* EvaluationContext::GetSexp(ExpressionPtr &expr) {
+  Sexp* result = nullptr;
+  if (auto sexp = TypeHelper::GetValue<Sexp>(expr))
+    result = sexp;
+  else if (auto quote = TypeHelper::GetValue<Quote>(expr)) {
+    if (auto sexp = TypeHelper::GetValue<Sexp>(quote->Value))
+      result = sexp;
+  }
+  return result;
+}
+
+Sexp* EvaluationContext::GetList(ExpressionPtr &expr) {
+  if (auto sexp = GetSexp(expr)) {
+    if (IsSexpAList(*sexp))
+      return sexp;
+  }
   return nullptr;
 }
 
