@@ -1442,9 +1442,36 @@ TEST_F(StdLibListTest, TestZip) {
   ASSERT_TRUE(RunFail("(zip (fn () 2) (1 2) (3 4))"));
   ASSERT_TRUE(RunFail("(zip (fn (a) (+ a 2)) (1 2) (3 4))"));
   ASSERT_TRUE(RunFail("(zip (fn (a b c) (+ a b c)) (1 2) (3 4))"));
+  ASSERT_TRUE(RunSuccess("(zip + (1 .. 2) (3 .. 4))", "(4 6)"));
 
   // 3 lists
   ASSERT_TRUE(RunSuccess("(zip (fn (a b c) (+ a b c)) (1 2) (3 4) (4 5))", "(8 11)"));
+}
+
+TEST_F(StdLibListTest, TestAny) {
+  ASSERT_TRUE(RunFail("(any)"));
+  ASSERT_TRUE(RunFail("(any even?)"));
+  ASSERT_TRUE(RunFail("(any even? ())"));
+  ASSERT_TRUE(RunSuccess("(any even? (1))", "false"));
+  ASSERT_TRUE(RunSuccess("(any even? (1 2))", "true"));
+  ASSERT_TRUE(RunSuccess("(any even? (1 3))", "false"));
+  ASSERT_TRUE(RunSuccess("(any even? (2 4))", "true"));
+  ASSERT_TRUE(RunSuccess("(any even? (2 \"this should not get passed to even?\"))", "true"));
+  ASSERT_TRUE(RunSuccess("(any even? (2 thisShouldNotGetEvaluated))", "true"));
+  ASSERT_TRUE(RunFail("(any even? (1 thisShouldNotGetEvaluated))"));
+}
+
+TEST_F(StdLibListTest, TestAll) {
+  ASSERT_TRUE(RunFail("(all)"));
+  ASSERT_TRUE(RunFail("(all even?)"));
+  ASSERT_TRUE(RunFail("(all even? ())"));
+  ASSERT_TRUE(RunSuccess("(all even? (1))", "false"));
+  ASSERT_TRUE(RunSuccess("(all even? (1 2))", "false"));
+  ASSERT_TRUE(RunSuccess("(all even? (1 3))", "false"));
+  ASSERT_TRUE(RunSuccess("(all even? (2 4))", "true"));
+  ASSERT_TRUE(RunFail("(all even? (2 \"this should not get passed to even?\"))"));
+  ASSERT_TRUE(RunFail("(all even? (2 thisShouldNotGetEvaluated))"));
+  ASSERT_TRUE(RunSuccess("(all even? (1 thisShouldNotGetEvaluated))", "false"));
 }
 
 TEST_F(StdLibListTest, TestHead) {

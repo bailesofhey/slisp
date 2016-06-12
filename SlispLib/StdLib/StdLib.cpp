@@ -215,10 +215,15 @@ void StdLib::Load(Interpreter &interpreter) {
     StdLib::List
   });
 
-  FuncDef lstTransformDef { FuncDef::Args({&Function::TypeInstance, &Quote::TypeInstance}), FuncDef::OneArg(Quote::TypeInstance) };
+  FuncDef lstTransformDef { FuncDef::Args({&Function::TypeInstance, &Sexp::TypeInstance}), FuncDef::OneArg(Quote::TypeInstance) };
   symbols.PutSymbolFunction("map", StdLib::Map, lstTransformDef.Clone());
   symbols.PutSymbolFunction("filter", StdLib::Filter, lstTransformDef.Clone());
-  symbols.PutSymbolFunction("reduce", StdLib::Reduce, FuncDef { FuncDef::Args({&Function::TypeInstance, &Quote::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction("reduce", StdLib::Reduce, FuncDef { FuncDef::Args({&Function::TypeInstance, &Sexp::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) });
+
+  FuncDef listPredDef { FuncDef::Args({&Function::TypeInstance, &Sexp::TypeInstance}), FuncDef::OneArg(Bool::TypeInstance) };
+  symbols.PutSymbolFunction("any", StdLib::Any, listPredDef.Clone());
+  symbols.PutSymbolFunction("all", StdLib::All, listPredDef.Clone());
+
   symbols.PutSymbolFunction("zip", StdLib::Zip, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 1, ArgDef::ANY_ARGS), FuncDef::OneArg(Quote::TypeInstance) });
 
   symbols.PutSymbolFunction("cons", StdLib::Cons, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2), FuncDef::OneArg(Quote::TypeInstance) });
@@ -1579,13 +1584,7 @@ bool StdLib::List(EvaluationContext &ctx) {
   return true;
 }
 
-enum ListTransforms {
-  Map,
-  Filter,
-  Reduce
-};
-
-bool TransformList(EvaluationContext &ctx, ListTransforms transform) {
+bool StdLib::TransformList(EvaluationContext &ctx, ListTransforms transform) {
   ExpressionPtr fnExpr { std::move(ctx.Args.front()) };
   ctx.Args.pop_front();
 
@@ -1593,15 +1592,28 @@ bool TransformList(EvaluationContext &ctx, ListTransforms transform) {
   ctx.Args.pop_front();
 
   ExpressionPtr resultExpr { };
-  if (transform == Map || transform == Filter)
+  if (transform == ListTransforms::Map || transform == ListTransforms::Filter)
     resultExpr.reset(new Sexp());
+  else if (transform == ListTransforms::Any)
+    resultExpr.reset(new Bool(false));
+  else if (transform == ListTransforms::All)
+    resultExpr.reset(new Bool(true));
+
   auto resultList = static_cast<Sexp*>(resultExpr.get());
 
   int i = -1;
   if (auto fn = ctx.GetRequiredValue<Function>(fnExpr)) {
     if (auto list = ctx.GetRequiredListValue(listExpr)) {
-      if (transform == Reduce && list->Args.empty())
-        return ctx.Error("reduce requires list to have at least one element");
+      if (!IsSexpAList(ctx, *list)) {
+        if (!ctx.Evaluate(listExpr, "list"))
+          return false;
+        list = ctx.GetRequiredListValue(listExpr);
+        if (!list)
+          return ctx.TypeError("list", listExpr);
+      }
+
+      if ((transform == ListTransforms::Reduce || transform == ListTransforms::Any || transform == ListTransforms::All) && list->Args.empty())
+        return ctx.Error("empty list not allowed");
 
       for (auto &item : list->Args) {
         ++i;
@@ -1609,7 +1621,7 @@ bool TransformList(EvaluationContext &ctx, ListTransforms transform) {
         auto evalSexp = static_cast<Sexp*>(evalExpr.get());
         evalSexp->Args.push_back(fn->Clone());
 
-        if (transform == Reduce) {
+        if (transform == ListTransforms::Reduce) {
           if (resultExpr)
             evalSexp->Args.push_back(resultExpr->Clone());
           else {
@@ -1622,17 +1634,31 @@ bool TransformList(EvaluationContext &ctx, ListTransforms transform) {
         if (!ctx.EvaluateNoError(evalExpr))
           return ctx.Error("Failed to call " +  fn->ToString() + " on item " + std::to_string(i));
 
-        if (transform == Map)
+        if (transform == ListTransforms::Map)
           resultList->Args.push_back(std::move(evalExpr));
-        else if (transform == Filter) {
+        else if (transform == ListTransforms::Filter || transform == ListTransforms::Any || transform == ListTransforms::All) {
           if (auto predResult = ctx.GetRequiredValue<Bool>(evalExpr)) {
-            if (predResult->Value)
-              resultList->Args.push_back(item->Clone());
+            if (transform == ListTransforms::Filter) {
+              if (predResult->Value)
+                resultList->Args.push_back(item->Clone());
+            }
+            else if (transform == ListTransforms::Any) {
+              if (predResult->Value) {
+                ctx.Expr.reset(new Bool(true));
+                return true;
+              }
+            }
+            else if (transform == ListTransforms::All) {
+              if (!predResult->Value) {
+                ctx.Expr.reset(new Bool(false));
+                return true;
+              }
+            }
           }
           else
             return false;
         }
-        else if (transform == Reduce)
+        else if (transform == ListTransforms::Reduce)
           resultExpr = std::move(evalExpr);
       }
     }
@@ -1656,6 +1682,14 @@ bool StdLib::Filter(EvaluationContext &ctx) {
 
 bool StdLib::Reduce(EvaluationContext &ctx) {
   return TransformList(ctx, ListTransforms::Reduce);
+}
+
+bool StdLib::Any(EvaluationContext &ctx) {
+  return TransformList(ctx, ListTransforms::Any);
+}
+
+bool StdLib::All(EvaluationContext &ctx) {
+  return TransformList(ctx, ListTransforms::All);
 }
 
 bool StdLib::Zip(EvaluationContext &ctx) {
@@ -1730,6 +1764,7 @@ bool StdLib::Zip(EvaluationContext &ctx) {
   ctx.Expr.reset(new Quote(std::move(resultExpr)));
   return true;
 }
+
 
 bool StdLib::Cons(EvaluationContext &ctx) {
   auto arg1 = std::move(ctx.Args.front());
@@ -2551,26 +2586,29 @@ bool StdLib::TypeQFunc(EvaluationContext &ctx) {
 
 // Helpers
 
+bool StdLib::IsSexpAList(EvaluationContext &ctx, Sexp &sexp) {
+  if (sexp.Args.empty())
+    return true;
+  else {
+    auto &firstSexpArg = sexp.Args.front();
+    if (auto sym = TypeHelper::GetValue<Symbol>(firstSexpArg)) {
+      ExpressionPtr symValue;
+      if (ctx.GetSymbol(sym->Value, symValue)) {
+        if (TypeHelper::IsA<Function>(symValue))
+          return false;
+        else
+          return true;
+      }
+    }
+    return true;
+  }
+}
+
 bool StdLib::IsQuoteAList(EvaluationContext &ctx, Quote &quote) {
   auto &quoteValue = quote.Value;
   if (quoteValue) {
-    if (auto sexp = TypeHelper::GetValue<Sexp>(quoteValue)) {
-      if (sexp->Args.empty())
-        return true;
-      else {
-        auto &firstSexpArg = sexp->Args.front();
-        if (auto sym = TypeHelper::GetValue<Symbol>(firstSexpArg)) {
-          ExpressionPtr symValue;
-          if (ctx.GetSymbol(sym->Value, symValue)) {
-            if (TypeHelper::IsA<Function>(symValue))
-              return false;
-            else
-              return true;
-          }
-        }
-        return true;
-      }
-    }
+    if (auto sexp = TypeHelper::GetValue<Sexp>(quoteValue))
+      return IsSexpAList(ctx, *sexp);
     else
       return false;
   }

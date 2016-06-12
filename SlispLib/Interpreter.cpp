@@ -94,11 +94,14 @@ bool EvaluationContext::GetSymbol(const std::string &symName, Expression *&value
 }
 
 Sexp* EvaluationContext::GetRequiredListValue(ExpressionPtr &expr) {
-  if (auto quote = GetRequiredValue<Quote>(expr, "list")) {
-    if (auto list = GetRequiredValue<Sexp>(quote->Value, "list"))
+  if (auto quote = TypeHelper::GetValue<Quote>(expr)) {
+    if (auto list = TypeHelper::GetValue<Sexp>(quote->Value))
       return list;
   }
-  return false;
+  else if (auto unquotedList = TypeHelper::GetValue<Sexp>(expr))
+    return unquotedList;
+  TypeError("list", expr);
+  return nullptr;
 }
 
 const std::string EvaluationContext::GetThisFunctionName() {

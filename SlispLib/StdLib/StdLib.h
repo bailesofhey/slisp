@@ -137,6 +137,8 @@ class StdLib: public Library {
     static bool Filter(EvaluationContext &ctx);
     static bool Reduce(EvaluationContext &ctx);
     static bool Zip(EvaluationContext &ctx);
+    static bool Any(EvaluationContext &ctx);
+    static bool All(EvaluationContext &ctx);
     static bool Cons(EvaluationContext &ctx);
     static bool Range(EvaluationContext &ctx);
 
@@ -180,6 +182,7 @@ class StdLib: public Library {
     template <class S, class L>
     static bool SequenceFn(EvaluationContext &ctx, S strFn, L listFn);
 
+    static bool IsSexpAList(EvaluationContext &ctx, Sexp &sexp);
     static bool IsQuoteAList(EvaluationContext &ctx, Quote &quote);
     static bool EvaluateListSexp(EvaluationContext &ctx); 
 
@@ -214,4 +217,14 @@ class StdLib: public Library {
     static ExpressionPtr GetNil();
 
     static bool LambdaPrepareFormals(EvaluationContext &ctx, ExpressionPtr &formalsExpr, ArgList &anonFuncArgs, int &nArgs);
+
+
+    enum class ListTransforms {
+      Map,
+      Filter,
+      Reduce,
+      Any,
+      All
+    };
+    static bool TransformList(EvaluationContext &ctx, ListTransforms transform);
 };
