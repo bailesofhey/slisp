@@ -1404,6 +1404,14 @@ TEST_F(StdLibListTest, TestFilter) {
   ASSERT_TRUE(RunSuccess("(filter even? (0 .. 4))", "(0 2 4)"));
 }
 
+TEST_F(StdLibListTest, TestReduce) {
+  ASSERT_TRUE(RunFail("(reduce)"));
+  ASSERT_TRUE(RunFail("(reduce +))"));
+  ASSERT_TRUE(RunSuccess("(reduce + (1 2 3))", "6"));
+  ASSERT_TRUE(RunSuccess("(reduce (fn (a b) (a + b)) (1 2 3))", "6"));
+  ASSERT_TRUE(RunSuccess("(reduce + (1 .. 100))", "5050"));
+}
+
 TEST_F(StdLibListTest, TestHead) {
   ASSERT_TRUE(RunFail("(head)"));
   ASSERT_TRUE(RunFail("(head 3)"));

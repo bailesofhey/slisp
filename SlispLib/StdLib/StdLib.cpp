@@ -218,6 +218,7 @@ void StdLib::Load(Interpreter &interpreter) {
   FuncDef lstTransformDef { FuncDef::Args({&Function::TypeInstance, &Quote::TypeInstance}), FuncDef::OneArg(Quote::TypeInstance) };
   symbols.PutSymbolFunction("map", StdLib::Map, lstTransformDef.Clone());
   symbols.PutSymbolFunction("filter", StdLib::Filter, lstTransformDef.Clone());
+  symbols.PutSymbolFunction("reduce", StdLib::Reduce, FuncDef { FuncDef::Args({&Function::TypeInstance, &Quote::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) });
 
   symbols.PutSymbolFunction("cons", StdLib::Cons, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2), FuncDef::OneArg(Quote::TypeInstance) });
   symbols.PutSymbolFunction("range", StdLib::Range, FuncDef { FuncDef::ManyArgs(Int::TypeInstance, 2, 3), FuncDef::OneArg(Quote::TypeInstance) });
@@ -1577,36 +1578,58 @@ bool StdLib::List(EvaluationContext &ctx) {
   return true;
 }
 
-bool MapFilter(EvaluationContext &ctx, bool isMap) {
+enum ListTransforms {
+  Map,
+  Filter,
+  Reduce
+};
+
+bool TransformList(EvaluationContext &ctx, ListTransforms transform) {
   ExpressionPtr fnExpr { std::move(ctx.Args.front()) };
   ctx.Args.pop_front();
 
   ExpressionPtr listExpr { std::move(ctx.Args.front()) };
   ctx.Args.pop_front();
 
-  ExpressionPtr resultExpr { new Sexp {} };
+  ExpressionPtr resultExpr { };
+  if (transform == Map || transform == Filter)
+    resultExpr.reset(new Sexp());
   auto resultList = static_cast<Sexp*>(resultExpr.get());
-  int i = 0;
+
+  int i = -1;
   if (auto fn = ctx.GetRequiredValue<Function>(fnExpr)) {
     if (auto list = ctx.GetRequiredListValue(listExpr)) {
       for (auto &item : list->Args) {
+        ++i;
         ExpressionPtr evalExpr { new Sexp { } };
         auto evalSexp = static_cast<Sexp*>(evalExpr.get());
         evalSexp->Args.push_back(fn->Clone());
+
+        if (transform == Reduce) {
+          if (resultExpr)
+            evalSexp->Args.push_back(resultExpr->Clone());
+          else {
+            resultExpr = item->Clone();
+            continue;
+          }
+        }
+
         evalSexp->Args.push_back(item->Clone());
         if (!ctx.EvaluateNoError(evalExpr))
           return ctx.Error("Failed to call " +  fn->ToString() + " on item " + std::to_string(i));
 
-        if (isMap)
+        if (transform == Map)
           resultList->Args.push_back(std::move(evalExpr));
-        else if (auto predResult = ctx.GetRequiredValue<Bool>(evalExpr)) {
-          if (predResult->Value)
-            resultList->Args.push_back(item->Clone());
+        else if (transform == Filter) {
+          if (auto predResult = ctx.GetRequiredValue<Bool>(evalExpr)) {
+            if (predResult->Value)
+              resultList->Args.push_back(item->Clone());
+          }
+          else
+            return false;
         }
-        else
-          return false;
-
-        ++i;
+        else if (transform == Reduce)
+          resultExpr = std::move(evalExpr);
       }
     }
     else 
@@ -1620,11 +1643,15 @@ bool MapFilter(EvaluationContext &ctx, bool isMap) {
 }
 
 bool StdLib::Map(EvaluationContext &ctx) {
-  return MapFilter(ctx, true);
+  return TransformList(ctx, ListTransforms::Map);
 }
 
 bool StdLib::Filter(EvaluationContext &ctx) {
-  return MapFilter(ctx, false);
+  return TransformList(ctx, ListTransforms::Filter);
+}
+
+bool StdLib::Reduce(EvaluationContext &ctx) {
+  return TransformList(ctx, ListTransforms::Reduce);
 }
 
 bool StdLib::Cons(EvaluationContext &ctx) {
