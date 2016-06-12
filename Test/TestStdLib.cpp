@@ -240,6 +240,64 @@ TEST_F(StdLibInterpreterTest, TestHelp) {
   ASSERT_TRUE(RunSuccess("(help help)", "help"));
 }
 
+class StdLibIOTest: public StdLibTest {
+protected:
+  void BasicExistsDeleteTest();
+  void BasicReadWriteLinesTest();
+};
+
+void StdLibIOTest::BasicExistsDeleteTest() {
+  ASSERT_TRUE(RunFail("(exists)"));
+  ASSERT_TRUE(RunFail("(exists 42)"));
+  ASSERT_TRUE(RunFail("(delete)"));
+  ASSERT_TRUE(RunFail("(delete 42)"));
+
+  ASSERT_TRUE(RunSuccess("(set filename \"basicExistsDeleteTest.txt\")", ""));
+  ASSERT_TRUE(RunSuccess("(exists filename)", "false"));
+  ASSERT_TRUE(RunSuccess("(writelines filename ())", "true"));
+  ASSERT_TRUE(RunSuccess("(exists filename)", "true"));
+  ASSERT_TRUE(RunSuccess("(delete filename)", "true"));
+  ASSERT_TRUE(RunSuccess("(exists filename)", "false"));
+  ASSERT_TRUE(RunSuccess("(delete filename)", "false"));
+}
+
+TEST_F(StdLibIOTest, TestExists) {
+  ASSERT_NO_FATAL_FAILURE(BasicExistsDeleteTest());
+}
+
+TEST_F(StdLibIOTest, TestDelete) {
+  ASSERT_NO_FATAL_FAILURE(BasicExistsDeleteTest());
+}
+
+void StdLibIOTest::BasicReadWriteLinesTest() {
+  ASSERT_TRUE(RunFail("(readlines)"));
+  ASSERT_TRUE(RunFail("(readlines 42)"));
+
+  ASSERT_TRUE(RunSuccess("(set filename \"readLinesTest.txt\")", ""));
+
+  ASSERT_TRUE(RunSuccess("(exists filename)", "false"));
+  ASSERT_TRUE(RunSuccess("(writelines filename ())", "true"));
+  ASSERT_TRUE(RunSuccess("(exists filename)", "true"));
+  ASSERT_TRUE(RunSuccess("(readlines filename)", "()"));
+
+  ASSERT_TRUE(RunSuccess("(writelines filename (\"first line\"))", "true"));
+  ASSERT_TRUE(RunSuccess("(readlines filename)", "(\"first line\")"));
+
+  ASSERT_TRUE(RunSuccess("(writelines filename (\"first line\", \"second line\"))", "true"));
+  ASSERT_TRUE(RunSuccess("(readlines filename)", "(\"first line\" \"second line\")"));
+
+  ASSERT_TRUE(RunSuccess("(writelines filename ())", "true"));
+  ASSERT_TRUE(RunSuccess("(readlines filename)", "()"));
+}
+
+TEST_F(StdLibIOTest, TestReadLines) {
+  ASSERT_NO_FATAL_FAILURE(BasicExistsDeleteTest());
+}
+
+TEST_F(StdLibIOTest, TestWriteLines) {
+  ASSERT_NO_FATAL_FAILURE(BasicExistsDeleteTest());
+}
+
 class StdLibAssignmentTest: public StdLibTest {
   protected:
     void TestSetFunctions();

@@ -21,6 +21,12 @@ class StdLib: public Library {
     static bool InfixRegister(EvaluationContext &ctx);
     static bool InfixUnregister(EvaluationContext &ctx);
 
+    // IO
+    static bool Exists(EvaluationContext &ctx);
+    static bool Delete(EvaluationContext &ctx);
+    static bool ReadLines(EvaluationContext &ctx);
+    static bool WriteLines(EvaluationContext &ctx);
+
     // Assignment operators
     static bool Set(EvaluationContext &ctx);
     static bool UnSet(EvaluationContext &ctx);
