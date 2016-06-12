@@ -61,10 +61,12 @@ class StdLib: public Library {
     static bool AbsInt(EvaluationContext &ctx);
     static bool MaxInt(EvaluationContext &ctx);
     static bool MinInt(EvaluationContext &ctx);
-
     static bool Hex(EvaluationContext &ctx);
     static bool Bin(EvaluationContext &ctx);
     static bool Dec(EvaluationContext &ctx);
+    static bool Even(EvaluationContext &ctx);
+    static bool Odd(EvaluationContext &ctx);
+    static bool Zero(EvaluationContext &ctx);
 
     // Float - Common
     static bool AddFloat(EvaluationContext &ctx);
@@ -181,6 +183,9 @@ class StdLib: public Library {
     static bool InfixRegistrationFunction(EvaluationContext &ctx, const std::string &name, bool unregister);
 
     template <class T, class F>
+    static bool UnaryFunction(EvaluationContext &ctx, F fn);
+
+    template <class T, class R, class F>
     static bool UnaryFunction(EvaluationContext &ctx, F fn);
 
     template<class T, class F>

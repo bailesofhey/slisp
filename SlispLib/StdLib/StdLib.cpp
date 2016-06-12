@@ -157,6 +157,11 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction("bin", StdLib::Bin, baseFn.Clone());
   symbols.PutSymbolFunction("dec", StdLib::Dec, baseFn.Clone());
 
+  FuncDef intPredDef { FuncDef::OneArg(Int::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) };
+  symbols.PutSymbolFunction("even?", StdLib::Even, intPredDef.Clone());
+  symbols.PutSymbolFunction("odd?", StdLib::Odd, intPredDef.Clone());
+  symbols.PutSymbolFunction("zero?", StdLib::Zero, intPredDef.Clone());
+
   // Bitwise
 
   RegisterBinaryFunction(symbols, "<<", StdLib::LeftShift);
@@ -993,6 +998,30 @@ bool StdLib::MaxInt(EvaluationContext &ctx) {
 
 bool StdLib::MinInt(EvaluationContext &ctx) {
   return BinaryFunction<Int>(ctx, [](int64_t a, int64_t b) { return std::min(a, b); });
+}
+
+bool EvenOddHelper(EvaluationContext &ctx, bool isEven) {
+  ExpressionPtr numExpr = ctx.Args.front()->Clone();
+  if (auto num = ctx.GetRequiredValue<Int>(numExpr)) {
+    if (num->Value < 0)
+      return ctx.Error("expecting positive " + Int::TypeInstance.Name());
+    ctx.Expr = ExpressionPtr { new Bool { (num->Value % 2) == (isEven ? 0 : 1) } };
+    return true;
+  }
+  else
+    return false;
+}
+
+bool StdLib::Even(EvaluationContext &ctx) {
+  return EvenOddHelper(ctx, true);
+}
+
+bool StdLib::Odd(EvaluationContext &ctx) {
+  return EvenOddHelper(ctx, false);
+}
+
+bool StdLib::Zero(EvaluationContext &ctx) {
+  return UnaryFunction<Int, Bool>(ctx, [](int64_t n) { return n == 0; });
 }
 
 // Float Functions
@@ -2428,9 +2457,14 @@ bool StdLib::IsQuoteAList(EvaluationContext &ctx, Quote &quote) {
 
 template <class T, class F>
 bool StdLib::UnaryFunction(EvaluationContext &ctx, F fn) {
+  return UnaryFunction<T, T, F>(ctx, fn);
+}
+
+template <class T, class R, class F>
+bool StdLib::UnaryFunction(EvaluationContext &ctx, F fn) {
   ExpressionPtr numExpr = ctx.Args.front()->Clone();
   if (auto num = ctx.GetRequiredValue<T>(numExpr)) {
-    ctx.Expr = ExpressionPtr { new T { fn(num->Value) } };
+    ctx.Expr = ExpressionPtr { new R { fn(num->Value) } };
     return true;
   }
   return false;

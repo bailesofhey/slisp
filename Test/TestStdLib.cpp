@@ -700,6 +700,39 @@ TEST_F(StdLibNumericalTest, TestATanh) {
   ASSERT_TRUE(RunSuccess("(atanh 0.5)", "0.54"));
 }
 
+TEST_F(StdLibNumericalTest, TestEven) {
+  ASSERT_TRUE(RunFail("(even? \"2\")"));
+  ASSERT_TRUE(RunFail("(even? 1.2)"));
+  ASSERT_TRUE(RunFail("(even? -2)"));
+  ASSERT_TRUE(RunFail("(even? -1)"));
+  ASSERT_TRUE(RunSuccess("(even? 0)", "true"));
+  ASSERT_TRUE(RunSuccess("(even? 1)", "false"));
+  ASSERT_TRUE(RunSuccess("(even? 2)", "true"));
+  ASSERT_TRUE(RunSuccess("(even? 3)", "false"));
+}
+
+TEST_F(StdLibNumericalTest, TestOdd) {
+  ASSERT_TRUE(RunFail("(odd? \"2\")"));
+  ASSERT_TRUE(RunFail("(odd? 1.2)"));
+  ASSERT_TRUE(RunFail("(odd? -2)"));
+  ASSERT_TRUE(RunFail("(odd? -1)"));
+  ASSERT_TRUE(RunSuccess("(odd? 0)", "false"));
+  ASSERT_TRUE(RunSuccess("(odd? 1)", "true"));
+  ASSERT_TRUE(RunSuccess("(odd? 2)", "false"));
+  ASSERT_TRUE(RunSuccess("(odd? 3)", "true"));
+}
+
+TEST_F(StdLibNumericalTest, TestZero) {
+  ASSERT_TRUE(RunFail("(zero? \"2\")"));
+  ASSERT_TRUE(RunFail("(zero? 1.2)"));
+  ASSERT_TRUE(RunSuccess("(zero? -2)", "false"));
+  ASSERT_TRUE(RunSuccess("(zero? -1)", "false"));
+  ASSERT_TRUE(RunSuccess("(zero? 0)", "true"));
+  ASSERT_TRUE(RunSuccess("(zero? 1)", "false"));
+  ASSERT_TRUE(RunSuccess("(zero? 2)", "false"));
+  ASSERT_TRUE(RunSuccess("(zero? 3)", "false"));
+}
+
 class StdLibBitwiseTest: public StdLibNumericalTest {
 };
 
