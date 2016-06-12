@@ -83,6 +83,8 @@
     <ClCompile Include="ConsoleInterface.cpp" />
     <ClCompile Include="Controller.cpp" />
     <ClCompile Include="Expression.cpp" />
+    <ClCompile Include="FileSystem.cpp" />
+    <ClCompile Include="FileSystemInterface.cpp" />
     <ClCompile Include="FunctionDef.cpp" />
     <ClCompile Include="Interpreter.cpp" />
     <ClCompile Include="InterpreterUtils.cpp" />
@@ -97,6 +99,8 @@
     <ClInclude Include="ConsoleInterface.h" />
     <ClInclude Include="Controller.h" />
     <ClInclude Include="Expression.h" />
+    <ClInclude Include="FileSystem.h" />
+    <ClInclude Include="FileSystemInterface.h" />
     <ClInclude Include="FunctionDef.h" />
     <ClInclude Include="Interpreter.h" />
     <ClInclude Include="InterpreterUtils.h" />

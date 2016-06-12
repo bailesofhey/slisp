@@ -148,6 +148,7 @@
     <ClCompile Include="TestConsoleInterface.cpp" />
     <ClCompile Include="TestController.cpp" />
     <ClCompile Include="TestExpression.cpp" />
+    <ClCompile Include="TestFileSystem.cpp" />
     <ClCompile Include="TestFuncDef.cpp" />
     <ClCompile Include="TestInterpreter.cpp" />
     <ClCompile Include="TestParser.cpp" />

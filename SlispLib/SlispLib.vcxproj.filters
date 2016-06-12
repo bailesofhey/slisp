@@ -19,6 +19,12 @@
     <Filter Include="Source Files\StdLib">
       <UniqueIdentifier>{5b24e6de-e3a3-40ee-b38f-36919237812b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\IO">
+      <UniqueIdentifier>{f6125c16-08f0-4216-a359-efb44a238f6c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\IO">
+      <UniqueIdentifier>{292a2316-b2db-4380-8c48-8a4ef83c27fa}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Tokenizer.cpp">
@@ -45,12 +51,6 @@
     <ClCompile Include="FunctionDef.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CommandInterface.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ConsoleInterface.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Controller.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -59,6 +59,18 @@
     </ClCompile>
     <ClCompile Include="NumConverter.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommandInterface.cpp">
+      <Filter>Source Files\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="ConsoleInterface.cpp">
+      <Filter>Source Files\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="FileSystemInterface.cpp">
+      <Filter>Source Files\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="FileSystem.cpp">
+      <Filter>Source Files\IO</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -86,12 +98,6 @@
     <ClInclude Include="FunctionDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CommandInterface.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ConsoleInterface.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Controller.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -100,6 +106,18 @@
     </ClInclude>
     <ClInclude Include="NumConverter.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommandInterface.h">
+      <Filter>Header Files\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="ConsoleInterface.h">
+      <Filter>Header Files\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="FileSystemInterface.h">
+      <Filter>Header Files\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="FileSystem.h">
+      <Filter>Header Files\IO</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

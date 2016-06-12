@@ -13,6 +13,7 @@
       <Filter>StdLib</Filter>
     </ClCompile>
     <ClCompile Include="TestController.cpp" />
+    <ClCompile Include="TestFileSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common.h" />
