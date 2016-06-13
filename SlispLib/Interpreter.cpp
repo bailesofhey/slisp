@@ -209,7 +209,8 @@ Interpreter::Interpreter(CommandInterface &cmdInterface):
   TypeReducers { },
   Errors { },
   ErrorWhere { "Interpreter" },
-  StopRequested_ { false }
+  StopRequested_ { false },
+  Environment_ { }
 {
   RegisterReducers();
 }
@@ -271,6 +272,10 @@ bool Interpreter::Evaluate(ExpressionPtr &expr) {
 
 CommandInterface& Interpreter::GetCommandInterface() {
   return CmdInterface;
+}
+
+Environment& Interpreter::GetEnvironment() {
+  return Environment_;
 }
 
 bool Interpreter::GetCurrFrameSymbol(const std::string &symbolName, ExpressionPtr &value) {

@@ -4,14 +4,18 @@
 
 #include "Controller.h"
 
-
 class StdLibTest: public ::testing::Test {
   protected:
+    static char *ArgV[];
+    static int ArgC;
+
     Controller Controller_;
     std::stringstream Out;
     int NOutputLines;
     
-    explicit StdLibTest() {
+    explicit StdLibTest():
+      Controller_(ArgC, ArgV)
+    {
       Controller_.SetOutput(Out);
     }
 
@@ -37,6 +41,21 @@ class StdLibTest: public ::testing::Test {
       return RunSuccess(code, "Error");
     }
 };
+
+char *StdLibTest::ArgV[] = {"Slisp.exe", "arg1", "arg2"};
+int StdLibTest::ArgC = 3;
+
+class StdLibEnvironmentTest: public StdLibTest {
+};
+
+TEST_F(StdLibEnvironmentTest, TestArgs) {
+  ASSERT_TRUE(RunSuccess("sys.args", "(\"Slisp.exe\" \"arg1\" \"arg2\")"));
+  ASSERT_TRUE(RunSuccess("sys.argv", "(\"Slisp.exe\" \"arg1\" \"arg2\")"));
+}
+
+TEST_F(StdLibEnvironmentTest, TestVersion) {
+  ASSERT_TRUE(RunSuccess("sys.version", "Slisp"));
+}
 
 class StdLibDefaultFunctionTest: public StdLibTest {
 };

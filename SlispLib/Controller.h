@@ -13,6 +13,7 @@
 class Controller {
   public:
     explicit Controller();
+    explicit Controller(int argc, char **argv);
     void Run();
     void Run(std::istream &in);
     void Run(const std::string &code);
@@ -31,6 +32,9 @@ class Controller {
     StdLib Lib;
     std::unique_ptr<std::fstream> OutFile;
 
+    void SetupEnvironment(int argc, char **argv);
     void REPL();
     void RunSingle();
+
+  friend class ControllerTest;
 };

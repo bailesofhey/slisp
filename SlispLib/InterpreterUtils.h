@@ -78,3 +78,24 @@ class InterpreterSettings {
 
     bool GetSpecialFunction(const std::string &name, FunctionPtr &func) const;
 };
+
+struct SlispVersion {
+  const int Major;
+  const int Minor;
+  const int SubMinor;
+  const int Build;
+  explicit SlispVersion(const int major, const int minor, const int subMinor, const int build);
+};
+
+class Environment {
+public:
+  explicit Environment();
+  void SetArgs(const std::vector<std::string> &processArgs, const std::vector<std::string> &slispArgs);
+  const SlispVersion& Version() const;
+  const std::vector<std::string>& ProcessArgs() const;
+  const std::vector<std::string>& SlispArgs() const;
+private:
+  const SlispVersion Version_;
+  std::vector<std::string> ProcessArgs_;
+  std::vector<std::string> SlispArgs_; 
+};

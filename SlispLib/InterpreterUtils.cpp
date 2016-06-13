@@ -213,3 +213,34 @@ bool InterpreterSettings::GetSpecialFunction(const std::string &name, FunctionPt
 
 //=============================================================================
 
+SlispVersion::SlispVersion(const int major, const int minor, const int subMinor, const int build):
+  Major(major),
+  Minor(minor),
+  SubMinor(subMinor),
+  Build(build)
+{
+}
+
+//=============================================================================
+
+Environment::Environment():
+  Version_(0, 1, 0, 1)
+{
+}
+
+void Environment::SetArgs(const std::vector<std::string> &processArgs, const std::vector<std::string> &slispArgs) {
+  ProcessArgs_ = processArgs;
+  SlispArgs_ = slispArgs;
+}
+
+const SlispVersion& Environment::Version() const {
+  return Version_;
+}
+
+const std::vector<std::string>& Environment::ProcessArgs() const {
+  return ProcessArgs_;
+}
+
+const std::vector<std::string>& Environment::SlispArgs() const {
+  return SlispArgs_;
+}

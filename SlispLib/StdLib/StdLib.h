@@ -11,6 +11,8 @@ class StdLib: public Library {
     virtual void UnLoad(Interpreter &interpreter) override;
 
   private:
+    void LoadEnvironment(SymbolTable &symbols, const Environment &env);
+
     // Interpreter
     static bool DefaultFunction(EvaluationContext &ctx);
     static bool Display(EvaluationContext &ctx);

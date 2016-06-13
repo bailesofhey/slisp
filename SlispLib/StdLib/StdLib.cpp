@@ -21,11 +21,7 @@ void StdLib::Load(Interpreter &interpreter) {
   auto &symbols = interpreter.GetDynamicSymbols();
   auto &settings = interpreter.GetSettings();
 
-  int major = 0,
-      minor = 1;
-  symbols.PutSymbolStr("system.version", "Slip " + std::to_string(major) + "." + std::to_string(minor));
-  symbols.PutSymbolInt("system.versionNumber.major", major);
-  symbols.PutSymbolInt("system.versionNumber.minor", minor);
+  LoadEnvironment(symbols, interpreter.GetEnvironment());
 
   symbols.PutSymbolFloat("PI", 3.14159265358979323846);
   symbols.PutSymbolFloat("E", 2.71828182845904523536);
@@ -351,6 +347,29 @@ void StdLib::Load(Interpreter &interpreter) {
 
 void StdLib::UnLoad(Interpreter &interpreter) {
   //TODO
+}
+
+void AddCommandLineArgs(SymbolTable &symbols, const std::string &name, const std::vector<std::string> &args) {
+  ExpressionPtr argsExpr { new Sexp() };
+  Sexp &argsList = static_cast<Sexp&>(*argsExpr);
+  for (auto &arg : args)
+    argsList.Args.emplace_back(new Str(arg));
+  symbols.PutSymbol(name, ExpressionPtr { new Quote(std::move(argsExpr)) });
+}
+
+void StdLib::LoadEnvironment(SymbolTable &symbols, const Environment &env) {
+  const SlispVersion &version = env.Version();
+  std::stringstream verDisp;
+  verDisp << "Slisp " << version.Major << "." << version.Minor << "." << version.SubMinor << "." << version.Build;
+
+  symbols.PutSymbolStr("sys.version", verDisp.str());
+  symbols.PutSymbolInt("sys.versionNumber.major", version.Major);
+  symbols.PutSymbolInt("sys.versionNumber.minor", version.Minor);
+  symbols.PutSymbolInt("sys.versionNumber.subMinor", version.SubMinor);
+  symbols.PutSymbolInt("sys.versionNumber.build", version.Build);
+
+  AddCommandLineArgs(symbols, "sys.args", env.SlispArgs());
+  AddCommandLineArgs(symbols, "sys.argv", env.ProcessArgs());
 }
 
 // Interpreter Functions

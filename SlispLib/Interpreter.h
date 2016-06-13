@@ -112,6 +112,8 @@ class Interpreter {
 
     CommandInterface& GetCommandInterface();
 
+    Environment& GetEnvironment();
+
   private:
     using TypeReducer      = std::function<bool(ExpressionPtr &expr)>;
     using TypeReducersType = std::map<const TypeInfo*, TypeReducer>;
@@ -127,6 +129,7 @@ class Interpreter {
     std::string             ErrorWhere;
     Sexp                    *Current;
     bool                    StopRequested_;
+    Environment             Environment_;
 
     template<class T>          bool InterpretLiteral(T *expr, char *wrapper = nullptr);
     template<class S, class V> bool GetLiteral(const std::string &symbolName, V &value);

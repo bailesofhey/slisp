@@ -5,7 +5,14 @@
 
 #include "Controller.h"
 
-TEST(TestController, TestRunStreams) {
+class ControllerTest: public testing::Test {
+protected:
+  Environment& GetEnvironment(Controller &controller) {
+    return controller.Interpreter_.GetEnvironment();
+  }
+};
+
+TEST_F(ControllerTest, TestRunStreams) {
   std::stringstream in,
                     out;
   Controller controller;
@@ -19,7 +26,7 @@ TEST(TestController, TestRunStreams) {
   ASSERT_NE(out.str().find("10"), std::string::npos);
 }
 
-TEST(TestController, TestRunString) {
+TEST_F(ControllerTest, TestRunString) {
   std::stringstream out;
   Controller controller;
   controller.SetOutput(out);
@@ -30,7 +37,7 @@ TEST(TestController, TestRunString) {
   ASSERT_NE(out.str().find("10"), std::string::npos);
 }
 
-TEST(TestController, TestRunFile) {
+TEST_F(ControllerTest, TestRunFile) {
   std::stringstream out;
   Controller controller;
   controller.SetOutput(out);
@@ -41,7 +48,7 @@ TEST(TestController, TestRunFile) {
   ASSERT_NE(out.str().find("10"), std::string::npos);
 }
 
-TEST(TestController, TestOutputStream) {
+TEST_F(ControllerTest, TestOutputStream) {
   std::stringstream out1,
                     out2;
   Controller controller;
@@ -51,6 +58,39 @@ TEST(TestController, TestOutputStream) {
   controller.SetOutput(out2);
   controller.Run("(+ 4 6)");
   ASSERT_NE(out2.str().find("10"), std::string::npos);
+}
+
+TEST_F(ControllerTest, TestEnvironment) {
+  {
+    Controller controller(0, nullptr);
+    auto &env = GetEnvironment(controller);
+    ASSERT_TRUE(env.ProcessArgs().empty());
+    ASSERT_TRUE(env.SlispArgs().empty());
+  }
+  {
+    char *args[] = {"Slisp.exe"};
+    const size_t size = 1;
+    Controller controller(size, args);
+    auto &env = GetEnvironment(controller);
+    ASSERT_EQ(size, env.ProcessArgs().size());
+    ASSERT_EQ(size, env.SlispArgs().size());
+  }
+  {
+    char *args[] = {"Slisp.exe", "arg1"};
+    const size_t size = 2;
+    Controller controller(size, args);
+    auto &env = GetEnvironment(controller);
+    ASSERT_EQ(size, env.ProcessArgs().size());
+    ASSERT_EQ(size, env.SlispArgs().size());
+  }
+  {
+    char *args[] = {"Slisp.exe", "arg1", "arg2"};
+    const size_t size = 3;
+    Controller controller(size, args);
+    auto &env = GetEnvironment(controller);
+    ASSERT_EQ(size, env.ProcessArgs().size());
+    ASSERT_EQ(size, env.SlispArgs().size());
+  }
 }
 
 void TestOutFile(Controller &controller, const char *outFileName, const char *code, const char *expectedOutput) {
@@ -65,7 +105,7 @@ void TestOutFile(Controller &controller, const char *outFileName, const char *co
   ASSERT_NE(outLine.find(expectedOutput), std::string::npos);
 }
 
-TEST(TestController, TestOutputFile) {
+TEST_F(ControllerTest, TestOutputFile) {
   Controller controller;
   ASSERT_NO_FATAL_FAILURE(TestOutFile(controller, "TestOutputFile1.txt", "(+ 2 3)", "5"));
   ASSERT_NO_FATAL_FAILURE(TestOutFile(controller, "TestOutputFile2.txt", "(+ 4 6)", "10"));

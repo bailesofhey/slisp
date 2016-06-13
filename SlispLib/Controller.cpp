@@ -3,7 +3,7 @@
 #include <fstream>
 #include "Controller.h"
 
-Controller::Controller():
+Controller::Controller(int argc, char **argv):
   CmdInterface(),
   Interpreter_(CmdInterface),
   Settings(Interpreter_.GetSettings()),
@@ -11,7 +11,13 @@ Controller::Controller():
   Parser_(CmdInterface, Tokenizer_, Settings),
   Lib()
 {
+  SetupEnvironment(argc, argv);
   Lib.Load(Interpreter_);
+}
+
+Controller::Controller():
+  Controller(0, nullptr)
+{
 }
 
 void Controller::Run() {
@@ -62,6 +68,13 @@ bool Controller::SetOutputFile(const std::string &outPath) {
     return true;
   }
   return false;
+}
+
+void Controller::SetupEnvironment(int argc, char **argv) {
+  std::vector<std::string> args;
+  for (int i = 0; i < argc; ++i)
+    args.push_back(argv[i]);
+  Interpreter_.GetEnvironment().SetArgs(args, args);
 }
 
 void Controller::REPL() {

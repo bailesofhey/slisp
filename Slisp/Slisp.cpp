@@ -1,8 +1,7 @@
 #include "Controller.h"
 
 int main(int argc, char **argv) {
-  Controller controller;
+  Controller controller(argc, argv);
   controller.Run();
-
   return 0;
 }
