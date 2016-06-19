@@ -4,17 +4,18 @@
 
 #include "Controller.h"
 
+using namespace std;
+
 class StdLibTest: public ::testing::Test {
   protected:
-    static char *ArgV[];
-    static int ArgC;
+    static const vector<const char*> CmdArgs; 
 
     Controller Controller_;
     std::stringstream Out;
     int NOutputLines;
     
     explicit StdLibTest():
-      Controller_(ArgC, ArgV)
+      Controller_(static_cast<int>(CmdArgs.size()), CmdArgs.data())
     {
       Controller_.SetOutput(Out);
     }
@@ -42,15 +43,13 @@ class StdLibTest: public ::testing::Test {
     }
 };
 
-char *StdLibTest::ArgV[] = {"Slisp.exe", "arg1", "arg2"};
-int StdLibTest::ArgC = 3;
+const vector<const char*> StdLibTest::CmdArgs = {"slisp.exe", "(+ 3 4)", "arg1", "arg2"};
 
 class StdLibEnvironmentTest: public StdLibTest {
 };
 
 TEST_F(StdLibEnvironmentTest, TestArgs) {
-  ASSERT_TRUE(RunSuccess("sys.args", "(\"Slisp.exe\" \"arg1\" \"arg2\")"));
-  ASSERT_TRUE(RunSuccess("sys.argv", "(\"Slisp.exe\" \"arg1\" \"arg2\")"));
+  ASSERT_TRUE(RunSuccess("sys.args", "(\"arg1\" \"arg2\")"));
 }
 
 TEST_F(StdLibEnvironmentTest, TestVersion) {

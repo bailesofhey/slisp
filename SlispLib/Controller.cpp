@@ -2,17 +2,77 @@
 #include <sstream>
 #include <fstream>
 #include "Controller.h"
+#include "Utils.h"
 
-Controller::Controller(int argc, char **argv):
+ControllerArgs::ControllerArgs(int argc, const char * const *argv):
+  ScriptArgs(),
+  Flags(0)
+{
+  ParseArgs(argc, argv);
+}
+
+void ControllerArgs::ParseArgs(int argc, const char * const *argv) {
+  if (argc > 0) {
+    int argIdx = 0;
+    ProgramName.assign(argv[argIdx++]);
+
+    if (argc == 1)
+      Flags |= OptionFlags::REPL;
+    else {
+      std::string currArg = argv[argIdx++];
+      if (currArg == "-h"  || currArg == "-help"  || currArg == "-?" ||
+          currArg == "--h" || currArg == "--help" || currArg == "--?" ||
+          currArg == "/h"  || currArg == "/help"  || currArg == "/?")
+      {
+        Flags |= OptionFlags::Help;
+        return;
+      }
+      else if (currArg == "-i") {
+        Flags |= OptionFlags::REPL;
+        if (argc > 2)
+          currArg = argv[argIdx++];
+      }
+      else if (currArg[0] == '-') {
+        Flags |= OptionFlags::Error;
+        return;
+      }
+
+      if (Utils::EndsWith(currArg, ".slisp"))
+        Flags |= OptionFlags::RunFile;
+      else
+        Flags |= OptionFlags::RunCode;
+      Run = currArg;
+
+      for (; argIdx < argc; ++argIdx)
+        ScriptArgs.push_back(argv[argIdx]);
+    }
+  }
+  else
+    Flags |= OptionFlags::REPL;
+}
+
+//=============================================================================
+
+const std::string Controller::HelpText = R"(
+usage: slisp [option] [code | file] [arg] ...
+Options and arguments:
+-h   : help
+-i   : run REPL after running code or file
+file : program read from script file (e.g. script.slisp)
+code : program passed in as string
+)";
+
+Controller::Controller(int argc, const char * const * argv):
   CmdInterface(),
   Interpreter_(CmdInterface),
   Settings(Interpreter_.GetSettings()),
   Tokenizer_(),
   Parser_(CmdInterface, Tokenizer_, Settings),
-  Lib()
+  Lib(),
+  Args(argc, argv)
 {
-  SetupEnvironment(argc, argv);
-  Lib.Load(Interpreter_);
+  SetupEnvironment();
+  SetupModules();
 }
 
 Controller::Controller():
@@ -21,8 +81,23 @@ Controller::Controller():
 }
 
 void Controller::Run() {
-  CmdInterface.SetInput();
-  REPL();
+  if (Args.Flags & ControllerArgs::Error) {
+    CmdInterface.WriteError("Failed to parse args");
+    DisplayHelp();
+  }
+  else if (Args.Flags & ControllerArgs::Help)
+    DisplayHelp();
+  else if (Args.Flags & ControllerArgs::RunCode)
+    Run(Args.Run);
+  else if (Args.Flags & ControllerArgs::RunFile) {
+    if (!RunFile(Args.Run))
+      CmdInterface.WriteError("Could not run: " + Args.Run);
+  }
+
+  if (Args.Flags & ControllerArgs::REPL) {
+    CmdInterface.SetInput();
+    REPL();
+  }
 }
 
 void Controller::Run(std::istream &in) {
@@ -70,11 +145,20 @@ bool Controller::SetOutputFile(const std::string &outPath) {
   return false;
 }
 
-void Controller::SetupEnvironment(int argc, char **argv) {
-  std::vector<std::string> args;
-  for (int i = 0; i < argc; ++i)
-    args.push_back(argv[i]);
-  Interpreter_.GetEnvironment().SetArgs(args, args);
+void Controller::SetupEnvironment() {
+  auto &env = Interpreter_.GetEnvironment();
+  env.Program = Args.ProgramName;
+  if (Args.Flags & ControllerArgs::RunFile)
+    env.Script = Args.Run;
+  env.Args = Args.ScriptArgs;
+}
+
+void Controller::SetupModules() {
+  Lib.Load(Interpreter_);
+}
+
+void Controller::DisplayHelp() {
+  CmdInterface.WriteOutputLine(HelpText);
 }
 
 void Controller::REPL() {

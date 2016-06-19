@@ -358,7 +358,7 @@ void AddCommandLineArgs(SymbolTable &symbols, const std::string &name, const std
 }
 
 void StdLib::LoadEnvironment(SymbolTable &symbols, const Environment &env) {
-  const SlispVersion &version = env.Version();
+  const SlispVersion &version = env.Version;
   std::stringstream verDisp;
   verDisp << "Slisp " << version.Major << "." << version.Minor << "." << version.SubMinor << "." << version.Build;
 
@@ -367,9 +367,9 @@ void StdLib::LoadEnvironment(SymbolTable &symbols, const Environment &env) {
   symbols.PutSymbolInt("sys.versionNumber.minor", version.Minor);
   symbols.PutSymbolInt("sys.versionNumber.subMinor", version.SubMinor);
   symbols.PutSymbolInt("sys.versionNumber.build", version.Build);
-
-  AddCommandLineArgs(symbols, "sys.args", env.SlispArgs());
-  AddCommandLineArgs(symbols, "sys.argv", env.ProcessArgs());
+  symbols.PutSymbolStr("sys.program", env.Program); 
+  symbols.PutSymbolStr("sys.script", env.Script); 
+  AddCommandLineArgs(symbols, "sys.args", env.Args);
 }
 
 // Interpreter Functions

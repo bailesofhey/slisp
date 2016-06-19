@@ -14,6 +14,7 @@
     </ClCompile>
     <ClCompile Include="TestController.cpp" />
     <ClCompile Include="TestFileSystem.cpp" />
+    <ClCompile Include="TestUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common.h" />

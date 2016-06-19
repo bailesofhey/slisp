@@ -87,15 +87,10 @@ struct SlispVersion {
   explicit SlispVersion(const int major, const int minor, const int subMinor, const int build);
 };
 
-class Environment {
-public:
+struct Environment {
+  const SlispVersion Version;
+  std::string Program;
+  std::string Script;
+  std::vector<std::string> Args;
   explicit Environment();
-  void SetArgs(const std::vector<std::string> &processArgs, const std::vector<std::string> &slispArgs);
-  const SlispVersion& Version() const;
-  const std::vector<std::string>& ProcessArgs() const;
-  const std::vector<std::string>& SlispArgs() const;
-private:
-  const SlispVersion Version_;
-  std::vector<std::string> ProcessArgs_;
-  std::vector<std::string> SlispArgs_; 
 };

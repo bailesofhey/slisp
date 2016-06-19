@@ -224,23 +224,6 @@ SlispVersion::SlispVersion(const int major, const int minor, const int subMinor,
 //=============================================================================
 
 Environment::Environment():
-  Version_(0, 1, 0, 1)
+  Version(0, 1, 0, 1)
 {
-}
-
-void Environment::SetArgs(const std::vector<std::string> &processArgs, const std::vector<std::string> &slispArgs) {
-  ProcessArgs_ = processArgs;
-  SlispArgs_ = slispArgs;
-}
-
-const SlispVersion& Environment::Version() const {
-  return Version_;
-}
-
-const std::vector<std::string>& Environment::ProcessArgs() const {
-  return ProcessArgs_;
-}
-
-const std::vector<std::string>& Environment::SlispArgs() const {
-  return SlispArgs_;
 }
