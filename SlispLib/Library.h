@@ -7,4 +7,5 @@ class Library {
     virtual ~Library();
     virtual void Load(Interpreter &interpreter) = 0;
     virtual void UnLoad(Interpreter &interpreter) = 0;
+    virtual void SetInteractiveMode(Interpreter &interpreter, bool enabled);
 };

@@ -1,1 +1,1 @@
-(length sys.args)
+(print (length sys.args))

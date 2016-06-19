@@ -20,6 +20,7 @@ class ConsoleInterface: public CommandInterface {
     virtual bool WriteOutputLine(const std::string &output) override;
     virtual bool WriteError(const std::string &error) override;
 
+    void SetInteractiveMode(bool enabled);
     void SetInput();
     void SetInput(std::istream &in);
     void SetOutput();
@@ -29,4 +30,7 @@ class ConsoleInterface: public CommandInterface {
     std::istream *In;
     std::ostream *Out;
     bool HasMore_;
+    bool InteractiveMode_;
+
+    void Init();
 };

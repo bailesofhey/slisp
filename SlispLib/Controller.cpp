@@ -87,14 +87,22 @@ void Controller::Run() {
   }
   else if (Args.Flags & ControllerArgs::Help)
     DisplayHelp();
-  else if (Args.Flags & ControllerArgs::RunCode)
+  else if (Args.Flags & ControllerArgs::RunCode) {
+    Lib.SetInteractiveMode(Interpreter_, true);
+    CmdInterface.SetInteractiveMode(false);
     Run(Args.Run);
+  }
   else if (Args.Flags & ControllerArgs::RunFile) {
-    if (!RunFile(Args.Run))
+    Lib.SetInteractiveMode(Interpreter_, false);
+    CmdInterface.SetInteractiveMode(false);
+    bool runResult = RunFile(Args.Run);
+    if (!runResult)
       CmdInterface.WriteError("Could not run: " + Args.Run);
   }
 
   if (Args.Flags & ControllerArgs::REPL) {
+    Lib.SetInteractiveMode(Interpreter_, true);
+    CmdInterface.SetInteractiveMode(true);
     CmdInterface.SetInput();
     REPL();
   }
@@ -155,6 +163,7 @@ void Controller::SetupEnvironment() {
 
 void Controller::SetupModules() {
   Lib.Load(Interpreter_);
+  Lib.SetInteractiveMode(Interpreter_, true);
 }
 
 void Controller::DisplayHelp() {

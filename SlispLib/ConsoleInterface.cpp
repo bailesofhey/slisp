@@ -6,14 +6,23 @@ using namespace std;
 
 ConsoleInterface::ConsoleInterface()
 {
+  Init();
   SetInput();
   SetOutput();
 }
 
 ConsoleInterface::ConsoleInterface(istream &in, ostream &out)
 {
+  Init();
   SetInput(in);
   SetOutput(out);
+}
+
+void ConsoleInterface::Init() {
+  In = nullptr;
+  Out = nullptr;
+  HasMore_ = true;
+  InteractiveMode_ = true;
 }
 
 void ConsoleInterface::Reset() {
@@ -25,7 +34,8 @@ bool ConsoleInterface::HasMore() const {
 }
 
 bool ConsoleInterface::ReadLine(const string &prefix, string &input) {
-  *Out << prefix;
+  if (InteractiveMode_)
+    *Out << prefix;
   getline(*In, input);
   HasMore_ = !In->eof();
   if (!HasMore_)
@@ -58,4 +68,8 @@ void ConsoleInterface::SetOutput() {
 
 void ConsoleInterface::SetOutput(std::ostream &out) {
   Out = &out;
+}
+
+void ConsoleInterface::SetInteractiveMode(bool enabled) {
+  InteractiveMode_ = enabled;
 }

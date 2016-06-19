@@ -26,13 +26,6 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFloat("PI", 3.14159265358979323846);
   symbols.PutSymbolFloat("E", 2.71828182845904523536);
 
-  // Default
-
-  settings.PutDefaultFunction(CompiledFunction {
-    FuncDef { FuncDef::AnyArgs(), FuncDef::NoArgs() },
-    &StdLib::DefaultFunction
-  }); 
-
   // Interpreter
 
   FuncDef dispDef { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() };
@@ -347,6 +340,25 @@ void StdLib::Load(Interpreter &interpreter) {
 
 void StdLib::UnLoad(Interpreter &interpreter) {
   //TODO
+}
+
+void StdLib::SetInteractiveMode(Interpreter &interpreter, bool enabled) {
+  auto &settings = interpreter.GetSettings();
+  if (enabled) {
+    settings.PutDefaultFunction(CompiledFunction {
+      FuncDef { FuncDef::AnyArgs(), FuncDef::NoArgs() },
+      &StdLib::DefaultFunction
+    }); 
+  }
+  else {
+    settings.PutDefaultFunction(CompiledFunction {
+      FuncDef { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() },
+      [](EvaluationContext &ctx) {
+        ctx.Expr = GetNil();
+        return true;
+      }
+    }); 
+  }
 }
 
 void AddCommandLineArgs(SymbolTable &symbols, const std::string &name, const std::vector<std::string> &args) {
