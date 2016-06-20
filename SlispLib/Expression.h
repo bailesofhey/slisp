@@ -246,3 +246,7 @@ struct Ref: public Expression, IIterable {
   bool operator==(const Ref &rhs) const;
   bool operator!=(const Ref &rhs) const;
 };
+
+namespace List {
+  ExpressionPtr GetNil();
+}

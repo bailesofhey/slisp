@@ -12,3 +12,9 @@ bool CommandInterface::ReadInputLine(string &input) {
 bool CommandInterface::ReadContinuedInputLine(string &input) {
   return ReadLine("... ", input);
 }
+
+void CommandInterface::SetInteractiveMode(bool enabled) {
+}
+
+void CommandInterface::GetInteractiveMode(bool &enabled) {
+}

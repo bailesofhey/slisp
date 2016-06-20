@@ -602,3 +602,9 @@ bool Ref::operator==(const Ref &rhs) const {
 bool Ref::operator!=(const Ref &rhs) const {
   return !(rhs == *this);
 }
+
+//=============================================================================
+
+ExpressionPtr List::GetNil() {
+  return ExpressionPtr { new Quote { ExpressionPtr { new Sexp {} } } };
+}

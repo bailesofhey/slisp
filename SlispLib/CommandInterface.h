@@ -12,4 +12,6 @@ class CommandInterface {
     virtual bool ReadContinuedInputLine(std::string &input);
     virtual bool WriteOutputLine(const std::string &output) = 0;
     virtual bool WriteError(const std::string &error) = 0;
+    virtual void SetInteractiveMode(bool enabled);
+    virtual void GetInteractiveMode(bool &enabled);
 };

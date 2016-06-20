@@ -31,6 +31,33 @@ private:
   void ParseArgs(int argc, const char * const * argv);
 };
 
+class OutputManager {
+public:
+  enum OutputFlags {
+    ShowPrompt = 1 << 1,
+    ShowResults = 1 << 2,
+  };
+
+  explicit OutputManager(Interpreter &interpreter, Library &lib, ConsoleInterface &cmdInterface);
+  void SetFlags(uint8_t flags);
+  uint8_t GetFlags() const;
+
+private:
+  Interpreter &Interpreter_;
+  Library &Lib;
+  ConsoleInterface &CmdInterface;
+  uint8_t Flags; 
+};
+
+class OutputSettingsScope {
+public:
+  explicit OutputSettingsScope(OutputManager &outManager, uint8_t flags);
+  ~OutputSettingsScope();
+private:
+  OutputManager &OutManager;
+  uint8_t OldFlags;
+};
+
 class Controller {
   public:
     explicit Controller();
@@ -53,6 +80,7 @@ class Controller {
     Parser Parser_;
     StdLib Lib;
     ControllerArgs Args;
+    OutputManager OutManager;
     std::unique_ptr<std::fstream> OutFile;
 
     void SetupEnvironment();

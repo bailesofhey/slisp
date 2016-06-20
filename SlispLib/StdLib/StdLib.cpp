@@ -354,7 +354,7 @@ void StdLib::SetInteractiveMode(Interpreter &interpreter, bool enabled) {
     settings.PutDefaultFunction(CompiledFunction {
       FuncDef { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() },
       [](EvaluationContext &ctx) {
-        ctx.Expr = GetNil();
+        ctx.Expr = List::GetNil();
         return true;
       }
     }); 
@@ -426,7 +426,7 @@ bool StdLib::Render(EvaluationContext &ctx, bool isDisplay) {
     ++argNum;
   }
 
-  ctx.Expr = GetNil();
+  ctx.Expr = List::GetNil();
   return true;
 }
 
@@ -449,7 +449,14 @@ bool StdLib::Prompt(EvaluationContext &ctx) {
 
   auto &cmdInt = ctx.Interp.GetCommandInterface();
   std::string inputLine;
-  if (cmdInt.ReadLine(prefix, inputLine)) {
+
+  bool oldInteractiveMode = false;
+  cmdInt.GetInteractiveMode(oldInteractiveMode);
+  cmdInt.SetInteractiveMode(true);
+  bool result = cmdInt.ReadLine(prefix, inputLine);
+  cmdInt.SetInteractiveMode(oldInteractiveMode);
+
+  if (result) {
     ctx.Expr.reset(new Str(inputLine));
     return true;
   }
@@ -459,7 +466,7 @@ bool StdLib::Prompt(EvaluationContext &ctx) {
 
 bool StdLib::Quit(EvaluationContext &ctx) {
   ctx.Interp.Stop();
-  ctx.Expr = GetNil();
+  ctx.Expr = List::GetNil();
   return true;
 }
 
@@ -492,7 +499,7 @@ bool StdLib::Help(EvaluationContext &ctx) {
     }
   }
 
-  ctx.Expr = GetNil();
+  ctx.Expr = List::GetNil();
   ctx.Interp.GetCommandInterface().WriteOutputLine(ss.str());
   return true;
 }
@@ -575,7 +582,7 @@ bool StdLib::InfixRegistrationFunction(EvaluationContext &ctx, const std::string
         settings.UnregisterInfixSymbol(sym.Value);
       else
         settings.RegisterInfixSymbol(sym.Value);
-      ctx.Expr = GetNil(); 
+      ctx.Expr = List::GetNil(); 
       return true;
     }
     else
@@ -1918,7 +1925,7 @@ bool StdLib::Head(EvaluationContext &ctx) {
   }
   else if (auto list = ctx.GetRequiredListValue(seqArg)) {
     if (list->Args.empty())
-      ctx.Expr = StdLib::GetNil();
+      ctx.Expr = List::GetNil();
     else {
       ctx.Expr = std::move(list->Args.front());
       list->Args.pop_front();
@@ -1940,7 +1947,7 @@ bool StdLib::Tail(EvaluationContext &ctx) {
   }
   else if (auto list = ctx.GetRequiredListValue(seqArg)) {
     if (list->Args.empty())
-      ctx.Expr = StdLib::GetNil();
+      ctx.Expr = List::GetNil();
     else {
       list->Args.pop_front();
       ExpressionPtr tail { new Sexp {} };
@@ -1968,7 +1975,7 @@ bool StdLib::Last(EvaluationContext &ctx) {
   }
   else if (auto list = ctx.GetRequiredListValue(seqArg)) {
     if (list->Args.empty())
-      ctx.Expr = StdLib::GetNil();
+      ctx.Expr = List::GetNil();
     else
       ctx.Expr = list->Args.back()->Clone();
     return true;
@@ -2237,7 +2244,7 @@ bool StdLib::Cond(EvaluationContext &ctx) {
       return false;
     ++argNum;
   }
-  ctx.Expr = GetNil();
+  ctx.Expr = List::GetNil();
   return true;
 }
 
@@ -2323,12 +2330,12 @@ bool StdLib::Switch(EvaluationContext &ctx) {
   }
   else
     return false;
-  ctx.Expr = GetNil();
+  ctx.Expr = List::GetNil();
   return true;
 }
 
 bool StdLib::While(EvaluationContext &ctx) {
-  ExpressionPtr lastStatementResult = GetNil();
+  ExpressionPtr lastStatementResult = List::GetNil();
   ArgList loopArgs;
   while (true) {
     loopArgs.clear();
@@ -2796,8 +2803,4 @@ void StdLib::RegisterBinaryFunction(SymbolTable &symbolTable, const std::string&
 
 void StdLib::RegisterComparator(SymbolTable &symbolTable, const std::string& name, SlipFunction fn) {
   symbolTable.PutSymbolFunction(name, fn, FuncDef { FuncDef::AtleastOneArg(), FuncDef::OneArg(Bool::TypeInstance) });
-}
-
-ExpressionPtr StdLib::GetNil() {
-  return ExpressionPtr { new Quote { ExpressionPtr { new Sexp {} } } };
 }

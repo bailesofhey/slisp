@@ -218,10 +218,7 @@ class StdLib: public Library {
     template <class T>
     static bool CheckDivideByZero(EvaluationContext &ctx);
 
-    static ExpressionPtr GetNil();
-
     static bool LambdaPrepareFormals(EvaluationContext &ctx, ExpressionPtr &formalsExpr, ArgList &anonFuncArgs, int &nArgs);
-
 
     enum class ListTransforms {
       Map,

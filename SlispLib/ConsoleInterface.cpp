@@ -73,3 +73,7 @@ void ConsoleInterface::SetOutput(std::ostream &out) {
 void ConsoleInterface::SetInteractiveMode(bool enabled) {
   InteractiveMode_ = enabled;
 }
+
+void ConsoleInterface::GetInteractiveMode(bool &enabled) {
+  enabled = InteractiveMode_;
+}

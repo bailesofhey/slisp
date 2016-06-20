@@ -3,6 +3,7 @@
 #include <fstream>
 #include "Controller.h"
 #include "Utils.h"
+#include "Expression.h"
 
 ControllerArgs::ControllerArgs(int argc, const char * const *argv):
   ScriptArgs(),
@@ -53,6 +54,70 @@ void ControllerArgs::ParseArgs(int argc, const char * const *argv) {
 
 //=============================================================================
 
+OutputManager::OutputManager(Interpreter &interpreter, Library &lib, ConsoleInterface &cmdInterface):
+  Interpreter_(interpreter),
+  Lib(lib),
+  CmdInterface(cmdInterface),
+  Flags(0)
+{
+}
+
+void OutputManager::SetFlags(uint8_t flags) {
+  uint8_t flagChanges = Flags ^ flags;
+  if (flagChanges & OutputManager::ShowResults)
+    Lib.SetInteractiveMode(Interpreter_, (flags & OutputManager::ShowResults) != 0);
+  if (flagChanges & OutputManager::ShowPrompt)
+    CmdInterface.SetInteractiveMode((flags & OutputManager::ShowPrompt) != 0);
+  Flags = flags;
+}
+
+uint8_t OutputManager::GetFlags() const {
+  return Flags;
+}
+
+//=============================================================================
+
+OutputSettingsScope::OutputSettingsScope(OutputManager &outManager, uint8_t flags):
+  OutManager(outManager),
+  OldFlags(outManager.GetFlags())
+{
+  OutManager.SetFlags(flags);
+}
+
+OutputSettingsScope::~OutputSettingsScope() {
+  OutManager.SetFlags(OldFlags);
+}
+
+//=============================================================================
+
+struct ImportModuleFunctor {
+  Controller& Controller_;
+
+  explicit ImportModuleFunctor(Controller &controller):
+    Controller_(controller)
+  {
+  }
+
+  bool operator()(EvaluationContext &ctx) {
+    ExpressionPtr firstArg = std::move(ctx.Args.front());
+    ctx.Args.pop_front();
+    if (auto *sym = ctx.GetRequiredValue<Symbol>(firstArg)) {
+      std::string fileName = sym->Value + ".slisp";
+      bool result = Controller_.RunFile(fileName);
+      if (result) {
+        ctx.Expr = List::GetNil();
+        return true;
+      }
+      else
+        return ctx.Error("Failed to import: " + fileName);
+    }
+    else
+      return false;
+  }
+};
+
+//=============================================================================
+
 const std::string Controller::HelpText = R"(
 usage: slisp [option] [code | file] [arg] ...
 Options and arguments:
@@ -69,7 +134,8 @@ Controller::Controller(int argc, const char * const * argv):
   Tokenizer_(),
   Parser_(CmdInterface, Tokenizer_, Settings),
   Lib(),
-  Args(argc, argv)
+  Args(argc, argv),
+  OutManager(Interpreter_, Lib, CmdInterface)
 {
   SetupEnvironment();
   SetupModules();
@@ -88,21 +154,15 @@ void Controller::Run() {
   else if (Args.Flags & ControllerArgs::Help)
     DisplayHelp();
   else if (Args.Flags & ControllerArgs::RunCode) {
-    Lib.SetInteractiveMode(Interpreter_, true);
-    CmdInterface.SetInteractiveMode(false);
     Run(Args.Run);
   }
   else if (Args.Flags & ControllerArgs::RunFile) {
-    Lib.SetInteractiveMode(Interpreter_, false);
-    CmdInterface.SetInteractiveMode(false);
     bool runResult = RunFile(Args.Run);
     if (!runResult)
       CmdInterface.WriteError("Could not run: " + Args.Run);
   }
 
   if (Args.Flags & ControllerArgs::REPL) {
-    Lib.SetInteractiveMode(Interpreter_, true);
-    CmdInterface.SetInteractiveMode(true);
     CmdInterface.SetInput();
     REPL();
   }
@@ -114,6 +174,7 @@ void Controller::Run(std::istream &in) {
 }
 
 void Controller::Run(const std::string &code) {
+  OutputSettingsScope scope(OutManager, OutputManager::ShowResults);
   std::stringstream in;
   in << code;
   CmdInterface.SetInput(in);
@@ -122,6 +183,7 @@ void Controller::Run(const std::string &code) {
 }
 
 bool Controller::RunFile(const std::string &inPath) {
+  OutputSettingsScope scope(OutManager, 0);
   std::fstream in;
   in.open(inPath, std::ios_base::in);
   if (in.is_open()) {
@@ -163,7 +225,10 @@ void Controller::SetupEnvironment() {
 
 void Controller::SetupModules() {
   Lib.Load(Interpreter_);
-  Lib.SetInteractiveMode(Interpreter_, true);
+  OutManager.SetFlags(OutputManager::ShowPrompt | OutputManager::ShowResults);
+
+  auto &symbols = Interpreter_.GetDynamicSymbols();
+  symbols.PutSymbolFunction("import", ImportModuleFunctor(*this), FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
 }
 
 void Controller::DisplayHelp() {
