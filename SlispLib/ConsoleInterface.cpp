@@ -57,7 +57,7 @@ void ConsoleInterface::SetInput() {
   SetInput(cin);
 }
 
-void ConsoleInterface::SetInput(std::istream &in) {
+void ConsoleInterface::SetInput(istream &in) {
   In = &in;
   Reset();
 }
@@ -66,7 +66,7 @@ void ConsoleInterface::SetOutput() {
   SetOutput(cout);
 }
 
-void ConsoleInterface::SetOutput(std::ostream &out) {
+void ConsoleInterface::SetOutput(ostream &out) {
   Out = &out;
 }
 

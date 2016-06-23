@@ -7,15 +7,17 @@
 
 #include "Expression.h"
 
+using namespace std;
+
 //=============================================================================
 
-TypeInfo::TypeInfo(const std::string &typeName, const ExpressionNewFn newFn):
+TypeInfo::TypeInfo(const string &typeName, const ExpressionNewFn newFn):
   TypeName { typeName },
   NewFn { newFn }
 {
 }
 
-const std::string& TypeInfo::Name() const {
+const string& TypeInfo::Name() const {
   return TypeName;
 }
 
@@ -56,17 +58,17 @@ bool Expression::AreEqual(const ExpressionPtr &lhs, const ExpressionPtr &rhs) {
     return static_cast<bool>(lhs) == static_cast<bool>(rhs);
 }
 
-const std::string Expression::ToString() const {
-  std::stringstream ss;
+const string Expression::ToString() const {
+  stringstream ss;
   ss << *this;
   return ss.str();
 }
 
-void Expression::Print(std::ostream& out) const {
+void Expression::Print(ostream& out) const {
   Display(out);
 }
 
-std::ostream& operator<<(std::ostream &out, const Expression &expr) {
+ostream& operator<<(ostream &out, const Expression &expr) {
   expr.Display(out);
   return out;
 };
@@ -138,7 +140,7 @@ void Bool::Swap(Bool &rhs) {
   Value = rhs.Value;
 }
 
-void Bool::Display(std::ostream &out) const {
+void Bool::Display(ostream &out) const {
   if (Value)
     out << "true";
   else
@@ -198,7 +200,7 @@ void Int::Swap(Int &rhs) {
   Value = rhs.Value;
 }
 
-void Int::Display(std::ostream &out) const {
+void Int::Display(ostream &out) const {
   out << Value;
 }
 
@@ -255,8 +257,8 @@ void Float::Swap(Float &rhs) {
   Value = rhs.Value;
 }
 
-void Float::Display(std::ostream &out) const {
-  out << std::setprecision(17) << Value;
+void Float::Display(ostream &out) const {
+  out << setprecision(17) << Value;
 }
 
 ExpressionPtr Float::New() {
@@ -273,7 +275,7 @@ Str::Str():
 { 
 }
 
-Str::Str(const std::string &value):
+Str::Str(const string &value):
   Literal { TypeInstance },
   Value { value }
 {
@@ -317,11 +319,11 @@ void Str::Swap(Str &rhs) {
   Value = rhs.Value;
 }
 
-void Str::Display(std::ostream &out) const {
+void Str::Display(ostream &out) const {
   out << "\"" << Value << "\"";
 }
 
-void Str::Print(std::ostream &out) const {
+void Str::Print(ostream &out) const {
   out << Value;
 }
 
@@ -341,7 +343,7 @@ StrIterator::StrIterator(Str &str):
 // TODO: really should be returning a CharRef (see #98)
 ExpressionPtr& StrIterator::Next() {
   if (Index < Value.Value.length()) {
-    Curr = ExpressionPtr { new Str(std::string(1, Value.Value[Index++]))};
+    Curr = ExpressionPtr { new Str(string(1, Value.Value[Index++]))};
     return Curr;
   }
   else
@@ -358,12 +360,12 @@ const TypeInfo Quote::TypeInstance("quote", Quote::New);
 
 Quote::Quote(ExpressionPtr &&expr):
   Literal { TypeInstance },
-  Value { std::move(expr) }
+  Value { move(expr) }
 {
 }
 
 ExpressionPtr Quote::Clone() const {
-  return ExpressionPtr { new Quote(std::move(Value->Clone())) };
+  return ExpressionPtr { new Quote(move(Value->Clone())) };
 }
 
 IteratorPtr Quote::GetIterator() {
@@ -387,11 +389,11 @@ bool Quote::operator!=(const Quote &rhs) const {
   return !(rhs == *this);
 }
 
-void Quote::Display(std::ostream &out) const {
+void Quote::Display(ostream &out) const {
   out << *Value;
 }
 
-void Quote::Print(std::ostream &out) const {
+void Quote::Print(ostream &out) const {
   Value->Print(out);
 }
 
@@ -403,7 +405,7 @@ ExpressionPtr Quote::New() {
 
 const TypeInfo Symbol::TypeInstance("symbol", TypeInfo::NewUndefined);
 
-Symbol::Symbol(const std::string &value):
+Symbol::Symbol(const string &value):
   Expression { TypeInstance },
   Value { value }
 {
@@ -443,7 +445,7 @@ void Symbol::Swap(Symbol &rhs) {
   Value = rhs.Value;
 }
 
-void Symbol::Display(std::ostream &out) const {
+void Symbol::Display(ostream &out) const {
   out << Value;
 }
 
@@ -485,10 +487,10 @@ Sexp::Sexp():
 Sexp::Sexp(ArgList &&args):
   Sexp()
 {
-  Args = std::move(args);
+  Args = move(args);
 }
 
-Sexp::Sexp(std::initializer_list<ExpressionPtr> &&args):
+Sexp::Sexp(initializer_list<ExpressionPtr> &&args):
   Sexp()
 {
   if (args.size()) {
@@ -524,7 +526,7 @@ bool Sexp::operator!=(const Sexp &rhs) const {
   return !(rhs == *this);
 }
 
-void Sexp::Display(std::ostream &out) const {
+void Sexp::Display(ostream &out) const {
   out << "(";
   auto argBegin = begin(Args);
   auto argEnd = end(Args);
@@ -580,7 +582,7 @@ ExpressionPtr Ref::NewRef() const {
   return ExpressionPtr { new Ref(Value) }; 
 }
 
-void Ref::Display(std::ostream& out) const {
+void Ref::Display(ostream& out) const {
 }
 
 IteratorPtr Ref::GetIterator() {

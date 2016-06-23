@@ -1,11 +1,13 @@
 #include "NumConverter.h"
 
-bool NumConverter::IsBase10NumberFloat(const std::string &str) {
-  return str.find(".") != std::string::npos
-      || str.find("e") != std::string::npos;
+using namespace std;
+
+bool NumConverter::IsBase10NumberFloat(const string &str) {
+  return str.find(".") != string::npos
+      || str.find("e") != string::npos;
 }
 
-int NumConverter::GetNumberBase(const std::string &str) {
+int NumConverter::GetNumberBase(const string &str) {
   if (str.length() > 2) {
     if (str[0] == '0') {
       if (str[1] == 'x')
@@ -17,18 +19,18 @@ int NumConverter::GetNumberBase(const std::string &str) {
   return 10;
 }
 
-bool NumConverter::Convert(const std::string &str, int64_t &value) {
+bool NumConverter::Convert(const string &str, int64_t &value) {
   int base = GetNumberBase(str);
   auto numStart = str.c_str();
   if (base != 10)
     numStart += 2;
-  value = std::stoll(numStart, nullptr, base);
+  value = stoll(numStart, nullptr, base);
   return true;
 }
 
-bool NumConverter::Convert(const std::string &str, double &value) {
+bool NumConverter::Convert(const string &str, double &value) {
   try {
-    value = std::stod(str);
+    value = stod(str);
     return true;
   }
   catch (...) {

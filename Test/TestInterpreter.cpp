@@ -5,12 +5,14 @@
 
 #include "Common.h"
 
-using PutFn = std::function<void(SymbolTable&, const std::string &name, ExpressionPtr &)>;
+using namespace std;
+
+using PutFn = function<void(SymbolTable&, const string &name, ExpressionPtr &)>;
 void TestPutSymbolFn(PutFn fn, ExpressionPtr &&val1, ExpressionPtr &&val2) {
   SymbolTable table;
-  ExpressionPtr val1Expected = std::move(val1),
+  ExpressionPtr val1Expected = move(val1),
                 val1Actual,
-                val2Expected = std::move(val2),
+                val2Expected = move(val2),
                 val2Actual;
   fn(table, "val1", val1Expected);
   fn(table, "val2", val2Expected);
@@ -27,31 +29,31 @@ void TestPutSymbolFn(PutFn fn, ExpressionPtr &&val1, ExpressionPtr &&val2) {
 }
 
 TEST(SymbolTable, TestPutSymbolBool) {
-  TestPutSymbolFn([](SymbolTable &table, const std::string &name, ExpressionPtr &val) {
+  TestPutSymbolFn([](SymbolTable &table, const string &name, ExpressionPtr &val) {
     table.PutSymbolBool(name, dynamic_cast<Bool&>(*val).Value);
   }, ExpressionPtr { new Bool(true) }, ExpressionPtr { new Bool(false) });
 }
 
 TEST(SymbolTable, TestPutSymbolInt) {
-  TestPutSymbolFn([](SymbolTable &table, const std::string &name, ExpressionPtr &val) {
+  TestPutSymbolFn([](SymbolTable &table, const string &name, ExpressionPtr &val) {
     table.PutSymbolInt(name, dynamic_cast<Int&>(*val).Value);
   }, ExpressionPtr { new Int(2) }, ExpressionPtr { new Int(6) });
 }
 
 TEST(SymbolTable, TestPutSymbolFloat) {
-  TestPutSymbolFn([](SymbolTable &table, const std::string &name, ExpressionPtr &val) {
+  TestPutSymbolFn([](SymbolTable &table, const string &name, ExpressionPtr &val) {
     table.PutSymbolFloat(name, dynamic_cast<Float&>(*val).Value);
   }, ExpressionPtr { new Float(3.14) }, ExpressionPtr { new Float(1.5) });
 }
 
 TEST(SymbolTable, TestPutSymbolStr) {
-  TestPutSymbolFn([](SymbolTable &table, const std::string &name, ExpressionPtr &val) {
+  TestPutSymbolFn([](SymbolTable &table, const string &name, ExpressionPtr &val) {
     table.PutSymbolStr(name, dynamic_cast<Str&>(*val).Value);
   }, ExpressionPtr { new Str("foo") }, ExpressionPtr { new Str("bar") });
 }
 
 TEST(SymbolTable, TestPutSymbolQuote) {
-  TestPutSymbolFn([](SymbolTable &table, const std::string &name, ExpressionPtr &val) {
+  TestPutSymbolFn([](SymbolTable &table, const string &name, ExpressionPtr &val) {
     table.PutSymbolQuote(name, dynamic_cast<Quote&>(*val).Value->Clone());
   },
   ExpressionPtr { new Quote(ExpressionPtr { new Str("foo") }) },
@@ -66,10 +68,10 @@ TEST(SymbolTable, TestPutSymbolFunction) {
   FuncDef def1  { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() };
   FuncDef def2  { FuncDef::OneArg(Str::TypeInstance), FuncDef::NoArgs() };
   ExpressionPtr temp;
-  ExpressionPtr f1 { new CompiledFunction(std::move(def1), slispFn1) };
-  ExpressionPtr f2 { new CompiledFunction(std::move(def2), slispFn2) };
-  table.PutSymbolFunction("f1", std::move(dynamic_cast<CompiledFunction&>(*f1->Clone())));
-  table.PutSymbolFunction("f2", std::move(dynamic_cast<CompiledFunction&>(*f2->Clone())));
+  ExpressionPtr f1 { new CompiledFunction(move(def1), slispFn1) };
+  ExpressionPtr f2 { new CompiledFunction(move(def2), slispFn2) };
+  table.PutSymbolFunction("f1", move(dynamic_cast<CompiledFunction&>(*f1->Clone())));
+  table.PutSymbolFunction("f2", move(dynamic_cast<CompiledFunction&>(*f2->Clone())));
   table.PutSymbolFunction("f3", slispFn2, def2.Clone());
   ASSERT_TRUE(table.GetSymbol("f1", temp));
   ASSERT_TRUE(table.GetSymbol("f2", temp));
@@ -161,7 +163,7 @@ TEST(SymbolTable, TestDeleteSymbol) {
 }
 
 struct ForEachData {
-  std::string LastName;
+  string LastName;
   ExpressionPtr LastValue;
   int Count;
   
@@ -175,7 +177,7 @@ struct ForEachData {
 TEST(SymbolTable, TestForEach) {
   SymbolTable table;
   ForEachData data;
-  auto fn = [&data](const std::string &name, ExpressionPtr &val) {
+  auto fn = [&data](const string &name, ExpressionPtr &val) {
     data.LastName = name;
     if (val)
       data.LastValue = val->Clone();
@@ -414,12 +416,12 @@ TEST_F(InterpreterTest, TestDefaultFunction) {
   auto slispFn = [](EvaluationContext&) { return true; };
   FuncDef def { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() };
   ExpressionPtr temp;
-  ExpressionPtr func { new CompiledFunction(std::move(def), slispFn) };
+  ExpressionPtr func { new CompiledFunction(move(def), slispFn) };
   FunctionPtr defaultFn;
   auto &settings = Interpreter_.GetSettings();
   ASSERT_FALSE(settings.GetDefaultFunction(defaultFn));
   ASSERT_FALSE(defaultFn);
-  settings.PutDefaultFunction(std::move(dynamic_cast<CompiledFunction&>(*func->Clone())));
+  settings.PutDefaultFunction(move(dynamic_cast<CompiledFunction&>(*func->Clone())));
   ASSERT_TRUE(settings.GetDefaultFunction(defaultFn));
   ASSERT_TRUE((bool)defaultFn);
 }
@@ -442,8 +444,8 @@ TEST_F(InterpreterTest, TestErrors_Many) {
   auto errors = Interpreter_.GetErrors();
   int errNum = 1;
   for (auto &error : errors) {
-    ASSERT_EQ("here" + std::to_string(errNum), error.Where);
-    ASSERT_EQ("err" + std::to_string(errNum), error.What);
+    ASSERT_EQ("here" + to_string(errNum), error.Where);
+    ASSERT_EQ("err" + to_string(errNum), error.What);
     ++errNum;
   }
   Interpreter_.ClearErrors();
@@ -528,8 +530,8 @@ class EvaluationTest: public InterpreterTest {
       args.push_back(ExpressionPtr { new Symbol("x") });
       Interpreter_.GetDynamicSymbols().PutSymbolFunction("myInterpretedFunc", InterpretedFunction {
         FuncDef { FuncDef::OneArg(Bool::TypeInstance), FuncDef::NoArgs() },
-        std::move(code),
-        std::move(args)
+        move(code),
+        move(args)
        });
 
 
@@ -539,20 +541,20 @@ class EvaluationTest: public InterpreterTest {
       ArgList badFnArgs;
       Interpreter_.GetDynamicSymbols().PutSymbolFunction("myInterpretedBadFunc", InterpretedFunction {
         FuncDef { FuncDef::NoArgs(), FuncDef::NoArgs() },
-        std::move(badFnCode),
-        std::move(badFnArgs)
+        move(badFnCode),
+        move(badFnArgs)
        });
     }
 
-    void TestSexpFunction(const std::string &funcName);
-    void TestBasicArg(const std::string &funcName);
-    void TestWrongTypeArg(const std::string &funcName);
-    void TestSymbolArg(const std::string &funcName);
-    void TestNotEnoughArgs(const std::string &funcName);
-    void TestTooManyArgs(const std::string &funcName);
+    void TestSexpFunction(const string &funcName);
+    void TestBasicArg(const string &funcName);
+    void TestWrongTypeArg(const string &funcName);
+    void TestSymbolArg(const string &funcName);
+    void TestNotEnoughArgs(const string &funcName);
+    void TestTooManyArgs(const string &funcName);
     
     static bool DefaultFunction(EvaluationContext &ctx) {
-      LastResult = std::move(ctx.Expr);
+      LastResult = move(ctx.Expr);
       LastArgs.clear();
       ArgListHelper::CopyTo(ctx.Args, LastArgs);
       ctx.Interp.GetCommandInterface().WriteOutputLine(LastArgs.front()->ToString());
@@ -597,8 +599,8 @@ TEST_F(EvaluationTest, TestLiteral) {
   ArgList args {};
   ExpressionPtr e { new InterpretedFunction(
     FuncDef { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() },
-    std::move(code),
-    std::move(args)
+    move(code),
+    move(args)
   ) };
   ASSERT_TRUE(Interpreter_.Evaluate(e));
   ASSERT_EQ(0, Interpreter_.GetErrors().size());
@@ -633,29 +635,29 @@ TEST_F(EvaluationTest, TestSexpDefaultFunction) {
     ExpressionPtr { new Symbol(settings.GetDefaultSexp()) },
     falseValue->Clone()
   })}));
-  ASSERT_TRUE(CommandInterface.Output.find("false") != std::string::npos);
+  ASSERT_TRUE(CommandInterface.Output.find("false") != string::npos);
   ASSERT_EQ(*falseValue, *EvaluationTest::LastArgs.front());
 
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
     ExpressionPtr { new Symbol(settings.GetDefaultSexp()) },
     trueValue->Clone()
   })}));
-  ASSERT_TRUE(CommandInterface.Output.find("true") != std::string::npos);
+  ASSERT_TRUE(CommandInterface.Output.find("true") != string::npos);
   ASSERT_EQ(*trueValue, *EvaluationTest::LastArgs.front());
 }
 
-void EvaluationTest::TestBasicArg(const std::string &funcName) {
+void EvaluationTest::TestBasicArg(const string &funcName) {
   ExpressionPtr trueValue { new Bool(true) };
  
   ExpressionPtr sym { new Symbol(funcName) };
-  ExpressionPtr sexp { new Sexp({std::move(sym), std::move(trueValue)}) };
+  ExpressionPtr sexp { new Sexp({move(sym), move(trueValue)}) };
 
   EvaluationTest::MyFuncCalled = false;
   ASSERT_TRUE(Interpreter_.Evaluate(sexp));
   ASSERT_TRUE(EvaluationTest::MyFuncCalled);
 }
 
-void EvaluationTest::TestSymbolArg(const std::string &funcName) {
+void EvaluationTest::TestSymbolArg(const string &funcName) {
   ExpressionPtr sym { new Symbol("sym") };
   EvaluationTest::MyFuncCalled = false;
   ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
@@ -673,7 +675,7 @@ void EvaluationTest::TestSymbolArg(const std::string &funcName) {
   ASSERT_TRUE(EvaluationTest::MyFuncCalled);
 }
 
-void EvaluationTest::TestNotEnoughArgs(const std::string &funcName) {
+void EvaluationTest::TestNotEnoughArgs(const string &funcName) {
   EvaluationTest::MyFuncCalled = false;
   ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
     ExpressionPtr { new Symbol(funcName) },
@@ -681,7 +683,7 @@ void EvaluationTest::TestNotEnoughArgs(const std::string &funcName) {
   ASSERT_FALSE(EvaluationTest::MyFuncCalled);
 }
 
-void EvaluationTest::TestTooManyArgs(const std::string &funcName) {
+void EvaluationTest::TestTooManyArgs(const string &funcName) {
   ExpressionPtr trueValue { new Bool(true) };
  
   EvaluationTest::MyFuncCalled = false;
@@ -693,7 +695,7 @@ void EvaluationTest::TestTooManyArgs(const std::string &funcName) {
   ASSERT_FALSE(EvaluationTest::MyFuncCalled);
 }
 
-void EvaluationTest::TestWrongTypeArg(const std::string &funcName) {
+void EvaluationTest::TestWrongTypeArg(const string &funcName) {
   ExpressionPtr str { new Str("foo") };
   EvaluationTest::MyFuncCalled = false;
   ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
@@ -703,7 +705,7 @@ void EvaluationTest::TestWrongTypeArg(const std::string &funcName) {
   ASSERT_FALSE(EvaluationTest::MyFuncCalled);
 }
 
-void EvaluationTest::TestSexpFunction(const std::string &funcName) {
+void EvaluationTest::TestSexpFunction(const string &funcName) {
   ASSERT_NO_FATAL_FAILURE(TestBasicArg(funcName));
   ASSERT_NO_FATAL_FAILURE(TestWrongTypeArg(funcName));
   ASSERT_NO_FATAL_FAILURE(TestSymbolArg(funcName));

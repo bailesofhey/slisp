@@ -2,6 +2,8 @@
 
 #include "Expression.h"
 
+using namespace std;
+
 template <class E>
 void RunExpressionTest(E &defaultValue, E &emptyValue, E &otherValue) {
   ASSERT_EQ(defaultValue, emptyValue);
@@ -84,16 +86,16 @@ TEST(Expression, TestSexp) {
   
   ASSERT_EQ(s, *sCopy);
   
-  ExpressionPtr arg1 = std::move(sCopy->Args.front());
+  ExpressionPtr arg1 = move(sCopy->Args.front());
   sCopy->Args.pop_front();
 
   ASSERT_NE(s, *sCopy);
 
-  ExpressionPtr arg2 = std::move(sCopy->Args.front());
+  ExpressionPtr arg2 = move(sCopy->Args.front());
   sCopy->Args.pop_front();
-  ExpressionPtr arg3 = std::move(sCopy->Args.front());
+  ExpressionPtr arg3 = move(sCopy->Args.front());
   sCopy->Args.pop_front();
-  ExpressionPtr arg4 = std::move(sCopy->Args.front());
+  ExpressionPtr arg4 = move(sCopy->Args.front());
   sCopy->Args.pop_front();
 
   auto argSym = dynamic_cast<Symbol*>(arg1.get());

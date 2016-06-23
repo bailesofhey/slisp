@@ -9,8 +9,7 @@
 #include "Expression.h"
 #include "FunctionDef.h"
 
-using std::cout;
-using std::endl;
+using namespace std;
 using namespace std::placeholders;
 
 //=============================================================================
@@ -29,29 +28,29 @@ StackFrame::~StackFrame() {
   Interp.PopStackFrame();
 }
 
-void StackFrame::PutLocalSymbol(const std::string &symbolName, ExpressionPtr &value) {
+void StackFrame::PutLocalSymbol(const string &symbolName, ExpressionPtr &value) {
   Locals.PutSymbol(symbolName, value);
 }
 
-void StackFrame::PutDynamicSymbol(const std::string &symbolName, ExpressionPtr &value) {
+void StackFrame::PutDynamicSymbol(const string &symbolName, ExpressionPtr &value) {
   DynamicScope.PutSymbol(symbolName, value);
 }
 
-bool StackFrame::GetSymbol(const std::string &symbolName, ExpressionPtr &valueCopy) {
+bool StackFrame::GetSymbol(const string &symbolName, ExpressionPtr &valueCopy) {
   if (Locals.GetSymbol(symbolName, valueCopy))
     return true;
   else
     return Dynamics.GetSymbol(symbolName, valueCopy);
 }
 
-bool StackFrame::GetSymbol(const std::string &symbolName, Expression *&value) {
+bool StackFrame::GetSymbol(const string &symbolName, Expression *&value) {
   if (Locals.GetSymbol(symbolName, value))
     return true;
   else
     return Dynamics.GetSymbol(symbolName, value);
 }
 
-void StackFrame::DeleteSymbol(const std::string &symbolName) {
+void StackFrame::DeleteSymbol(const string &symbolName) {
   ExpressionPtr value;
   if (Locals.GetSymbol(symbolName, value))
     Locals.DeleteSymbol(symbolName);
@@ -81,15 +80,15 @@ bool EvaluationContext::Evaluate(ExpressionPtr &expr, int argNum) {
   return EvaluateNoError(expr) ? true : EvaluateError(argNum);
 }
 
-bool EvaluationContext::Evaluate(ExpressionPtr &expr, const std::string &argName) {
+bool EvaluationContext::Evaluate(ExpressionPtr &expr, const string &argName) {
   return EvaluateNoError(expr) ? true : EvaluateError(argName);
 }
 
-bool EvaluationContext::GetSymbol(const std::string &symName, ExpressionPtr &valueCopy) {
+bool EvaluationContext::GetSymbol(const string &symName, ExpressionPtr &valueCopy) {
   return Interp.GetCurrentStackFrame().GetSymbol(symName, valueCopy);
 }
 
-bool EvaluationContext::GetSymbol(const std::string &symName, Expression *&value) {
+bool EvaluationContext::GetSymbol(const string &symName, Expression *&value) {
   return Interp.GetCurrentStackFrame().GetSymbol(symName, value);
 }
 
@@ -155,7 +154,7 @@ Sexp* EvaluationContext::GetList(ExpressionPtr &expr) {
   return nullptr;
 }
 
-const std::string EvaluationContext::GetThisFunctionName() {
+const string EvaluationContext::GetThisFunctionName() {
   if (auto thisSexp = TypeHelper::GetValue<Sexp>(Expr)) {
     if (auto thisFn = TypeHelper::GetValue<Function>(thisSexp->Args.front())) {
       if (thisFn->Symbol) {
@@ -169,19 +168,19 @@ const std::string EvaluationContext::GetThisFunctionName() {
   return "";
 }
 
-bool EvaluationContext::Error(const std::string &what) {
+bool EvaluationContext::Error(const string &what) {
   return Interp.PushError(EvalError { CurrentFunction.Value, what });
 }
 
 bool EvaluationContext::EvaluateError(int argNum) {
-  return EvaluateError(std::to_string(argNum));
+  return EvaluateError(to_string(argNum));
 }
 
-bool EvaluationContext::EvaluateError(const std::string &argName) {
+bool EvaluationContext::EvaluateError(const string &argName) {
   return Error("Failed to evaluate arg: " + argName);
 }
 
-bool EvaluationContext::UnknownSymbolError(const std::string &symName) {
+bool EvaluationContext::UnknownSymbolError(const string &symName) {
   return Error("Unknown symbol: " + symName);
 }
 
@@ -189,7 +188,7 @@ bool EvaluationContext::TypeError(const TypeInfo &expected, const ExpressionPtr 
   return TypeError(expected.Name(), actual);
 }
 
-bool EvaluationContext::TypeError(const std::string &expectedName, const ExpressionPtr &actual) {
+bool EvaluationContext::TypeError(const string &expectedName, const ExpressionPtr &actual) {
   return Error("Expecting: " + expectedName + ". Got: " + actual->Type().Name());
 }
 
@@ -219,7 +218,7 @@ InterpreterSettings& Interpreter::GetSettings() {
   return Settings;
 }
 
-std::list<EvalError> Interpreter::GetErrors() const {
+list<EvalError> Interpreter::GetErrors() const {
   return Errors;
 }
 
@@ -262,7 +261,7 @@ bool Interpreter::EvaluatePartial(ExpressionPtr &expr) {
   if (search != TypeReducers.end())
     return search->second(expr);
   else
-    throw std::exception("unknown type: ");
+    throw exception("unknown type: ");
 }
 
 bool Interpreter::Evaluate(ExpressionPtr &expr) {
@@ -278,20 +277,20 @@ Environment& Interpreter::GetEnvironment() {
   return Environment_;
 }
 
-bool Interpreter::GetCurrFrameSymbol(const std::string &symbolName, ExpressionPtr &value) {
+bool Interpreter::GetCurrFrameSymbol(const string &symbolName, ExpressionPtr &value) {
   return GetCurrentStackFrame().GetSymbol(symbolName, value);
 }
 
 void Interpreter::RegisterReducers() {
-  TypeReducers[&Int::TypeInstance]      = std::bind(&Interpreter::ReduceInt,       this, _1);
-  TypeReducers[&Float::TypeInstance]    = std::bind(&Interpreter::ReduceFloat,     this, _1);
-  TypeReducers[&Str::TypeInstance]      = std::bind(&Interpreter::ReduceStr,       this, _1);
-  TypeReducers[&Bool::TypeInstance]     = std::bind(&Interpreter::ReduceBool,      this, _1);
-  TypeReducers[&Symbol::TypeInstance]   = std::bind(&Interpreter::ReduceSymbol,    this, _1);
-  TypeReducers[&Function::TypeInstance] = std::bind(&Interpreter::ReduceFunction,  this, _1);
-  TypeReducers[&Sexp::TypeInstance]     = std::bind(&Interpreter::ReduceSexp,      this, _1);
-  TypeReducers[&Quote::TypeInstance]    = std::bind(&Interpreter::ReduceQuote,     this, _1);
-  TypeReducers[&Ref::TypeInstance]      = std::bind(&Interpreter::ReduceRef,       this, _1);
+  TypeReducers[&Int::TypeInstance]      = bind(&Interpreter::ReduceInt,       this, _1);
+  TypeReducers[&Float::TypeInstance]    = bind(&Interpreter::ReduceFloat,     this, _1);
+  TypeReducers[&Str::TypeInstance]      = bind(&Interpreter::ReduceStr,       this, _1);
+  TypeReducers[&Bool::TypeInstance]     = bind(&Interpreter::ReduceBool,      this, _1);
+  TypeReducers[&Symbol::TypeInstance]   = bind(&Interpreter::ReduceSymbol,    this, _1);
+  TypeReducers[&Function::TypeInstance] = bind(&Interpreter::ReduceFunction,  this, _1);
+  TypeReducers[&Sexp::TypeInstance]     = bind(&Interpreter::ReduceSexp,      this, _1);
+  TypeReducers[&Quote::TypeInstance]    = bind(&Interpreter::ReduceQuote,     this, _1);
+  TypeReducers[&Ref::TypeInstance]      = bind(&Interpreter::ReduceRef,       this, _1);
 }
 
 bool Interpreter::ReduceBool(ExpressionPtr &expr) {
@@ -330,13 +329,13 @@ bool Interpreter::ReduceSymbol(ExpressionPtr &expr) {
     if (EvaluatePartial(value) && value) {
       if (auto copy = value->Clone()) {
         if (copy) {
-          expr = std::move(copy);
+          expr = move(copy);
           if (auto fn = TypeHelper::GetValue<Function>(expr))
-            fn->Symbol = std::move(symCopy);
+            fn->Symbol = move(symCopy);
           return true;
         }
         else
-          throw std::exception("Clone() didn't return an Expression");
+          throw exception("Clone() didn't return an Expression");
       }
       else
         return PushError(EvalError { ErrorWhere, "Copying symbol value failed: " + value->ToString() });
@@ -352,11 +351,11 @@ bool Interpreter::ReduceSexp(ExpressionPtr &expr) {
   auto sexp = static_cast<Sexp*>(expr.get());
   auto &args = sexp->Args;
   if (!args.empty()) {
-    ExpressionPtr firstArg = std::move(args.front());
+    ExpressionPtr firstArg = move(args.front());
     args.pop_front();
 
     if (EvaluatePartial(firstArg)) {
-      args.push_front(std::move(firstArg));
+      args.push_front(move(firstArg));
       auto &funcExpr = args.front();
       if (auto func = TypeHelper::GetValue<Function>(funcExpr))
         return ReduceSexpFunction(expr, *func);
@@ -374,8 +373,8 @@ bool Interpreter::ReduceSexp(ExpressionPtr &expr) {
 
 bool Interpreter::ReduceSexpFunction(ExpressionPtr &expr, Function &function) {
   auto &funcDef = function.Def;
-  std::string error;
-  auto evaluator = std::bind(&Interpreter::EvaluatePartial, this, _1);
+  string error;
+  auto evaluator = bind(&Interpreter::EvaluatePartial, this, _1);
   ExpressionPtr funcCopy = function.Clone();
   auto funcToCall = static_cast<Function*>(funcCopy.get());
   if (funcDef.ValidateArgs(evaluator, expr, error)) {
@@ -414,7 +413,7 @@ bool Interpreter::ReduceSexpInterpretedFunction(ExpressionPtr &expr, Interpreted
   while (currArg != endArg && currFormal != endFormal) {
     if (auto sym = TypeHelper::GetValue<Symbol>(*currFormal)) {
       if (EvaluatePartial(*currArg)) {
-        newFrame.PutLocalSymbol(sym->Value, std::move(*currArg));
+        newFrame.PutLocalSymbol(sym->Value, move(*currArg));
         ++currArg;
         ++currFormal;
       }
@@ -425,7 +424,7 @@ bool Interpreter::ReduceSexpInterpretedFunction(ExpressionPtr &expr, Interpreted
       return PushError(EvalError { ErrorWhere, "Current formal is not a symbol " + (*currFormal)->ToString() });
   }
   for (auto &kv : function.Closure)
-    newFrame.PutLocalSymbol(kv.first, std::move(kv.second->Clone()));
+    newFrame.PutLocalSymbol(kv.first, move(kv.second->Clone()));
 
   if (currArg != endArg)
     return PushError(EvalError { ErrorWhere, "too many args passed to function" });
@@ -434,7 +433,7 @@ bool Interpreter::ReduceSexpInterpretedFunction(ExpressionPtr &expr, Interpreted
   else {
     ExpressionPtr codeCopy = function.Code.Value->Clone();
     if (EvaluatePartial(codeCopy)) {
-      expr = std::move(codeCopy);
+      expr = move(codeCopy);
       return true;
     }
     else
@@ -447,7 +446,7 @@ bool Interpreter::EvaluateArgs(ArgList &args) {
   int argNum = 1;
   for (auto &arg : args) {
     if (!EvaluatePartial(arg)) 
-      return PushError(EvalError { ErrorWhere, "Failed to evaluate arg " + std::to_string(argNum) });
+      return PushError(EvalError { ErrorWhere, "Failed to evaluate arg " + to_string(argNum) });
     ++argNum;
   }
   return true;
@@ -466,7 +465,7 @@ bool Interpreter::ReduceSexpList(ExpressionPtr &expr, ArgList &args) {
     if (!BuildListSexp(*wrappedSexp, args))
       return false;
 
-    expr = std::move(wrappedExpr);
+    expr = move(wrappedExpr);
     return ReduceSexp(expr);
   }
   else

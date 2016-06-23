@@ -62,116 +62,116 @@ protected:
 };
 
 TEST_F(ControllerTest, TestRunStreams) {
-  std::stringstream in,
+  stringstream in,
                     out;
   Controller controller;
   controller.SetOutput(out);
-  in << "(+ 2 3)" << std::endl;
+  in << "(+ 2 3)" << endl;
   controller.Run(in);
-  ASSERT_NE(out.str().find("5"), std::string::npos);
+  ASSERT_NE(out.str().find("5"), string::npos);
 
-  in << "(+ 4 6)" << std::endl;
+  in << "(+ 4 6)" << endl;
   controller.Run(in);
-  ASSERT_NE(out.str().find("10"), std::string::npos);
+  ASSERT_NE(out.str().find("10"), string::npos);
 }
 
 TEST_F(ControllerTest, TestRunString) {
-  std::stringstream out;
+  stringstream out;
   Controller controller;
   controller.SetOutput(out);
   controller.Run("(+ 2 3)");
-  ASSERT_NE(out.str().find("5"), std::string::npos);
+  ASSERT_NE(out.str().find("5"), string::npos);
 
   controller.Run("(+ 4 6)");
-  ASSERT_NE(out.str().find("10"), std::string::npos);
+  ASSERT_NE(out.str().find("10"), string::npos);
 }
 
 TEST_F(ControllerTest, TestRunFile) {
-  std::stringstream out;
+  stringstream out;
   Controller controller;
   controller.SetOutput(out);
   ASSERT_TRUE(controller.RunFile("..\\..\\Test\\Files\\TestRunFile1.slisp"));
-  ASSERT_NE(out.str().find("5"), std::string::npos);
+  ASSERT_NE(out.str().find("5"), string::npos);
 
   ASSERT_TRUE(controller.RunFile("..\\..\\Test\\Files\\TestRunFile2.slisp"));
-  ASSERT_NE(out.str().find("10"), std::string::npos);
+  ASSERT_NE(out.str().find("10"), string::npos);
 
   ASSERT_FALSE(controller.RunFile("ThisFileDoesNotExist.slisp"));
 }
 
 TEST_F(ControllerTest, TestOutputStream) {
-  std::stringstream out1,
+  stringstream out1,
                     out2;
   Controller controller;
   controller.SetOutput(out1);
   controller.Run("(+ 2 3)");
-  ASSERT_NE(out1.str().find("5"), std::string::npos);
+  ASSERT_NE(out1.str().find("5"), string::npos);
   controller.SetOutput(out2);
   controller.Run("(+ 4 6)");
-  ASSERT_NE(out2.str().find("10"), std::string::npos);
+  ASSERT_NE(out2.str().find("10"), string::npos);
 }
 
 TEST_F(ControllerTest, TestRunArgs_Help) {
   vector<const char*> args { "slisp.exe", "-help" };
-  std::stringstream out;
+  stringstream out;
   Controller controller(static_cast<int>(args.size()), args.data());
   controller.SetOutput(out);
   controller.Run();
-  ASSERT_NE(out.str().find("usage"), std::string::npos);
+  ASSERT_NE(out.str().find("usage"), string::npos);
 }
 
 TEST_F(ControllerTest, TestRunArgs_Error) {
   vector<const char*> args { "slisp.exe", "-badArg" };
-  std::stringstream out;
+  stringstream out;
   Controller controller(static_cast<int>(args.size()), args.data());
   controller.SetOutput(out);
   controller.Run();
-  ASSERT_NE(out.str().find("usage"), std::string::npos);
+  ASSERT_NE(out.str().find("usage"), string::npos);
 }
 
 TEST_F(ControllerTest, TestRunArgs_Code) {
   {
     vector<const char*> args { "slisp.exe", "(+ 2 3)"};
-    std::stringstream out;
+    stringstream out;
     Controller controller(static_cast<int>(args.size()), args.data());
     controller.SetOutput(out);
     controller.Run();
-    ASSERT_NE(out.str().find("5"), std::string::npos);
+    ASSERT_NE(out.str().find("5"), string::npos);
   }
   {
     vector<const char*> args { "slisp.exe", "(length sys.args)", "2", "3", "4"};
-    std::stringstream out;
+    stringstream out;
     Controller controller(static_cast<int>(args.size()), args.data());
     controller.SetOutput(out);
     controller.Run();
-    ASSERT_NE(out.str().find("3"), std::string::npos);
+    ASSERT_NE(out.str().find("3"), string::npos);
   }
 }
 
 TEST_F(ControllerTest, TestRunArgs_File) {
   {
     vector<const char*> args { "slisp.exe", "..\\..\\Test\\Files\\TestRunFile1.slisp"};
-    std::stringstream out;
+    stringstream out;
     Controller controller(static_cast<int>(args.size()), args.data());
     controller.SetOutput(out);
     controller.Run();
-    ASSERT_NE(out.str().find("5"), std::string::npos);
+    ASSERT_NE(out.str().find("5"), string::npos);
   }
   {
     vector<const char*> args { "slisp.exe", "..\\..\\Test\\Files\\TestRunArgs.slisp", "2", "3", "4"};
-    std::stringstream out;
+    stringstream out;
     Controller controller(static_cast<int>(args.size()), args.data());
     controller.SetOutput(out);
     controller.Run();
-    ASSERT_NE(out.str().find("3"), std::string::npos);
+    ASSERT_NE(out.str().find("3"), string::npos);
   }
   {
     vector<const char*> args { "slisp.exe", "ThisFileDoesNotExist.slisp"};
-    std::stringstream out;
+    stringstream out;
     Controller controller(static_cast<int>(args.size()), args.data());
     controller.SetOutput(out);
     controller.Run();
-    ASSERT_NE(out.str().find("ThisFileDoesNotExist"), std::string::npos);
+    ASSERT_NE(out.str().find("ThisFileDoesNotExist"), string::npos);
   }
 }
 
@@ -196,15 +196,15 @@ TEST_F(ControllerTest, TestEnvironment) {
 }
 
 void TestOutFile(Controller &controller, const char *outFileName, const char *code, const char *expectedOutput) {
-  std::fstream outFile;
-  std::string outLine;
+  fstream outFile;
+  string outLine;
   ASSERT_TRUE(controller.SetOutputFile(outFileName));
   controller.Run(code);
   controller.SetOutput();
-  outFile.open(outFileName, std::ios_base::in);
+  outFile.open(outFileName, ios_base::in);
   ASSERT_TRUE(outFile.is_open());
-  std::getline(outFile, outLine);
-  ASSERT_NE(outLine.find(expectedOutput), std::string::npos);
+  getline(outFile, outLine);
+  ASSERT_NE(outLine.find(expectedOutput), string::npos);
 }
 
 TEST_F(ControllerTest, TestOutputFile) {

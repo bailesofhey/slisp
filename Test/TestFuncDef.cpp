@@ -1,6 +1,8 @@
 #include "gtest\gtest.h"
 #include "FunctionDef.h"
 
+using namespace std;
+
 ExpressionPtr PrimitiveExpressions[] {
   ExpressionPtr { new Bool() },
   ExpressionPtr { new Int() },
@@ -14,20 +16,20 @@ bool TestEvaluator(ExpressionPtr &) {
 }
 
 bool TestSlispFn(EvaluationContext &ctx) {
-  throw std::exception("This should not be called");
+  throw exception("This should not be called");
 }
 
 void AssertValidate(FuncDef &funcDef, ExpressionPtr &&expr, bool expectSuccess) {
   ExpressionPtr copy = expr ? expr->Clone() : nullptr;
-  std::string error;
+  string error;
   ASSERT_EQ(expectSuccess, funcDef.ValidateArgs(TestEvaluator, expr, error)) << copy->ToString();
   ASSERT_EQ(expectSuccess, error.empty()) << copy->ToString();
 }
 
 void AssertValidateThrow(FuncDef &funcDef, ExpressionPtr &&expr) {
   ExpressionPtr copy = expr ? expr->Clone() : nullptr;
-  std::string error;
-  ASSERT_THROW(funcDef.ValidateArgs(TestEvaluator, expr, error), std::exception) << copy->ToString();
+  string error;
+  ASSERT_THROW(funcDef.ValidateArgs(TestEvaluator, expr, error), exception) << copy->ToString();
 }
 
 void TestBadExpressions(FuncDef &funcDef) {
@@ -42,7 +44,7 @@ void TestBadExpressions(FuncDef &funcDef) {
   }
 }
 
-void TestArgRecursive(FuncDef &funcDef, Sexp &s, int maxArgs, int argNum, std::function<bool(const Sexp &)> argSuccessFn) {
+void TestArgRecursive(FuncDef &funcDef, Sexp &s, int maxArgs, int argNum, function<bool(const Sexp &)> argSuccessFn) {
   if (argNum) {
     for (const auto &arg : PrimitiveExpressions) {
       ExpressionPtr sCopyPtr = s.Clone();
@@ -60,7 +62,7 @@ void TestArgRecursive(FuncDef &funcDef, Sexp &s, int maxArgs, int argNum, std::f
   }
 }
 
-void TestArgs(FuncDef &funcDef, int maxArgs, std::function<bool(const Sexp &)> argSuccessFn) {
+void TestArgs(FuncDef &funcDef, int maxArgs, function<bool(const Sexp &)> argSuccessFn) {
   Sexp s;
   s.Args.push_back(ExpressionPtr { new CompiledFunction(FuncDef(funcDef), TestSlispFn) });
   ASSERT_NO_FATAL_FAILURE(TestBadExpressions(funcDef)) << "TestBadExpressions";

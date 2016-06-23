@@ -6,6 +6,8 @@
 #include "Tokenizer.h"
 #include "Token.h"
 
+using namespace std;
+
 void RunNoneTest(Tokenizer &tokenizer) {
   for (int i = 0; i < 3; ++i) {
     ASSERT_EQ(Token(), *tokenizer);
@@ -14,16 +16,16 @@ void RunNoneTest(Tokenizer &tokenizer) {
 }
 
 struct TestCase {
-  std::string Line;
-  std::vector<Token> Tokens;
+  string Line;
+  vector<Token> Tokens;
 
-  TestCase(const std::string &line, std::initializer_list<Token> &&tokens):
+  TestCase(const string &line, initializer_list<Token> &&tokens):
     Line(line),
     Tokens(tokens)
   {
   }
 
-  TestCase(const std::string &line, std::vector<Token> &tokens):
+  TestCase(const string &line, vector<Token> &tokens):
     Line(line),
     Tokens(tokens)
   {
@@ -43,7 +45,7 @@ void RunTest(Tokenizer &tokenizer, const TestCase &test) {
   ASSERT_NO_FATAL_FAILURE(RunNoneTest(tokenizer)) << "Trailing tokens";
 }
 
-void RunTests(std::initializer_list<TestCase> &&tests) {
+void RunTests(initializer_list<TestCase> &&tests) {
   Tokenizer tokenizer;
   for (const auto &test : tests)
     ASSERT_NO_FATAL_FAILURE(RunTest(tokenizer, test)) << "{{{ " << test.Line << " }}}";
@@ -217,7 +219,7 @@ TEST(Tokenizer, TestUnknown) {
 }
 
 TEST(Tokenizer, TestSimpleSexp) {
-  std::vector<Token> tokens = {
+  vector<Token> tokens = {
     Token(TokenTypes::PARENOPEN, "("),
     Token(TokenTypes::SYMBOL, "+"),
     Token(TokenTypes::NUMBER, "2"),

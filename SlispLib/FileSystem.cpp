@@ -8,8 +8,8 @@
 
 using namespace std;
 
-File::File(std::fstream &&stream, FileSystemInterface::Modes mode):
-  Stream(std::move(stream)),
+File::File(fstream &&stream, FileSystemInterface::Modes mode):
+  Stream(move(stream)),
   Mode(mode)
 {
 }

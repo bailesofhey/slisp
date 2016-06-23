@@ -11,7 +11,7 @@ class StdLibTest: public ::testing::Test {
     static const vector<const char*> CmdArgs; 
 
     Controller Controller_;
-    std::stringstream Out;
+    stringstream Out;
     int NOutputLines;
     
     explicit StdLibTest():
@@ -26,7 +26,7 @@ class StdLibTest: public ::testing::Test {
       NOutputLines = 0;
     }
 
-    bool RunSuccess(const std::string &code, const std::string &expectedResult) {
+    bool RunSuccess(const string &code, const string &expectedResult) {
       Reset();
       Controller_.Run(code);
 
@@ -35,10 +35,10 @@ class StdLibTest: public ::testing::Test {
           ++NOutputLines;      
       }
 
-      return Out.str().find(expectedResult) != std::string::npos;
+      return Out.str().find(expectedResult) != string::npos;
     }
 
-    bool RunFail(const std::string &code) {
+    bool RunFail(const string &code) {
       return RunSuccess(code, "Error");
     }
 };
@@ -234,15 +234,15 @@ TEST_F(StdLibInterpreterTest, TestDisplay) {
 }
 
 TEST_F(StdLibInterpreterTest, TestQuit) {
-  std::stringstream in;
-  in << "(+ 2 3)" << std::endl
-     << "(+ 4 6)" << std::endl
-     << "(quit)" << std::endl
-     << "(+ 8 12)" << std::endl;
+  stringstream in;
+  in << "(+ 2 3)" << endl
+     << "(+ 4 6)" << endl
+     << "(quit)" << endl
+     << "(+ 8 12)" << endl;
   Controller_.Run(in);
-  ASSERT_NE(Out.str().find("5"), std::string::npos);
-  ASSERT_NE(Out.str().find("10"), std::string::npos);
-  ASSERT_EQ(Out.str().find("20"), std::string::npos);
+  ASSERT_NE(Out.str().find("5"), string::npos);
+  ASSERT_NE(Out.str().find("10"), string::npos);
+  ASSERT_EQ(Out.str().find("20"), string::npos);
 }
 
 TEST_F(StdLibInterpreterTest, TestHelp) {
@@ -443,27 +443,27 @@ class StdLibNumericalTest: public StdLibTest {
     decltype(Int::Value) MinValue,
                          MaxValue;
    explicit StdLibNumericalTest():
-    MinValue(std::numeric_limits<decltype(MinValue)>::min()),
-    MaxValue(std::numeric_limits<decltype(MaxValue)>::max())
+    MinValue(numeric_limits<decltype(MinValue)>::min()),
+    MaxValue(numeric_limits<decltype(MaxValue)>::max())
   {
   }
   
-  void TestBadNumericArgs(const std::string &name) {
+  void TestBadNumericArgs(const string &name) {
     static const char * const values[] = {" ", "\"foo\"", "+", "a"};
-    std::string prefix = "(" + name + " ";
+    string prefix = "(" + name + " ";
     for (auto &value : values) {
       if (name != "+" || value[0] != '"') {
-        std::string code = prefix + value + ")";
+        string code = prefix + value + ")";
         ASSERT_TRUE(RunFail(code));
       }
     }
   }
 
-  void TestIdentity(const std::string &name) {
+  void TestIdentity(const string &name) {
     static const char * const values[] = {"0", "1", "42"};
-    std::string prefix = "(" + name + " ";
+    string prefix = "(" + name + " ";
     for (auto &value : values) {
-      std::string code = prefix + value + ")";
+      string code = prefix + value + ")";
       const char *expectedValue = value;
       ASSERT_TRUE(RunSuccess(code, expectedValue));
     }
@@ -478,9 +478,9 @@ TEST_F(StdLibNumericalTest, TestIncr) {
   ASSERT_TRUE(RunSuccess("(incr 0)", "1"));
   ASSERT_TRUE(RunSuccess("(incr 41)", "42"));
 
-  std::stringstream temp;
+  stringstream temp;
   temp << "(incr " << MaxValue << ")";
-  ASSERT_TRUE(RunSuccess(temp.str(), std::to_string(MinValue)));
+  ASSERT_TRUE(RunSuccess(temp.str(), to_string(MinValue)));
 }
 
 TEST_F(StdLibNumericalTest, TestDecr) {
@@ -490,9 +490,9 @@ TEST_F(StdLibNumericalTest, TestDecr) {
   ASSERT_TRUE(RunSuccess("(decr 1)", "0"));
   ASSERT_TRUE(RunSuccess("(decr 42)", "41"));
 
-  std::stringstream temp;
+  stringstream temp;
   temp << "(decr " << MinValue << ")";
-  ASSERT_TRUE(RunSuccess(temp.str(), std::to_string(MaxValue)));
+  ASSERT_TRUE(RunSuccess(temp.str(), to_string(MaxValue)));
 }
 
 TEST_F(StdLibNumericalTest, TestAdd) {
@@ -502,9 +502,9 @@ TEST_F(StdLibNumericalTest, TestAdd) {
   ASSERT_TRUE(RunSuccess("(+ 3.14 4.6)", "7.74"));
   ASSERT_TRUE(RunSuccess("(+ 1 2 3 4 5)", "15"));
 
-  std::stringstream temp;
+  stringstream temp;
   temp << "(+ 1 " << MaxValue << ")";
-  ASSERT_TRUE(RunSuccess(temp.str(), std::to_string(MinValue)));
+  ASSERT_TRUE(RunSuccess(temp.str(), to_string(MinValue)));
 }
 
 TEST_F(StdLibNumericalTest, TestSub) {
@@ -515,9 +515,9 @@ TEST_F(StdLibNumericalTest, TestSub) {
   ASSERT_TRUE(RunSuccess("(- 3.14 4.0)", "-0.859999"));
   ASSERT_TRUE(RunSuccess("(- 1 2 3 4 5)", "-13"));
 
-  std::stringstream temp;
+  stringstream temp;
   temp << "(- 1 " << MinValue << ")";
-  ASSERT_TRUE(RunSuccess(temp.str(), std::to_string(MaxValue)));
+  ASSERT_TRUE(RunSuccess(temp.str(), to_string(MaxValue)));
 }
 
 TEST_F(StdLibNumericalTest, TestMult) {
@@ -1692,7 +1692,7 @@ TEST_F(StdLibListTest, TestNth) {
 
 class StdLibLogicalTest: public StdLibTest {
   protected:
-    std::string Prefix;
+    string Prefix;
     void TestAndOr(bool isAnd);
 };
 
@@ -1721,7 +1721,7 @@ void StdLibLogicalTest::TestAndOr(bool isAnd) {
   ASSERT_TRUE(RunFail(Prefix + "\"foo\" \"bar\")"));
 
   // Evaluation
-  std::string evalCode = Prefix + "(< n 100) (>= n 10) (!= n 43))";
+  string evalCode = Prefix + "(< n 100) (>= n 10) (!= n 43))";
   ASSERT_TRUE(RunSuccess("(set n 42)", "42"));
   ASSERT_TRUE(RunSuccess(evalCode, isAnd ? "true" : "true"));
   ASSERT_TRUE(RunSuccess("(set n 9)", "9"));
@@ -1764,7 +1764,7 @@ TEST_F(StdLibLogicalTest, TestNot) {
   ASSERT_TRUE(RunSuccess("(not false)", "true"));
   ASSERT_TRUE(RunSuccess("(not true)", "false"));
   
-  std::string code = "(not (< n 100))";
+  string code = "(not (< n 100))";
   ASSERT_TRUE(RunSuccess("(set n 42)", "42"));
   ASSERT_TRUE(RunSuccess(code, "false"));
   ASSERT_TRUE(RunSuccess("(set n 420)", "420"));
@@ -1773,7 +1773,7 @@ TEST_F(StdLibLogicalTest, TestNot) {
 
 class StdLibComparisonTest: public StdLibTest {
   protected:
-    std::string Prefix;
+    string Prefix;
 
     StdLibComparisonTest()
     {

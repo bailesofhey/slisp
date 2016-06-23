@@ -8,8 +8,7 @@
 #include "FunctionDef.h"
 #include "InterpreterUtils.h"
 
-using std::cout;
-using std::endl;
+using namespace std;
 
 //=============================================================================
 
@@ -24,7 +23,7 @@ Parser::Parser(CommandInterface &commandInterface, ITokenizer &tokenizer, Interp
 bool Parser::Parse() {
   Reset();
 
-  std::string line;
+  string line;
   if (CommandInterface_.ReadInputLine(line)) {
     Tokenizer_.SetLine(line);
     
@@ -61,8 +60,8 @@ bool HasInfixArgCount(InterpreterSettings &settings, Sexp &sexp, ArgList::iterat
   return true;
 }
 
-using InfixOp = std::pair<std::string, int>;
-bool PopulateInfixOperators(InterpreterSettings &settings, ArgList::const_iterator &firstPosArg, ArgList::const_iterator &endArg, std::vector<InfixOp> &infixOperators) {
+using InfixOp = pair<string, int>;
+bool PopulateInfixOperators(InterpreterSettings &settings, ArgList::const_iterator &firstPosArg, ArgList::const_iterator &endArg, vector<InfixOp> &infixOperators) {
   auto currArg = firstPosArg;
   if (auto firstArgSym = dynamic_cast<Symbol*>((*currArg).get())) {
     if (settings.IsSymbolFunction(firstArgSym->Value))
@@ -73,7 +72,7 @@ bool PopulateInfixOperators(InterpreterSettings &settings, ArgList::const_iterat
   while (currArg != endArg) {
     if ((argNum % 2) == 0) {
       if (auto fnSym = dynamic_cast<Symbol*>((*currArg).get())) {
-        std::string op = fnSym->Value;
+        string op = fnSym->Value;
         int precedence = settings.GetInfixSymbolPrecedence(op);
         if (precedence == InterpreterSettings::NO_PRECEDENCE)
           return false;
@@ -97,11 +96,11 @@ void Parser::TransformInfixSexp(Sexp &sexp, bool isImplicit) const {
   if (!HasInfixArgCount(Settings, sexp, currArg, firstPos))
     return;
 
-  std::vector<InfixOp> infixOperators;
+  vector<InfixOp> infixOperators;
   if (!PopulateInfixOperators(Settings, firstPos, endArg, infixOperators))
     return;
 
-  std::sort(begin(infixOperators), end(infixOperators), [](const InfixOp &lhs, const InfixOp &rhs) { 
+  sort(begin(infixOperators), end(infixOperators), [](const InfixOp &lhs, const InfixOp &rhs) { 
     return lhs.second < rhs.second;
   });
 
@@ -175,16 +174,16 @@ void Parser::TransformInfixSexp(Sexp &sexp, bool isImplicit) const {
   }
 }
 
-const std::string& Parser::Error() const {
+const string& Parser::Error() const {
   return Error_;
 }
 
-std::unique_ptr<Sexp> Parser::ExpressionTree() const {
-  return std::unique_ptr<Sexp>(static_cast<Sexp*>(ExprTree->Clone().release()));
+unique_ptr<Sexp> Parser::ExpressionTree() const {
+  return unique_ptr<Sexp>(static_cast<Sexp*>(ExprTree->Clone().release()));
 }
 
 void Parser::Reset() {
-  ExprTree = std::unique_ptr<Sexp>(new Sexp);
+  ExprTree = unique_ptr<Sexp>(new Sexp);
   ExprTree->Args.push_back(ExpressionPtr { new Symbol { Settings.GetDefaultSexp() } });
   Error_ = "";
   Depth = 0;
@@ -192,7 +191,7 @@ void Parser::Reset() {
 
 bool Parser::ParseToken(Sexp &root) {
   if (Debug)
-    cout << static_cast<std::string>(*Tokenizer_) << endl;
+    cout << static_cast<string>(*Tokenizer_) << endl;
 
   auto &tokenType = (*Tokenizer_).Type;
   if (tokenType == TokenTypes::NUMBER)
@@ -210,16 +209,16 @@ bool Parser::ParseToken(Sexp &root) {
   else if (tokenType == TokenTypes::NONE)
     return ParseNone(root);
   else {
-    Error_ = "Unexpected token: " + static_cast<std::string>(*Tokenizer_);
+    Error_ = "Unexpected token: " + static_cast<string>(*Tokenizer_);
     return false;
   }
 }
 
 template <class N>
-bool ParseNum(const std::string &val, ExpressionPtr &numExpr, Sexp &root, std::string &error) {
+bool ParseNum(const string &val, ExpressionPtr &numExpr, Sexp &root, string &error) {
   auto &num = static_cast<N&>(*numExpr);
   if (NumConverter::Convert(val, num.Value)) {
-    root.Args.push_back(std::move(numExpr));
+    root.Args.push_back(move(numExpr));
     return true;
   }
   else {
@@ -309,7 +308,7 @@ begin:
   }
   else  {
     if (Depth) {
-      std::string line;
+      string line;
       if (CommandInterface_.HasMore()) {
         CommandInterface_.ReadContinuedInputLine(line);
         Tokenizer_.SetLine(line);
@@ -327,7 +326,7 @@ begin:
       }
     }
     else
-      throw std::exception("Logic bug: NONE should only be reached with Depth > 0");
+      throw exception("Logic bug: NONE should only be reached with Depth > 0");
   }
 }
 

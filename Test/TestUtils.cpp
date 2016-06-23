@@ -1,6 +1,8 @@
 #include "gtest\gtest.h"
 #include "Utils.h"
 
+using namespace std;
+
 TEST(Utils, TestEndsWith) {
   EXPECT_FALSE(Utils::EndsWith("", ""));
   EXPECT_FALSE(Utils::EndsWith("a", ""));

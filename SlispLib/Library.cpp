@@ -1,5 +1,7 @@
 #include "Library.h"
 
+using namespace std;
+
 //=============================================================================
 
 Library::~Library() {

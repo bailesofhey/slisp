@@ -9,6 +9,8 @@
 
 #include "Common.h"
 
+using namespace std;
+
 class ParserTest: public ::testing::Test {
   public:
     ParserTest():
@@ -34,7 +36,7 @@ class ParserTest: public ::testing::Test {
     TestTokenizer Tokenizer;
     Parser Parser;
 
-    void TestParse(std::initializer_list<Token> &&tokens, bool expectSuccess, std::initializer_list<Expression*> &&expectedArgs) {
+    void TestParse(initializer_list<Token> &&tokens, bool expectSuccess, initializer_list<Expression*> &&expectedArgs) {
       Tokenizer.Tokens = tokens;
       ASSERT_EQ(expectSuccess, Parser.Parse());
       ASSERT_EQ(expectSuccess, Parser.Error().empty());
@@ -51,12 +53,12 @@ class ParserTest: public ::testing::Test {
       ASSERT_TRUE(ArgListHelper::AreEqual(exprTree->Args, expected));
     }
 
-    void TestParseFail(std::initializer_list<Token> &&tokens) {
-      TestParse(std::move(tokens), false, {});
+    void TestParseFail(initializer_list<Token> &&tokens) {
+      TestParse(move(tokens), false, {});
     }
 
-    void TestParseOk(std::initializer_list<Token> &&tokens, std::initializer_list<Expression*> &&expectedArgs) {
-      TestParse(std::move(tokens), true, std::move(expectedArgs));
+    void TestParseOk(initializer_list<Token> &&tokens, initializer_list<Expression*> &&expectedArgs) {
+      TestParse(move(tokens), true, move(expectedArgs));
     }
 };
 
@@ -117,10 +119,10 @@ TEST_F(ParserTest, TestSingleInt) {
   ASSERT_PARSE({ Token(TokenTypes::NUMBER, "0") }, { new Int(0) });
   ASSERT_PARSE({ Token(TokenTypes::NUMBER, "000") }, { new Int(0) });
 
-  auto minValue = std::numeric_limits<decltype(Int::Value)>::min(),
-       maxValue = std::numeric_limits<decltype(Int::Value)>::max();
-  ASSERT_PARSE({ Token(TokenTypes::NUMBER, std::to_string(minValue)) }, { new Int(minValue) });
-  ASSERT_PARSE({ Token(TokenTypes::NUMBER, std::to_string(maxValue)) }, { new Int(maxValue) });
+  auto minValue = numeric_limits<decltype(Int::Value)>::min(),
+       maxValue = numeric_limits<decltype(Int::Value)>::max();
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, to_string(minValue)) }, { new Int(minValue) });
+  ASSERT_PARSE({ Token(TokenTypes::NUMBER, to_string(maxValue)) }, { new Int(maxValue) });
 }
 
 // Automatically promote to float if overflow?
@@ -136,10 +138,10 @@ TEST_F(ParserTest, TestSingleFloat) {
   ASSERT_PARSE({ Token(TokenTypes::NUMBER, "3e2") }, { new Float(3e2) });
   ASSERT_PARSE({ Token(TokenTypes::NUMBER, "3e-2") }, { new Float(3e-2) });
   
-  auto minValue = std::numeric_limits<decltype(Float::Value)>::min(),
-       maxValue = std::numeric_limits<decltype(Float::Value)>::max();
-  std::stringstream ss;
-  ss << std::setprecision(17)
+  auto minValue = numeric_limits<decltype(Float::Value)>::min(),
+       maxValue = numeric_limits<decltype(Float::Value)>::max();
+  stringstream ss;
+  ss << setprecision(17)
      << minValue;
   ASSERT_PARSE({ Token(TokenTypes::NUMBER, ss.str()) }, { new Float(minValue) });
   ss.clear();
@@ -154,7 +156,7 @@ TEST_F(ParserTest, TestSingleSymbol) {
   ASSERT_PARSE({ Token(TokenTypes::SYMBOL, "+") }, { new Symbol("+") });
   ASSERT_NOPARSE({ Token(TokenTypes::SYMBOL, "") });
 
-  std::string longSym = "abcdefghijklmnopqrstuvwxyz0123456789";
+  string longSym = "abcdefghijklmnopqrstuvwxyz0123456789";
   ASSERT_PARSE({ Token(TokenTypes::SYMBOL, longSym) }, { new Symbol(longSym) });
 
   ASSERT_PARSE({ Token(TokenTypes::SYMBOL, "'a") }, { new Sexp({ExpressionPtr {new Symbol("'")}, ExpressionPtr {new Symbol("a")} }) });
@@ -354,7 +356,7 @@ TEST_F(ParserTest, TestComplexSexps) {
                 symPlus { new Symbol("+") },
                 symFoo { new Symbol("foo") },
                 strHello { new Str("hello") },
-                sexpAdd { new Sexp({ std::move(symPlus), std::move(num2), std::move(num3) }) };
+                sexpAdd { new Sexp({ move(symPlus), move(num2), move(num3) }) };
   ASSERT_PARSE(
     {
       Token(TokenTypes::PARENOPEN, ""), Token(TokenTypes::SYMBOL, "print"),
@@ -368,10 +370,10 @@ TEST_F(ParserTest, TestComplexSexps) {
     },
     {
       new Sexp({ 
-        std::move(symPrint),
-          std::move(sexpAdd),
-          std::move(symFoo),
-          std::move(strHello),
+        move(symPrint),
+          move(sexpAdd),
+          move(symFoo),
+          move(strHello),
       })
     }
   );

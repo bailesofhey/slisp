@@ -8,81 +8,83 @@
 #include "Expression.h"
 #include "FunctionDef.h"
 
+using namespace std;
+
 //=============================================================================
 
 ArgDef::~ArgDef() {
 }
 
-bool ArgDef::Validate(ExpressionEvaluator evaluator, ExpressionPtr &expr, std::string &error) const {
+bool ArgDef::Validate(ExpressionEvaluator evaluator, ExpressionPtr &expr, string &error) const {
   if (expr) {
     if (auto sexp = TypeHelper::GetValue<Sexp>(expr)) {
       auto &args = sexp->Args;
       if (!args.empty()) {
-        ExpressionPtr fnExpr = std::move(args.front());
+        ExpressionPtr fnExpr = move(args.front());
         args.pop_front();
         if (auto fn = TypeHelper::GetValue<Function>(fnExpr)) {
           bool result = ValidateArgs(evaluator, args, error);
-          args.push_front(std::move(fnExpr));
+          args.push_front(move(fnExpr));
           return result;
         }
         else
-          throw std::exception("first argument in sexp must be a function");
+          throw exception("first argument in sexp must be a function");
       }
       else
-        throw std::exception("sexp requires at least one argument");
+        throw exception("sexp requires at least one argument");
     }
     else
       error = "Expected: Sexp. Actual: " + expr->Type().Name();
   }
   else
-    throw std::exception("ExpressionPtr is empty");
+    throw exception("ExpressionPtr is empty");
 
   return error.empty();
 }
 
-bool ArgDef::CheckArgCount(size_t expected, ArgList &args, std::string &error) const {
+bool ArgDef::CheckArgCount(size_t expected, ArgList &args, string &error) const {
   return CheckArgCount(expected, expected, args, error);
 }
 
-bool ArgDef::CheckArgCount(size_t expectedMin, size_t expectedMax, ArgList &args, std::string &error) const {
+bool ArgDef::CheckArgCount(size_t expectedMin, size_t expectedMax, ArgList &args, string &error) const {
   auto actualArgCount = args.size();
   if ((expectedMin == ANY_ARGS || actualArgCount >= expectedMin) &&
       (expectedMax == ANY_ARGS || actualArgCount <= expectedMax))
     return true;
   else {
-    std::stringstream ss;
+    stringstream ss;
     ss << "Expected ";
     if (expectedMin == expectedMax)
-      ss << std::to_string(expectedMin);
+      ss << to_string(expectedMin);
     else if (expectedMax == ANY_ARGS)
-      ss << "at least " << std::to_string(expectedMin);
+      ss << "at least " << to_string(expectedMin);
     else
-      ss << "between " << std::to_string(expectedMin) << " and " << std::to_string(expectedMax);
-    ss << " args, got " + std::to_string(actualArgCount);
+      ss << "between " << to_string(expectedMin) << " and " << to_string(expectedMax);
+    ss << " args, got " + to_string(actualArgCount);
     error = ss.str();
     return false;
   }
 }
 
-bool ArgDef::CheckArg(ExpressionEvaluator evaluator, ExpressionPtr &arg, const TypeInfo &expectedType, size_t argNum, std::string &error) const {
+bool ArgDef::CheckArg(ExpressionEvaluator evaluator, ExpressionPtr &arg, const TypeInfo &expectedType, size_t argNum, string &error) const {
   if (arg && TypeHelper::TypeMatches(expectedType, arg->Type()) || evaluator(arg)) {
     if (&expectedType == &Literal::TypeInstance && &arg->Type() == &Quote::TypeInstance) {
-      arg = std::move(static_cast<Quote*>(arg.get())->Value);
+      arg = move(static_cast<Quote*>(arg.get())->Value);
       if (!evaluator(arg)) {
-        error = "Argument " + std::to_string(argNum) + ": Failed to evaluate quote";
+        error = "Argument " + to_string(argNum) + ": Failed to evaluate quote";
         return false;
       }
     }
 
     if (!TypeHelper::TypeMatches(expectedType, arg->Type())) {
-      error = "Argument " + std::to_string(argNum) + ": Expected " + expectedType.Name() + ", got " + arg->Type().Name();
+      error = "Argument " + to_string(argNum) + ": Expected " + expectedType.Name() + ", got " + arg->Type().Name();
       return false;
     }
     else
       return true;
   }
   else {
-    error = "Argument " + std::to_string(argNum) + ": Failed to evaluate";
+    error = "Argument " + to_string(argNum) + ": Failed to evaluate";
     return false;
   }
 }
@@ -106,11 +108,11 @@ ArgDefPtr FuncDef::VarArgDef::Clone() const {
   return ArgDefPtr { new VarArgDef { *this } };
 }
 
-const std::string FuncDef::VarArgDef::ToString() const {
+const string FuncDef::VarArgDef::ToString() const {
   if (IsAnyArgs())
     return "";
   else {
-    std::stringstream ss;
+    stringstream ss;
     for (int i = 0; i < MinArgs; ++i)
       ss << " " << Type.Name();
     
@@ -139,7 +141,7 @@ bool FuncDef::VarArgDef::operator==(const VarArgDef &rhs) const {
       && MaxArgs == rhs.MaxArgs;
 }
 
-bool FuncDef::VarArgDef::ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const {
+bool FuncDef::VarArgDef::ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, string &error) const {
   if (ValidateArgCount(args, error)) {
     ValidateArgTypes(evaluator, args, error);
   }
@@ -151,11 +153,11 @@ bool FuncDef::VarArgDef::IsAnyArgs() const {
   return MinArgs == ANY_ARGS && MaxArgs == ANY_ARGS;
 }
 
-bool FuncDef::VarArgDef::ValidateArgCount(ArgList &args, std::string &error) const {
+bool FuncDef::VarArgDef::ValidateArgCount(ArgList &args, string &error) const {
   return CheckArgCount(MinArgs, MaxArgs, args, error);
 }
 
-bool FuncDef::VarArgDef::ValidateArgTypes(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const {
+bool FuncDef::VarArgDef::ValidateArgTypes(ExpressionEvaluator evaluator, ArgList &args, string &error) const {
   int argNum = 0;
   for (auto &arg : args) {
     ++argNum;
@@ -167,9 +169,9 @@ bool FuncDef::VarArgDef::ValidateArgTypes(ExpressionEvaluator evaluator, ArgList
 
 //=============================================================================
 
-FuncDef::ListArgDef::ListArgDef(std::initializer_list<const TypeInfo*> &&types):
+FuncDef::ListArgDef::ListArgDef(initializer_list<const TypeInfo*> &&types):
   ArgDef {},
-  Types { std::move(types) }
+  Types { move(types) }
 {
 }
 
@@ -177,8 +179,8 @@ ArgDefPtr FuncDef::ListArgDef::Clone() const {
   return ArgDefPtr { new ListArgDef { *this } };
 }
 
-const std::string FuncDef::ListArgDef::ToString() const {
-  std::stringstream ss;
+const string FuncDef::ListArgDef::ToString() const {
+  stringstream ss;
   for (auto type : Types) {
     ss << " " << type->Name();
   }
@@ -194,7 +196,7 @@ bool FuncDef::ListArgDef::operator==(const ListArgDef &rhs) const {
   return Types == rhs.Types;
 }
 
-bool FuncDef::ListArgDef::ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, std::string &error) const {
+bool FuncDef::ListArgDef::ValidateArgs(ExpressionEvaluator evaluator, ArgList &args, string &error) const {
   if (CheckArgCount(Types.size(), args, error)) {
     int argNum = 0;
     auto currExpectedArg = Types.begin();
@@ -248,13 +250,13 @@ ArgDefPtr FuncDef::ManyArgs(const TypeInfo &type, size_t minArgs, size_t maxArgs
   return ArgDefPtr { new VarArgDef { type, minArgs, maxArgs } };
 }
 
-ArgDefPtr FuncDef::Args(std::initializer_list<const TypeInfo*> &&args) {
-  return ArgDefPtr { new ListArgDef { std::move(args) } };
+ArgDefPtr FuncDef::Args(initializer_list<const TypeInfo*> &&args) {
+  return ArgDefPtr { new ListArgDef { move(args) } };
 }
 
 FuncDef::FuncDef(ArgDefPtr &in, ArgDefPtr &out):
-  In { std::move(in) },
-  Out { std::move(out) }
+  In { move(in) },
+  Out { move(out) }
 {
 }
 
@@ -265,8 +267,8 @@ FuncDef::FuncDef(const FuncDef &val):
 }
 
 FuncDef::FuncDef(FuncDef &&rval):
-  In { std::move(rval.In) },
-  Out { std::move(rval.Out) }
+  In { move(rval.In) },
+  Out { move(rval.Out) }
 {
 }
 
@@ -295,14 +297,13 @@ FuncDef& FuncDef::operator=(FuncDef func) {
 }
 
 void FuncDef::Swap(FuncDef &func) {
-  using std::swap;
   swap(In, func.In);
   swap(Out, func.Out);
 }
 
-bool FuncDef::ValidateArgs(ExpressionEvaluator evaluator, ExpressionPtr &expr, std::string &error) {
-  std::stringstream ss;
-  std::string tmpError;
+bool FuncDef::ValidateArgs(ExpressionEvaluator evaluator, ExpressionPtr &expr, string &error) {
+  stringstream ss;
+  string tmpError;
   if (!In->Validate(evaluator, expr, tmpError)) {
     ss << "Wrong input args: " << tmpError;
     error = ss.str();
@@ -311,8 +312,8 @@ bool FuncDef::ValidateArgs(ExpressionEvaluator evaluator, ExpressionPtr &expr, s
   return true;
 }
 
-const std::string FuncDef::ToString() const {
-  std::stringstream ss;
+const string FuncDef::ToString() const {
+  stringstream ss;
   ss << In->ToString() << ") -> " << Out->ToString();
   return ss.str();
 }
@@ -329,14 +330,14 @@ Function::Function():
 }
 
 Function::Function(FuncDef &&def):
-  Function(std::move(def), ExpressionPtr {})
+  Function(move(def), ExpressionPtr {})
 {
 }
 
 Function::Function(FuncDef &&def, ExpressionPtr &sym):
   Literal { TypeInstance },
-  Def { std::move(def) },
-  Symbol { std::move(sym) }
+  Def { move(def) },
+  Symbol { move(sym) }
 {
 }
 
@@ -349,7 +350,7 @@ Function::Function(const Function &rhs):
     Symbol = rhs.Symbol->Clone();
 }
 
-void Function::Display(std::ostream &out) const {
+void Function::Display(ostream &out) const {
   out << "<Function";
   if (Symbol) {
     if (auto *sym = dynamic_cast<::Symbol*>(Symbol.get()))
@@ -380,7 +381,7 @@ CompiledFunction::CompiledFunction(const CompiledFunction &rhs):
 }
 
 CompiledFunction::CompiledFunction(FuncDef &&def, SlipFunction fn):
-  Function { std::move(def) },
+  Function { move(def) },
   Fn { fn }
 {
 }
@@ -425,15 +426,15 @@ InterpretedFunction::InterpretedFunction(const InterpretedFunction &rhs):
 {
   ArgListHelper::CopyTo(rhs.Args, Args);
   if (rhs.Code.Value)
-    Code.Value = std::move(rhs.Code.Value->Clone());
+    Code.Value = move(rhs.Code.Value->Clone());
   for (auto &kv : rhs.Closure) 
     Closure.emplace(kv.first, kv.second->Clone());
 }
 
 InterpretedFunction::InterpretedFunction(FuncDef &&def, ExpressionPtr &&code, ArgList &&args):
-  Function { std::move(def) },
-  Code { std::move(code) },
-  Args { std::move(args) },
+  Function { move(def) },
+  Code { move(code) },
+  Args { move(args) },
   Closure { }
 {
 }

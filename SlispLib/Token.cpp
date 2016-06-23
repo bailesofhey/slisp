@@ -3,20 +3,22 @@
 
 #include "Tokenizer.h"
 
+using namespace std;
+
 //=============================================================================
 Token::Token():
   Token(TokenTypes::NONE, "")
 {
 }
 
-Token::Token(TokenTypes type, const std::string &value):
+Token::Token(TokenTypes type, const string &value):
   Type(type),
   Value(value)
 {
 }
 
-Token::operator std::string() const {
-  std::string str = "Token { Type: ";
+Token::operator string() const {
+  string str = "Token { Type: ";
 
   if (Type == TokenTypes::NONE)
     str += "NONE";
@@ -33,7 +35,7 @@ Token::operator std::string() const {
   else if (Type == TokenTypes::UNKNOWN)
     str += "UNKNOWN";
   else
-    throw std::exception("invalid token type");
+    throw exception("invalid token type");
 
   str += ", Value: ";
   if (Type == TokenTypes::STRING)
@@ -51,6 +53,6 @@ bool Token::operator==(const Token& rhs) const {
       && Value == rhs.Value;
 }
 
-std::ostream& operator<<(std::ostream& os, const Token& token) {
-  return os << token.operator std::string();
+ostream& operator<<(ostream& os, const Token& token) {
+  return os << token.operator string();
 }
