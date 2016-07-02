@@ -265,18 +265,18 @@ protected:
 };
 
 void StdLibIOTest::BasicExistsDeleteTest() {
-  ASSERT_TRUE(RunFail("(exists)"));
-  ASSERT_TRUE(RunFail("(exists 42)"));
-  ASSERT_TRUE(RunFail("(delete)"));
-  ASSERT_TRUE(RunFail("(delete 42)"));
+  ASSERT_TRUE(RunFail("(file.exists)"));
+  ASSERT_TRUE(RunFail("(file.exists 42)"));
+  ASSERT_TRUE(RunFail("(file.delete)"));
+  ASSERT_TRUE(RunFail("(file.delete 42)"));
 
   ASSERT_TRUE(RunSuccess("(set filename \"basicExistsDeleteTest.txt\")", ""));
-  ASSERT_TRUE(RunSuccess("(exists filename)", "false"));
-  ASSERT_TRUE(RunSuccess("(writelines filename ())", "true"));
-  ASSERT_TRUE(RunSuccess("(exists filename)", "true"));
-  ASSERT_TRUE(RunSuccess("(delete filename)", "true"));
-  ASSERT_TRUE(RunSuccess("(exists filename)", "false"));
-  ASSERT_TRUE(RunSuccess("(delete filename)", "false"));
+  ASSERT_TRUE(RunSuccess("(file.exists filename)", "false"));
+  ASSERT_TRUE(RunSuccess("(file.writelines filename ())", "true"));
+  ASSERT_TRUE(RunSuccess("(file.exists filename)", "true"));
+  ASSERT_TRUE(RunSuccess("(file.delete filename)", "true"));
+  ASSERT_TRUE(RunSuccess("(file.exists filename)", "false"));
+  ASSERT_TRUE(RunSuccess("(file.delete filename)", "false"));
 }
 
 TEST_F(StdLibIOTest, TestExists) {
@@ -293,19 +293,19 @@ void StdLibIOTest::BasicReadWriteLinesTest() {
 
   ASSERT_TRUE(RunSuccess("(set filename \"readLinesTest.txt\")", ""));
 
-  ASSERT_TRUE(RunSuccess("(exists filename)", "false"));
-  ASSERT_TRUE(RunSuccess("(writelines filename ())", "true"));
-  ASSERT_TRUE(RunSuccess("(exists filename)", "true"));
-  ASSERT_TRUE(RunSuccess("(readlines filename)", "()"));
+  ASSERT_TRUE(RunSuccess("(file.exists filename)", "false"));
+  ASSERT_TRUE(RunSuccess("(file.writelines filename ())", "true"));
+  ASSERT_TRUE(RunSuccess("(file.exists filename)", "true"));
+  ASSERT_TRUE(RunSuccess("(file.readlines filename)", "()"));
 
-  ASSERT_TRUE(RunSuccess("(writelines filename (\"first line\"))", "true"));
-  ASSERT_TRUE(RunSuccess("(readlines filename)", "(\"first line\")"));
+  ASSERT_TRUE(RunSuccess("(file.writelines filename (\"first line\"))", "true"));
+  ASSERT_TRUE(RunSuccess("(file.readlines filename)", "(\"first line\")"));
 
-  ASSERT_TRUE(RunSuccess("(writelines filename (\"first line\", \"second line\"))", "true"));
-  ASSERT_TRUE(RunSuccess("(readlines filename)", "(\"first line\" \"second line\")"));
+  ASSERT_TRUE(RunSuccess("(file.writelines filename (\"first line\", \"second line\"))", "true"));
+  ASSERT_TRUE(RunSuccess("(file.readlines filename)", "(\"first line\" \"second line\")"));
 
-  ASSERT_TRUE(RunSuccess("(writelines filename ())", "true"));
-  ASSERT_TRUE(RunSuccess("(readlines filename)", "()"));
+  ASSERT_TRUE(RunSuccess("(file.writelines filename ())", "true"));
+  ASSERT_TRUE(RunSuccess("(file.readlines filename)", "()"));
 }
 
 TEST_F(StdLibIOTest, TestReadLines) {

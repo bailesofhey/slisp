@@ -56,10 +56,16 @@ void SymbolTable::PutSymbolFunction(const string &symbolName, Function &&func) {
   PutSymbol(symbolName, func.Clone());
 }
 
-void SymbolTable::PutSymbolFunction(const string &symbolName, SlipFunction fn, FuncDef &&def) {
+void SymbolTable::PutSymbolFunction(const string &symbolName, const string &signatures, const string &doc, initializer_list<ExampleDef> examples, SlipFunction fn, FuncDef &&def) {
   ExpressionPtr funcExpr { new CompiledFunction { move(def), fn } };
-  static_cast<CompiledFunction*>(funcExpr.get())->Symbol = ExpressionPtr { new Symbol(symbolName) };
-  PutSymbol(symbolName, move(funcExpr));
+  if (funcExpr) {
+    auto *func = static_cast<CompiledFunction*>(funcExpr.get());
+    func->Symbol = ExpressionPtr { new Symbol(symbolName) };
+    func->Signatures = signatures;
+    func->Doc = doc;
+    func->Examples = examples;
+    PutSymbol(symbolName, move(funcExpr));
+  }
 }
 
 bool SymbolTable::GetSymbol(const string &symbolName, ExpressionPtr &valueCopy) {

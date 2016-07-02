@@ -31,83 +31,452 @@ void StdLib::Load(Interpreter &interpreter) {
   // Interpreter
 
   FuncDef dispDef { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() };
-  symbols.PutSymbolFunction("display", StdLib::Display, dispDef.Clone());
-  symbols.PutSymbolFunction("print", StdLib::Print, dispDef.Clone());
-
-  symbols.PutSymbolFunction("prompt", StdLib::Prompt, FuncDef { FuncDef::ManyArgs(Str::TypeInstance, 0, 1), FuncDef::OneArg(Str::TypeInstance) });
-  symbols.PutSymbolFunction("quit", StdLib::Quit, FuncDef { FuncDef::NoArgs(), FuncDef::NoArgs() });
-  symbols.PutSymbolFunction("help", StdLib::Help, FuncDef { FuncDef::AnyArgs(Symbol::TypeInstance), FuncDef::NoArgs() });
-
-  symbols.PutSymbolFunction("infix-register", StdLib::InfixRegister, FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::NoArgs() });
-  symbols.PutSymbolFunction("infix-unregister", StdLib::InfixUnregister, FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::NoArgs() });
+  symbols.PutSymbolFunction(
+    "display",
+    "(display .. args) -> nil",
+    "dump each arg to console. similar to (print)",
+    {{"(display \"hello world\")", "\"hello world\""}},
+    StdLib::Display,
+    dispDef.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "print",
+    "(print .. args) -> nil", 
+    "print each arg (strings are not show with quotes). similar to (display)",
+    {{"(print \"hello world\")", "hello world"}},
+    StdLib::Print,
+    dispDef.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "prompt",
+    "(prompt prefix) -> str",
+    "print prefix, then read a line from stdin",
+    {{"(prompt \"name: \")", "name: John\n\"John\""}},
+    StdLib::Prompt,
+    FuncDef { FuncDef::ManyArgs(Str::TypeInstance, 0, 1), FuncDef::OneArg(Str::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "quit",
+    "(quit) -> nil",
+    "exit the REPL",
+    {},
+    StdLib::Quit,
+    FuncDef { FuncDef::NoArgs(), FuncDef::NoArgs() }
+  );
+  symbols.PutSymbolFunction(
+    "help",
+    "(help symbol) -> nil",
+    "get help on a particular symbol",
+    {},
+    StdLib::Help,
+    FuncDef { FuncDef::AnyArgs(Symbol::TypeInstance), FuncDef::NoArgs() }
+  );
+  symbols.PutSymbolFunction(
+    "infix-register",
+    "(infix-register symbol) -> nil",
+    "support calling symbol (a binary function) in infix form",
+    {{"(set add +)", ""}, {"(infix-register add)", ""}, {"(3 add 4)", "7"}},
+    StdLib::InfixRegister,
+    FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::NoArgs() }
+  );
+  symbols.PutSymbolFunction(
+    "infix-unregister",
+    "(infix-unregister symbol) -> nil",
+    "unregister previously defined infix symbol",
+    {{"(infix-unregister add)",""}},
+    StdLib::InfixUnregister,
+    FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::NoArgs() }
+  );
 
   // IO
+  initializer_list<ExampleDef> ioExample {
+    {"(file.writelines \"ioExample.txt\" (\"line1\" \"line2\"))", "true"},
+    {"(file.readlines \"ioExample.txt\")", "(\"line1\" \"line2\")"},
+    {"(file.delete \"ioExample.txt\")", "true"},
+    {"(file.exists \"ioExample.txt\")", "false"}
+  };
   
-  symbols.PutSymbolFunction("exists", StdLib::Exists, FuncDef { FuncDef::OneArg(Str::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
-  symbols.PutSymbolFunction("delete", StdLib::Delete, FuncDef { FuncDef::OneArg(Str::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
-  symbols.PutSymbolFunction("readlines", StdLib::ReadLines, FuncDef { FuncDef::OneArg(Str::TypeInstance), FuncDef::OneArg(Quote::TypeInstance) });
-  symbols.PutSymbolFunction("writelines", StdLib::WriteLines, FuncDef { FuncDef::Args({&Str::TypeInstance, &Quote::TypeInstance}), FuncDef::OneArg(Bool::TypeInstance) });
+  symbols.PutSymbolFunction(
+    "file.exists",
+    "(file.exists filepath) -> bool",
+    "does filepath exist",
+    ioExample,
+    StdLib::Exists,
+    FuncDef { FuncDef::OneArg(Str::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "file.delete",
+    "(file.delete filepath) -> bool",
+    "delete filepath",
+    ioExample,
+    StdLib::Delete,
+    FuncDef { FuncDef::OneArg(Str::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "file.readlines",
+    "(file.readlines filepath) -> list",
+    "returns a list of all lines in filepath",
+    ioExample,
+    StdLib::ReadLines,
+    FuncDef { FuncDef::OneArg(Str::TypeInstance), FuncDef::OneArg(Quote::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "file.writelines",
+    "(file.writelines filepath lines) -> bool",
+    "write list of lines into filepath (overwrite what's already there)",
+    ioExample,
+    StdLib::WriteLines,
+    FuncDef { FuncDef::Args({&Str::TypeInstance, &Quote::TypeInstance}), FuncDef::OneArg(Bool::TypeInstance) }
+  );
 
   // Assignment Operators
 
   FuncDef setDef { FuncDef::Args({&Symbol::TypeInstance, &Sexp::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) };  
-  symbols.PutSymbolFunction("set", StdLib::Set, setDef.Clone()); 
-  symbols.PutSymbolFunction("=", StdLib::Set,   setDef.Clone()); 
-  symbols.PutSymbolFunction("+=", StdLib::Set,  setDef.Clone()); 
-  symbols.PutSymbolFunction("-=", StdLib::Set,  setDef.Clone()); 
-  symbols.PutSymbolFunction("*=", StdLib::Set,  setDef.Clone()); 
-  symbols.PutSymbolFunction("/=", StdLib::Set,  setDef.Clone()); 
-  symbols.PutSymbolFunction("%=", StdLib::Set,  setDef.Clone()); 
-  symbols.PutSymbolFunction("<<=", StdLib::Set, setDef.Clone()); 
-  symbols.PutSymbolFunction(">>=", StdLib::Set, setDef.Clone()); 
-  symbols.PutSymbolFunction("&=", StdLib::Set,  setDef.Clone()); 
-  symbols.PutSymbolFunction("^=", StdLib::Set,  setDef.Clone()); 
-  symbols.PutSymbolFunction("|=", StdLib::Set,  setDef.Clone()); 
+  symbols.PutSymbolFunction(
+    "set", 
+    "(set symbol value) -> value",
+    "sets a symbol to value",
+    {{"(set foo 42)", "42"}},
+    StdLib::Set,
+    setDef.Clone()
+  ); 
+  symbols.PutSymbolFunction(
+    "=",
+    "(= symbol value) -> value",
+    "alias for (set)",
+    {{"(= foo 42)", "42"}},
+    StdLib::Set,   
+    setDef.Clone()
+  ); 
+
+    
+  string setWithOpDoc = "perform operation on current symbol and return new value. value can be: int, float, str, list";
+  symbols.PutSymbolFunction(
+    "+=",
+    "(+= symbol value) -> value",
+    setWithOpDoc,
+    {{"(= foo 2)", "2"}, {"(+= foo 3)", "5"}},
+    StdLib::Set, 
+    setDef.Clone()
+  ); 
+  symbols.PutSymbolFunction(
+    "-=",
+    "(-= symbol value) -> value",
+    setWithOpDoc,
+    {{"(= foo 2)", "2"}, {"(-= foo 3)", "-1"}},
+    StdLib::Set,
+    setDef.Clone()
+  ); 
+  symbols.PutSymbolFunction(
+    "*=",
+    "(*= symbol value) -> value",
+    setWithOpDoc,
+    {{"(= foo 2)", "2"}, {"(*= foo 3)", "6"}},
+    StdLib::Set,
+    setDef.Clone()
+  ); 
+  symbols.PutSymbolFunction(
+    "/=",
+    "(/= symbol value) -> value",
+    setWithOpDoc,
+    {{"(= foo 2)", "2"}, {"(/= foo 3)", "0"}},
+    StdLib::Set,
+    setDef.Clone()
+  ); 
+  symbols.PutSymbolFunction(
+    "%=",
+    "(%= symbol value) -> value",
+    setWithOpDoc,
+    {{"(= foo 2)", "2"}, {"(%= foo 3)", "2"}},
+    StdLib::Set,
+    setDef.Clone()
+  ); 
+  symbols.PutSymbolFunction(
+    "<<=",
+    "(<<= symbol value) -> value",
+    setWithOpDoc, 
+    {{"(= foo 2)", "2"}, {"(<<= foo 3)", "16"}},
+    StdLib::Set,
+    setDef.Clone()
+  ); 
+  symbols.PutSymbolFunction(
+    ">>=",
+    "(>>= symbol value) -> value",
+    setWithOpDoc,
+    {{"(= foo 2)", "2"}, {"(>>= foo 3)", "0"}},
+    StdLib::Set,
+    setDef.Clone()
+  ); 
+  symbols.PutSymbolFunction(
+    "&=",
+    "(&= symbol value) -> value",
+    setWithOpDoc,
+    {{"(= foo 2)", "2"}, {"(&= foo 3)", "2"}},
+    StdLib::Set,
+    setDef.Clone()
+  ); 
+  symbols.PutSymbolFunction(
+    "^=",
+    "(^= symbol value) -> value",
+    setWithOpDoc,
+    {{"(= foo 2)", "2"}, {"(^= foo 3)", "1"}},
+    StdLib::Set, 
+    setDef.Clone()
+  ); 
+  symbols.PutSymbolFunction(
+    "|=",
+    "(|= symbol value) -> value",
+    setWithOpDoc,
+    {{"(= foo 2)", "2"}, {"(|= foo 3)", "3"}},
+    StdLib::Set,  
+    setDef.Clone()
+  ); 
   
   FuncDef incrDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) };
-  symbols.PutSymbolFunction("++", StdLib::Set, incrDef.Clone()); 
-  symbols.PutSymbolFunction("--", StdLib::Set, incrDef.Clone()); 
+  symbols.PutSymbolFunction(
+    "++",
+    "(++ symbol) -> value",
+    "increment symbol and return new value",
+    {{"(= foo 2)", "2"}, {"(++ foo)", "3"}},
+    StdLib::Set,
+    incrDef.Clone()
+  ); 
+  symbols.PutSymbolFunction(
+    "--",
+    "(-- symbol) -> value",
+    "decrement symbol and return new value",
+    {{"(= foo 2)", "2"}, {"(-- foo)", "1"}},
+    StdLib::Set, 
+    incrDef.Clone()
+  ); 
 
-  symbols.PutSymbolFunction("unset", StdLib::UnSet, FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction(
+    "unset",
+    "(unset symbol) -> value",
+    "make symbol undefined",
+    {},
+    StdLib::UnSet,
+    FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) }
+  );
 
   // Generic
 
-  symbols.PutSymbolFunction("length", StdLib::Length, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Int::TypeInstance) });
-  symbols.PutSymbolFunction("+", StdLib::Add, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
-  symbols.PutSymbolFunction("empty?", StdLib::EmptyQ, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
-  symbols.PutSymbolFunction("-", StdLib::Sub, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
-  symbols.PutSymbolFunction("*", StdLib::Mult, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
-  symbols.PutSymbolFunction("/", StdLib::Div, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction(
+    "length",
+    "(length iterable) -> int",
+    "return the length of iterable (str, list)",
+    {{"(length \"abc\")", "3"}, {"(length (42 53 64))", "3"}},
+    StdLib::Length, 
+    FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Int::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "+",
+    "(+ .. values) -> value",
+    "add each value and return result. all values must be same type which can be: int, float, str, list",
+    {{"(+ 2 3)", "5"}, {"(+ \"a\" \"bc\")", "\"abc\""}},
+    StdLib::Add,
+    FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "empty?",
+    "(empty? iterable) -> bool",
+    "return whether iterable (list, str) is empty",
+    {{"(empty? \"abc\")", "false"}},
+    StdLib::EmptyQ,
+    FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "-",
+    "(- .. nums) -> num",
+    "subtract each num and return result. all values must be same type which can be: int, float",
+    {{"(- 42 10)", "32"}},
+    StdLib::Sub,
+    FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "*",
+    "(* .. nums) -> num",
+    "multiply each num and return result. all values must be same type which can be: int, float",
+    {{"(* 2 3)", "6"}},
+    StdLib::Mult, 
+    FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "/",
+    "(/ .. nums) -> num",
+    "divide each num and return result. all values must be same type which can be: int, float",
+    {{"(/ 42 6)", "7"}},
+    StdLib::Div, 
+    FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
 
   FuncDef powDef { FuncDef::ManyArgs(Literal::TypeInstance, 2), FuncDef::OneArg(Literal::TypeInstance) };
-  symbols.PutSymbolFunction("pow", StdLib::Pow, powDef.Clone());
-  symbols.PutSymbolFunction("**", StdLib::Pow, powDef.Clone());
-  symbols.PutSymbolFunction("abs", StdLib::Abs, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
-  symbols.PutSymbolFunction("max", StdLib::Max, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
-  symbols.PutSymbolFunction("min", StdLib::Min, FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction(
+    "pow",
+    "(pow base exponent) -> num",
+    "base to the power of exponent. base and exponent must be same type which can be: int, float",
+    {{"(pow 2 3)", "8"}},
+    StdLib::Pow,
+    powDef.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "**",
+    "(** base expontent) -> num",
+    "alias for (pow)",
+    {},
+    StdLib::Pow,
+    powDef.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "abs",
+    "(abs num) -> num",
+    "absolute value of num which can be: int, float",
+    {},
+    StdLib::Abs,
+    FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "max",
+    "(max .. nums) -> num",
+    "return maximum num",
+    {{"(max 42 54 23)", "54"}},
+    StdLib::Max,
+    FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "min",
+    "(min .. nums) -> num",
+    "return minimum num",
+    {{"(min 42 54 23)", "23"}},
+    StdLib::Min,
+    FuncDef { FuncDef::AtleastOneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) }
+  );
 
   FuncDef foreachDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) };
-  symbols.PutSymbolFunction("foreach", StdLib::Foreach, foreachDef.Clone());
-  symbols.PutSymbolFunction("for", StdLib::Foreach, foreachDef.Clone());
+  symbols.PutSymbolFunction(
+    "foreach",
+    "(foreach item iterable .. expressions)    -> value\n"
+    "(foreach item in iterable .. expressions) -> value\n"
+    "(foreach item : iterable .. expressions)  -> value\n"
+    "(foreach iterable fn)                     -> value",
+    "evaluate fn or expressions on each item in iterable. return last expression evaluated",
+    {{"(foreach num (42 54 23) (print num))", "42\n54\n23\n23"}},
+    StdLib::Foreach,
+    foreachDef.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "for",
+    "(for item iterable .. expressions)    -> value\n"
+    "(for item in iterable .. expressions) -> value\n"
+    "(for item : iterable .. expressions)  -> value\n"
+    "(for iterable fn)                     -> value",
+    "alias for (foreach)",
+    {},
+    StdLib::Foreach, 
+    foreachDef.Clone()
+  );
 
-  symbols.PutSymbolFunction("reverse", StdLib::Reverse, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction(
+    "reverse",
+    "(reverse iterable) -> new-iterable",
+    "return the reverse of iterable which can be: str, list",
+    {{"(reverse \"abc\")", "\"cba\""}},
+    StdLib::Reverse,
+    FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) }
+  );
 
   FuncDef headDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) };
-  symbols.PutSymbolFunction("head", StdLib::Head, headDef.Clone());
-  symbols.PutSymbolFunction("car", StdLib::Head, headDef.Clone());
-  symbols.PutSymbolFunction("first", StdLib::Head, headDef.Clone());
-  symbols.PutSymbolFunction("front", StdLib::Head, headDef.Clone());
+  symbols.PutSymbolFunction(
+    "head",
+    "(head iterable) -> value",
+    "return first item in iterable which can be: str, list",
+    {{"(reverse \"abc\")", "\"a\""}},
+    StdLib::Head,
+    headDef.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "car",
+    "(car iterable) -> value",
+    "alias for (head)",
+    {},
+    StdLib::Head,
+    headDef.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "first",
+    "(first iterable) -> value",
+    "alias for (head)",
+    {},
+    StdLib::Head,
+    headDef.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "front",
+    "(front iterable) -> value",
+    "alias for (head)",
+    {},
+    StdLib::Head,
+    headDef.Clone()
+  );
 
-  symbols.PutSymbolFunction("tail", StdLib::Tail, headDef.Clone());
-  symbols.PutSymbolFunction("cdr", StdLib::Tail, headDef.Clone());
-  symbols.PutSymbolFunction("rest", StdLib::Tail, headDef.Clone());
+  symbols.PutSymbolFunction(
+    "tail",
+    "(tail iterable) -> iterable",
+    "returns new iterable (str, list) without first element",
+    {{"(tail \"abc\")", "bc"}},
+    StdLib::Tail,
+    headDef.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "cdr", 
+    "(cdr iterable) -> iterable",
+    "alias for (tail)",
+    {},
+    StdLib::Tail,
+    headDef.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "rest", 
+    "(rest iterable) -> iterable",
+    "alias for (tail)",
+    {},
+    StdLib::Tail, 
+    headDef.Clone()
+  );
 
-  symbols.PutSymbolFunction("last", StdLib::Last, headDef.Clone());
-  symbols.PutSymbolFunction("back", StdLib::Last, headDef.Clone());
+  symbols.PutSymbolFunction(
+    "last",
+    "(last iterable) -> iterable",
+    "return last item in iterable (str, list)",
+    {{"(last \"abc\")", "\"c\""}},
+    StdLib::Last, 
+    headDef.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "back", 
+    "(back iterable) -> iterable",
+    "alias for (last)",
+    {},
+    StdLib::Last, 
+    headDef.Clone()
+  );
 
   FuncDef atDef { FuncDef::Args({&Literal::TypeInstance, &Int::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance)};
-  symbols.PutSymbolFunction("at", StdLib::At, atDef.Clone());
-  symbols.PutSymbolFunction("nth", StdLib::At, atDef.Clone());
+  symbols.PutSymbolFunction(
+    "at", 
+    "(at iterable index) -> value",
+    "return index (zero based) of iterable (str, list)",
+    {{"(at \"abc\" 1)", "\"b\""}},
+    StdLib::At,
+    atDef.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "nth", 
+    "(nth iterable index) -> value",
+    "alias for (at)",
+    {},
+    StdLib::At, 
+    atDef.Clone()
+  );
   //TODO: Lists
   //TODO: ("abc" 1) => "b" ??????????
   //TODO: "abc"[1] => b
@@ -117,77 +486,424 @@ void StdLib::Load(Interpreter &interpreter) {
 
   // Float
 
-  symbols.PutSymbolFunction("exp", StdLib::Exp, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
-  symbols.PutSymbolFunction("log", StdLib::Log, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
-  symbols.PutSymbolFunction("sqrt", StdLib::Sqrt, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
-  symbols.PutSymbolFunction("ceil", StdLib::Ceil, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
-  symbols.PutSymbolFunction("floor", StdLib::Floor, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
-  symbols.PutSymbolFunction("round", StdLib::Round, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
-  symbols.PutSymbolFunction("cos", StdLib::Cos, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
-  symbols.PutSymbolFunction("sin", StdLib::Sin, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
-  symbols.PutSymbolFunction("tan", StdLib::Tan, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
-  symbols.PutSymbolFunction("acos", StdLib::ACos, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
-  symbols.PutSymbolFunction("asin", StdLib::ASin, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
-  symbols.PutSymbolFunction("atan", StdLib::ATan, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
-  symbols.PutSymbolFunction("atan2", StdLib::ATan2, FuncDef { FuncDef::ManyArgs(Float::TypeInstance, 2), FuncDef::OneArg(Float::TypeInstance) });
-  symbols.PutSymbolFunction("cosh", StdLib::Cosh, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
-  symbols.PutSymbolFunction("sinh", StdLib::Sinh, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
-  symbols.PutSymbolFunction("tanh", StdLib::Tanh, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
-  symbols.PutSymbolFunction("acosh", StdLib::ACosh, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
-  symbols.PutSymbolFunction("asinh", StdLib::ASinh, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
-  symbols.PutSymbolFunction("atanh", StdLib::ATanh, FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
+  symbols.PutSymbolFunction(
+    "exp", 
+    "(exp float) -> float",
+    "E to the power",
+    {},
+    StdLib::Exp, 
+    FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "log", 
+    "(log float) -> float",
+    "natural logarithm (base E)",
+    {},
+    StdLib::Log, 
+    FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "sqrt", 
+    "(sqrt float) -> float",
+    "square root",
+    {},
+    StdLib::Sqrt, 
+    FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "ceil", 
+    "(ceil float) -> float",
+    "ceiling",
+    {{"(ceil 1.4)", "2.0"}},
+    StdLib::Ceil, 
+    FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "floor", 
+    "(floor float) -> float",
+    "floor",
+    {{"(floor 1.4)", "1.0"}},
+    StdLib::Floor, 
+    FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "round", 
+    "(round float) -> float",
+    "round to the nearest whole number",
+    {{"(round 1.4)", "1.0"}},
+    StdLib::Round, 
+    FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "cos", 
+    "(cos radians) -> float",
+    "cosine of angle in radians",
+    {{"(cos (PI / 2))", "0"}},
+    StdLib::Cos, 
+    FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "sin", 
+    "(sin radians) -> float",
+    "sine of angle in radians",
+    {{"(sin (PI / 2))", "1.0"}},
+    StdLib::Sin, 
+    FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "tan", 
+    "(tan radians) -> float",
+    "tangent of angle in radians",
+    {},
+    StdLib::Tan, 
+    FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "acos", 
+    "(acos float) -> float",
+    "arc cosine",
+    {},
+    StdLib::ACos, 
+    FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "asin", 
+    "(asin float) -> float",
+    "arc sine",
+    {},
+    StdLib::ASin, 
+    FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "atan", 
+    "(atan float) -> float",
+    "arc tangent",
+    {},
+    StdLib::ATan, 
+    FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "atan2", 
+    "(atan2 x y) -> float",
+    "arc tangent of y/x (both must be floats)",
+    {},
+    StdLib::ATan2, 
+    FuncDef { FuncDef::ManyArgs(Float::TypeInstance, 2), FuncDef::OneArg(Float::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "cosh", 
+    "(cosh float) -> float",
+    "hyperbolic cosine",
+    {},
+    StdLib::Cosh, 
+    FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "sinh", 
+    "(sinh float) -> float",
+    "hyperbolic sine",
+    {},
+    StdLib::Sinh, 
+    FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "tanh", 
+    "(tanh float) -> float",
+    "hyperbolic tan",
+    {},
+    StdLib::Tanh, 
+    FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "acosh", 
+    "(acosh float) -> float",
+    "arc hyperbolic cosine",
+    {},
+    StdLib::ACosh, 
+    FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "asinh", 
+    "(asinh float) -> float",
+    "arc hyperbolic sine",
+    {},
+    StdLib::ASinh, 
+    FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "atanh", 
+    "(atanh float) -> float",
+    "arc hyperbolic tangent",
+    {},
+    StdLib::ATanh, 
+    FuncDef { FuncDef::OneArg(Float::TypeInstance), FuncDef::OneArg(Float::TypeInstance) }
+  );
 
   // Numerical
 
-  symbols.PutSymbolFunction("incr", StdLib::Incr, FuncDef { FuncDef::OneArg(Int::TypeInstance), FuncDef::OneArg(Int::TypeInstance) });
-  symbols.PutSymbolFunction("decr", StdLib::Decr, FuncDef { FuncDef::OneArg(Int::TypeInstance), FuncDef::OneArg(Int::TypeInstance) });
-  RegisterBinaryFunction(symbols, "%", StdLib::Mod);
+  symbols.PutSymbolFunction(
+    "incr", 
+    "(incr int) -> int",
+    "alias for (++)",
+    {},
+    StdLib::Incr, 
+    FuncDef { FuncDef::OneArg(Int::TypeInstance), FuncDef::OneArg(Int::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "decr", 
+    "(decr int) -> int",
+    "alias for (--)",
+    {},
+    StdLib::Decr, 
+    FuncDef { FuncDef::OneArg(Int::TypeInstance), FuncDef::OneArg(Int::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "%", 
+    "(% .. values) -> int",
+    "modulus",
+    {{"(% 5 2)", "1"}},
+    StdLib::Mod, 
+    FuncDef { FuncDef::AtleastOneArg(Int::TypeInstance), FuncDef::OneArg(Int::TypeInstance) }
+  );
 
   FuncDef baseFn { FuncDef::OneArg(Int::TypeInstance), FuncDef::OneArg(Str::TypeInstance) };
-  symbols.PutSymbolFunction("hex", StdLib::Hex, baseFn.Clone());
-  symbols.PutSymbolFunction("bin", StdLib::Bin, baseFn.Clone());
-  symbols.PutSymbolFunction("dec", StdLib::Dec, baseFn.Clone());
+  symbols.PutSymbolFunction(
+    "hex", 
+    "(hex int) -> str",
+    "return str of int converted to base 16",
+    {{"(hex 12)", "\"0xc\""}},
+    StdLib::Hex, 
+    baseFn.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "bin", 
+    "(bin int) -> str",
+    "return str of int converted to base 2",
+    {{"(bin 12)", "\"0b1100\""}},
+    StdLib::Bin,
+    baseFn.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "dec", 
+    "(dec int) -> str",
+    "return str of int converted to base 10",
+    {{"(dec 0xc)", "\"12\""}},
+    StdLib::Dec, 
+    baseFn.Clone()
+  );
 
   FuncDef intPredDef { FuncDef::OneArg(Int::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) };
-  symbols.PutSymbolFunction("even?", StdLib::Even, intPredDef.Clone());
-  symbols.PutSymbolFunction("odd?", StdLib::Odd, intPredDef.Clone());
-  symbols.PutSymbolFunction("zero?", StdLib::Zero, intPredDef.Clone());
+  symbols.PutSymbolFunction(
+    "even?", 
+    "(even? int) -> bool",
+    "true if int is even",
+    {{"(even? 42)", "true"}},
+    StdLib::Even, 
+    intPredDef.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "odd?", 
+    "(odd? int) -> bool",
+    "true if int is odd",
+    {{"(odd? 42)", "false"}},
+    StdLib::Odd, 
+    intPredDef.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "zero?", 
+    "(zero? int) -> bool",
+    "true if int is zero",
+    {{"(zero? 42)", "false"}},
+    StdLib::Zero, 
+    intPredDef.Clone()
+  );
 
   // Bitwise
 
-  RegisterBinaryFunction(symbols, "<<", StdLib::LeftShift);
-  RegisterBinaryFunction(symbols, ">>", StdLib::RightShift);
-  RegisterBinaryFunction(symbols, "&", StdLib::BitAnd);
-  RegisterBinaryFunction(symbols, "|", StdLib::BitOr);
-  RegisterBinaryFunction(symbols, "^", StdLib::BitXor);
-  symbols.PutSymbolFunction("~", StdLib::BitNot, FuncDef { FuncDef::OneArg(Int::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction(
+    "<<", 
+    "(<< .. ints) -> int",
+    "left bitwise shift",
+    {{"(<< 1 3)", "8"}},
+    StdLib::LeftShift, 
+    FuncDef { FuncDef::AtleastOneArg(Int::TypeInstance), FuncDef::OneArg(Int::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    ">>", 
+    "(>> .. ints) -> int",
+    "right bitwise shift",
+    {{"(>> 8 3)", "1"}},
+    StdLib::RightShift, 
+    FuncDef { FuncDef::AtleastOneArg(Int::TypeInstance), FuncDef::OneArg(Int::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "&", 
+    "(& .. ints) -> int",
+    "bitwise and",
+    {{"(& 3 6)", "2"}},
+    StdLib::BitAnd, 
+    FuncDef { FuncDef::AtleastOneArg(Int::TypeInstance), FuncDef::OneArg(Int::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "|", 
+    "(| .. ints) -> int",
+    "bitwise or",
+    {{"(| 3 4)", "7"}},
+    StdLib::BitOr, 
+    FuncDef { FuncDef::AtleastOneArg(Int::TypeInstance), FuncDef::OneArg(Int::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "^", 
+    "(^ .. ints) -> int",
+    "bitwise xor",
+    {{"(^ 3 6)", "5"}},
+    StdLib::BitXor, 
+    FuncDef { FuncDef::AtleastOneArg(Int::TypeInstance), FuncDef::OneArg(Int::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "~", 
+    "(~ int) -> int",
+    "bitwise not",
+    {{"(~ 0)", "-1"}},
+    StdLib::BitNot, 
+    FuncDef { FuncDef::OneArg(Int::TypeInstance), FuncDef::OneArg(Int::TypeInstance) }
+  );
 
   // Str 
 
   FuncDef trimDef { FuncDef::OneArg(Str::TypeInstance), FuncDef::OneArg(Str::TypeInstance) };
-  symbols.PutSymbolFunction("trim", StdLib::Trim, trimDef.Clone());
-  symbols.PutSymbolFunction("upper", StdLib::Upper, trimDef.Clone());
-  symbols.PutSymbolFunction("lower", StdLib::Lower, trimDef.Clone());
+  symbols.PutSymbolFunction(
+    "trim", 
+    "(trim str) -> str",
+    "return str that has leading and trailing whitespace removed",
+    {{"(trim \" abc  \")", "\"abc\""}},
+    StdLib::Trim, 
+    trimDef.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "upper", 
+    "(upper str) -> str",
+    "return upper cased str",
+    {{"(uppper \"aBc\")", "\"ABC\""}},
+    StdLib::Upper, 
+    trimDef.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "lower", 
+    "(lower str) -> str",
+    "return lower cased str",
+    {{"(lower \"AbC\")", "\"abc\""}},
+    StdLib::Lower,
+    trimDef.Clone()
+  );
 
-  symbols.PutSymbolFunction("substr", StdLib::SubStr, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2, 3), FuncDef::OneArg(Str::TypeInstance) });
+  symbols.PutSymbolFunction(
+    "substr", 
+    "(substr str start)\n"
+    "(substr str start count)",
+    "returns new str starting at start (zero based) and optionally spanning a maximum of count number of characters",
+    {{"(substr \"abcde\" 1)", "\"bcde\""}, {"(substr \"abcde\" 1 2)", "\"bc\""}},
+    StdLib::SubStr, 
+    FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2, 3), FuncDef::OneArg(Str::TypeInstance) }
+  );
 
   FuncDef compareDef { FuncDef::ManyArgs(Str::TypeInstance, 2), FuncDef::OneArg(Int::TypeInstance) };
-  symbols.PutSymbolFunction("compare", StdLib::Compare, compareDef.Clone());
+  symbols.PutSymbolFunction(
+    "compare", 
+    "(compare str1 str2) -> int",
+    "lexiographical comparison of str1 and str2.\nstr1 < str2 returns -1\nstr1 == str2 returns 0\nstr1 > str2 returns 1",
+    {{"(compare \"abc\" \"abc\")", "0"}},
+    StdLib::Compare, 
+    compareDef.Clone()
+  );
 
   FuncDef findDef { FuncDef::ManyArgs(Literal::TypeInstance, 2, 3), FuncDef::OneArg(Int::TypeInstance) };
-  symbols.PutSymbolFunction("find", StdLib::Find, findDef.Clone());
-  symbols.PutSymbolFunction("rfind", StdLib::RFind, findDef.Clone());
+  symbols.PutSymbolFunction(
+    "find", 
+    "(find haystack needle)       -> int\n"
+    "(find haystack needle start) -> int",
+    "find needle in haystack, optionally starting at start (zero based)",
+    {{"(find \"hello caramellow!\" \"lo\")", "3"}, {"(find \"hello caramellow!\" \"lo\" 5)", "13"}},
+    StdLib::Find, 
+    findDef.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "rfind", 
+    "(rfind haystack needle)       -> int\n"
+    "(rfind haystack needle start) -> int",
+    "find needle in haystack starting at the end of haystack, optionally starting at start (zero based)",
+    {},
+    StdLib::RFind, 
+    findDef.Clone()
+  );
 
   FuncDef containsDef { FuncDef::ManyArgs(Str::TypeInstance, 2), FuncDef::OneArg(Bool::TypeInstance) };
-  symbols.PutSymbolFunction("contains", StdLib::Contains, containsDef.Clone()); 
-  symbols.PutSymbolFunction("startswith", StdLib::StartsWith, containsDef.Clone());
-  symbols.PutSymbolFunction("endswith", StdLib::EndsWith, containsDef.Clone());
+  symbols.PutSymbolFunction(
+    "contains", 
+    "(contains haystack needle) -> bool",
+    "true if haystack contains needle",
+    {{"(contains \"abcde\" \"cd\")", "true"}},
+    StdLib::Contains, 
+    containsDef.Clone()
+  ); 
+  symbols.PutSymbolFunction(
+    "startswith",
+    "(startswith haystack needle) -> bool",
+    "true if haystack starts with needle",
+    {{"(startswith \"abcde\" \"ab\")", "true"}},
+    StdLib::StartsWith, 
+    containsDef.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "endswith", 
+    "(endswith haystack needle) -> bool",
+    "true if haystack ends with needle",
+    {{"(endswith \"abcde\" \"de\")", "true"}},
+    StdLib::EndsWith, 
+    containsDef.Clone()
+  );
 
-  symbols.PutSymbolFunction("replace", StdLib::Replace, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2, 4), FuncDef::OneArg(Str::TypeInstance) });
-  symbols.PutSymbolFunction("split", StdLib::Split, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2, 3), FuncDef::OneArg(Quote::TypeInstance) });
-  symbols.PutSymbolFunction("join", StdLib::Join, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2, 3), FuncDef::OneArg(Str::TypeInstance) });
+  symbols.PutSymbolFunction(
+    "replace", 
+    "(replace haystack needle)                             -> str\n"
+    "(replace haystack needle replacement)                 -> str\n"
+    "(replace haystack needle replacement maxReplacements) -> str",
+    "replace needle with replacement inside haystack for maxReplacements times. if replacement isn't specified, the empty string is used.",
+    {{"(replace \"hello world\" \"o\")", "\"hell wrld\""},
+     {"(replace \"hello world\" \"o\" \"X\")", "\"hellX wXrld\""},
+     {"(replace \"hello world\" \"o\" \"X\" 1)", "\"hellX world\""}},
+    StdLib::Replace, 
+    FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2, 4), FuncDef::OneArg(Str::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "split", 
+    "(split str)           -> list\n"
+    "(split str delimiter) -> list",
+    "split str using delimiter (space if not specified)",
+    {{"(split \"jon,42\" \",\")", "(\"jon\" \"42\")"}},
+    StdLib::Split, 
+    FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2, 3), FuncDef::OneArg(Quote::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "join", 
+    "(join list)           -> str\n"
+    "(join list delimiter) -> str",
+    "build a str by joining all items in list together with delimiter (space if not specified)",
+    {{"(join (\"jon\" \"42\"))", "jon,42"}},
+    StdLib::Join, 
+    FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2, 3), FuncDef::OneArg(Str::TypeInstance) }
+  );
 
-  symbols.PutSymbolFunction("format", StdLib::Format, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 1, ArgDef::ANY_ARGS), FuncDef::OneArg(Str::TypeInstance) });
+  symbols.PutSymbolFunction(
+    "format", 
+    "(format pattern .. args) -> str",
+    "build a str using pattern and args.\n{} means pick next positional arg\n{0} means pick first arg\n{foo} means get value of variable foo in the current scope",
+    {{"(format \"{} is {} years old\" \"jon\" 42)", "jon is 42 years old"},
+     {"(format \"{0} is {1} years old\" \"jon\" 42)", "jon is 42 years old"},
+     {"(let ((name \"jon\") (age 42)) (format \"{name} is {age} years old\"))", "jon is 42 years old"}},
+    StdLib::Format, 
+    FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 1, ArgDef::ANY_ARGS), FuncDef::OneArg(Str::TypeInstance) }
+  );
   
   // Logical
 
@@ -201,90 +917,437 @@ void StdLib::Load(Interpreter &interpreter) {
     FuncDef { FuncDef::AnyArgs(), FuncDef::OneArg(Quote::TypeInstance) },
     StdLib::List
   });
+
+  symbols.PutSymbolFunction(
+    "list",
+    "(list .. values) -> list",
+    "construct a list from values",
+    {{"(list 1 2)", "(1 2)"}},
+    StdLib::List,
+    FuncDef { FuncDef::AnyArgs(), FuncDef::OneArg(Quote::TypeInstance) }
+  );
+
   symbols.PutSymbolFunction("list", CompiledFunction {
     FuncDef { FuncDef::AnyArgs(), FuncDef::OneArg(Quote::TypeInstance) },
     StdLib::List
   });
 
   FuncDef lstTransformDef { FuncDef::Args({&Function::TypeInstance, &Sexp::TypeInstance}), FuncDef::OneArg(Quote::TypeInstance) };
-  symbols.PutSymbolFunction("map", StdLib::Map, lstTransformDef.Clone());
-  symbols.PutSymbolFunction("filter", StdLib::Filter, lstTransformDef.Clone());
-  symbols.PutSymbolFunction("reduce", StdLib::Reduce, FuncDef { FuncDef::Args({&Function::TypeInstance, &Sexp::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction(
+    "map", 
+    "(map fn list) -> list",
+    "returns new list with fn applied to each element",
+    {{"(map even? (1 2 3))", "(false true false)"}},
+    StdLib::Map,
+    lstTransformDef.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "filter", 
+    "(filter predicate list) -> list",
+    "returns new list containing only elements which match the predicate",
+    {{"(filter even? (1 2 3))", "(2)"}},
+    StdLib::Filter, 
+    lstTransformDef.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "reduce", 
+    "(reduce binaryFn list) -> value",
+    "aggregate elements in list using binaryFn",
+    {{"(reduce + (1 2 3))", "6"}},
+    StdLib::Reduce,
+    FuncDef { FuncDef::Args({&Function::TypeInstance, &Sexp::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) }
+  );
 
   FuncDef takeDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2), FuncDef::OneArg(Quote::TypeInstance) };
-  symbols.PutSymbolFunction("take", StdLib::Take, takeDef.Clone());
-  symbols.PutSymbolFunction("skip", StdLib::Skip, takeDef.Clone());
+  symbols.PutSymbolFunction(
+    "take", 
+    "(take num list)       -> list\n"
+    "(take predicate list) -> list",
+    "take from list num elements or as long as each element matches predicate",
+    {{"(take 2 (4 6 7 8))", "(4 6)"}, {"(take even? (4 6 7 8))", "(4 6)"}},
+    StdLib::Take, 
+    takeDef.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "skip", 
+    "(skip num list)       -> list\n"
+    "(skip predicate list) -> list",
+    "skip over num elements in list or until predicate no longer matches",
+    {{"(skip 2 (4 6 7 8))", "(7 8)"}, {"(skip even? (4 6 7 8))", "(7 8)"}},
+    StdLib::Skip, 
+    takeDef.Clone()
+  );
 
   FuncDef listPredDef { FuncDef::Args({&Function::TypeInstance, &Sexp::TypeInstance}), FuncDef::OneArg(Bool::TypeInstance) };
-  symbols.PutSymbolFunction("any", StdLib::Any, listPredDef.Clone());
-  symbols.PutSymbolFunction("all", StdLib::All, listPredDef.Clone());
+  symbols.PutSymbolFunction(
+    "any",
+    "(any predicate list) -> bool",
+    "true if any element in list matches predicate",
+    {{"(any even? (1 2 3))", "true"}},
+    StdLib::Any,
+    listPredDef.Clone()
+  );
+  symbols.PutSymbolFunction(
+    "all", 
+    "(all predicate list) -> bool",
+    "true if all elements in list match predicate",
+    {{"(all even? (1 2 3))", "false"}},
+    StdLib::All, 
+    listPredDef.Clone()
+  );
 
-  symbols.PutSymbolFunction("zip", StdLib::Zip, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 1, ArgDef::ANY_ARGS), FuncDef::OneArg(Quote::TypeInstance) });
+  symbols.PutSymbolFunction(
+    "zip", 
+    "(zip .. lists)    -> list\n"
+    "(zip fn .. lists) -> list",
+    "zip one or more lists together, optionally using applying fn",
+    {{"(zip (1 2) (99 98))", "((1 99) (2 98))"}, {"(zip + (1 2) (99 98))", "(100 100)"}},
+    StdLib::Zip,
+    FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 1, ArgDef::ANY_ARGS), FuncDef::OneArg(Quote::TypeInstance) }
+  );
 
-  symbols.PutSymbolFunction("cons", StdLib::Cons, FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2), FuncDef::OneArg(Quote::TypeInstance) });
-  symbols.PutSymbolFunction("range", StdLib::Range, FuncDef { FuncDef::ManyArgs(Int::TypeInstance, 2, 3), FuncDef::OneArg(Quote::TypeInstance) });
-  symbols.PutSymbolFunction("..", StdLib::Range, FuncDef { FuncDef::ManyArgs(Int::TypeInstance, 2), FuncDef::OneArg(Quote::TypeInstance) });
+  symbols.PutSymbolFunction(
+    "cons", 
+    "(cons item list) -> list",
+    "add item into front of list",
+    {{"(cons 3 (4))", "(3 4)"}},
+    StdLib::Cons,
+    FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2), FuncDef::OneArg(Quote::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "range", 
+    "(range start end)        -> list\n"
+    "(range start end stride) -> list",
+    "return a list of all numbers between and start and end, optionally increasing by stride (defaults to 1)",
+    {{"(range 2 8)", "(2 3 4 5 6 7 8)"}, {"(range 2 8 4)", "(2 6)"}},
+    StdLib::Range,
+    FuncDef { FuncDef::ManyArgs(Int::TypeInstance, 2, 3), FuncDef::OneArg(Quote::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "..", 
+    "(.. start end)        -> list\n"
+    "(.. start end stride) -> list",
+    "alias for (range)",
+    {},
+    StdLib::Range, 
+    FuncDef { FuncDef::ManyArgs(Int::TypeInstance, 2), FuncDef::OneArg(Quote::TypeInstance) }
+  );
 
   // Logical
 
-  symbols.PutSymbolFunction("and", StdLib::And, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Bool::TypeInstance) });
-  symbols.PutSymbolFunction("&&", StdLib::And, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Bool::TypeInstance) });
+  symbols.PutSymbolFunction(
+    "and", 
+    "(and .. expressions) -> bool",
+    "logical and of each boolean expression. shortcuits if false expression encountered",
+    {{"(and false true)", "false"}},
+    StdLib::And, 
+    FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Bool::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "&&", 
+    "(&& .. expressions) -> bool",
+    "alias for (and)",
+    {},
+    StdLib::And, 
+    FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Bool::TypeInstance) }
+  );
 
-  symbols.PutSymbolFunction("or", StdLib::Or, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Bool::TypeInstance) });
-  symbols.PutSymbolFunction("||", StdLib::Or, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Bool::TypeInstance) });
+  symbols.PutSymbolFunction(
+    "or", 
+    "(or .. expressions) -> bool",
+    "logical or of each expression. shortcuits if true expression encountered",
+    {{"(or true false)", "true"}},
+    StdLib::Or, 
+    FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Bool::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "||", 
+    "(|| .. expressions) -> bool",
+    "alias for (or)",
+    {},
+    StdLib::Or, 
+    FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Bool::TypeInstance) }
+  );
 
-  symbols.PutSymbolFunction("not", StdLib::Not, FuncDef { FuncDef::OneArg(Sexp::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
-  symbols.PutSymbolFunction("!", StdLib::Not, FuncDef { FuncDef::OneArg(Sexp::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
+  symbols.PutSymbolFunction(
+    "not", 
+    "(not expression) -> bool",
+    "logical not of expression",
+    {{"(not false)", "true"}},
+    StdLib::Not, 
+    FuncDef { FuncDef::OneArg(Sexp::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "!", 
+    "(! expression) -> bool",
+    "alias for (not)",
+    {},
+    StdLib::Not, 
+    FuncDef { FuncDef::OneArg(Sexp::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) }
+  );
 
   // Comparison
 
-  RegisterComparator(symbols, "==", StdLib::Eq);
-  RegisterComparator(symbols, "!=", StdLib::Ne);
-  RegisterComparator(symbols, "<", StdLib::Lt);
-  RegisterComparator(symbols, ">", StdLib::Gt);
-  RegisterComparator(symbols, "<=", StdLib::Lte);
-  RegisterComparator(symbols, ">=", StdLib::Gte);
+  symbols.PutSymbolFunction(
+    "==", 
+    "(== .. values) -> bool",
+    "true if all values are equal",
+    {{"(== 3 4 5)", "false"}},
+    StdLib::Eq, 
+    FuncDef { FuncDef::AtleastOneArg(), FuncDef::OneArg(Bool::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "!=", 
+    "(!= .. values) -> bool",
+    "true if all values are not equal",
+    {{"(!= 3 4 5)", "true"}},
+    StdLib::Ne, 
+    FuncDef { FuncDef::AtleastOneArg(), FuncDef::OneArg(Bool::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "<", 
+    "(< .. ints) -> bool",
+    "true if all values are monotonically decreasing",
+    {{"(< 4 3 2)", "true"}},
+    StdLib::Lt, 
+    FuncDef { FuncDef::AtleastOneArg(), FuncDef::OneArg(Bool::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    ">", 
+    "(> .. ints) -> bool",
+    "true if all values are monotonically increasing",
+    {{"(> 2 3 4)", "true"}},
+    StdLib::Gt, 
+    FuncDef { FuncDef::AtleastOneArg(), FuncDef::OneArg(Bool::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "<=", 
+    "(<= .. values) -> bool",
+    "true if all values are less than or equal to each other",
+    {{"(<= 4 3 3)", "true"}},
+    StdLib::Lte, 
+    FuncDef { FuncDef::AtleastOneArg(), FuncDef::OneArg(Bool::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    ">=", 
+    "(>= .. values) -> bool",
+    "true if all values are greater than or equal to each other",
+    {{"(>= 2 3 3)", "true"}},
+    StdLib::Gte, 
+    FuncDef { FuncDef::AtleastOneArg(), FuncDef::OneArg(Bool::TypeInstance) }
+  );
 
   // Branching, scoping, evaluation
 
-  symbols.PutSymbolFunction("quote", StdLib::QuoteFn, FuncDef { FuncDef::OneArg(Sexp::TypeInstance), FuncDef::OneArg(Quote::TypeInstance) });
-  symbols.PutSymbolFunction("'", StdLib::QuoteFn, FuncDef { FuncDef::OneArg(Sexp::TypeInstance), FuncDef::OneArg(Quote::TypeInstance) });
-  symbols.PutSymbolFunction("unquote", StdLib::Unquote, FuncDef { FuncDef::OneArg(Sexp::TypeInstance), FuncDef::OneArg(Quote::TypeInstance) });
+  symbols.PutSymbolFunction(
+    "quote", 
+    "(quote expression) -> quote",
+    "quote expression (prevent evaluation)",
+    {{"(quote (+ 3 4))", "(+ 3 4)"}},
+    StdLib::QuoteFn, 
+    FuncDef { FuncDef::OneArg(Sexp::TypeInstance), FuncDef::OneArg(Quote::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "'", 
+    "(' expression) -> quote",
+    "alias for (quote)",
+    {},
+    StdLib::QuoteFn, 
+    FuncDef { FuncDef::OneArg(Sexp::TypeInstance), FuncDef::OneArg(Quote::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "unquote", 
+    "(unquote quotedExpression) -> value",
+    "unquote (evaluate) expression",
+    {{"(unquote (quote (+ 3 4)))", "7"}},
+    StdLib::Unquote, 
+    FuncDef { FuncDef::OneArg(Sexp::TypeInstance), FuncDef::OneArg(Quote::TypeInstance) }
+  );
 
-  symbols.PutSymbolFunction("if", StdLib::If, FuncDef { 
-    FuncDef::Args({&Bool::TypeInstance, &Sexp::TypeInstance, &Sexp::TypeInstance}),
-    FuncDef::OneArg(Literal::TypeInstance)
-  });
+  symbols.PutSymbolFunction(
+    "if", 
+    "(if expr trueBranch)             -> value\n"
+    "(if expr trueBranch falseBranch) -> value",
+    "if expr is true, evaluate trueBranch. Otherwise, evaluate falseBranch (if defined)",
+    {{"(if (2 < 3) true)", "true"}, {"(if (2 > 3) true false)", "false"}},
+    StdLib::If,
+    FuncDef { FuncDef::Args({&Bool::TypeInstance, &Sexp::TypeInstance, &Sexp::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) }
+  );
 
-  symbols.PutSymbolFunction("cond", StdLib::Cond, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 1, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) });
-  symbols.PutSymbolFunction("switch", StdLib::Switch, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 3, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) });
-  symbols.PutSymbolFunction("while", StdLib::While, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) });
-  symbols.PutSymbolFunction("let", StdLib::Let, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) });
-  symbols.PutSymbolFunction("begin", StdLib::Begin, FuncDef { FuncDef::AtleastOneArg(Sexp::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) });
-  symbols.PutSymbolFunction("lambda", StdLib::Lambda, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2), FuncDef::OneArg(Function::TypeInstance) });
-  symbols.PutSymbolFunction("fn", StdLib::Lambda, FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2), FuncDef::OneArg(Function::TypeInstance) });
-  symbols.PutSymbolFunction("def", StdLib::Def, 
-    FuncDef { FuncDef::Args({&Symbol::TypeInstance, &Sexp::TypeInstance, &Sexp::TypeInstance}),
-    FuncDef::OneArg(Function::TypeInstance)
-  });
-  symbols.PutSymbolFunction("apply", StdLib::Apply, FuncDef { FuncDef::Args({ &Function::TypeInstance, &Sexp::TypeInstance }), FuncDef::OneArg(Literal::TypeInstance) });
+  symbols.PutSymbolFunction(
+    "cond", 
+    "(cond ((expr1 branch1) .. (exprN branchN) (true defaultBranch))) -> value",
+    "generalization of if/else if",
+    {{"(cond ((2 < 3) \"less than\") ((2 > 3) \"greater than\") (true \"equal\"))", "less than"}},
+    StdLib::Cond, 
+    FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 1, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "switch", 
+    "(switch expr (value1 branch1) .. (valueN branchN) (defaultBranch))                   -> value\n"
+    "(switch expr (case value1 branch1) .. (case valueN branchN) (default defaultBranch)) -> value",
+    "evaluate expr, then evaluate the statement that matches appropriate value (otherwise evaluate defaultValueStatement)",
+    {{"(switch 3 (1 \"one\") (2 \"two\") (\"other\"))", "\"other\""}},
+    StdLib::Switch, 
+    FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 3, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "while", 
+    "(while expr .. statements) -> value",
+    "execute statements as long as expr evaluates to true",
+    {{"(while false \"this line doesn't evalute\")", "nil"}},
+    StdLib::While, 
+    FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "let", 
+    "(let ((name1 value1) ..) .. statements) -> value",
+    "evaluate statements with bound variables",
+    {{"(let ((a 3) (b 4)) (+ a b))", "7"}},
+    StdLib::Let, 
+    FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "begin", 
+    "(begin .. statements) -> value",
+    "evaluate statements",
+    {},
+    StdLib::Begin, 
+    FuncDef { FuncDef::AtleastOneArg(Sexp::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "lambda", 
+    "(lambda (.. vars) .. statements) -> fn",
+    "create anonymous function",
+    {{"(lambda (x) (+ x 10))", "<Function>"}},
+    StdLib::Lambda, 
+    FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2), FuncDef::OneArg(Function::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "fn", 
+    "(fn (.. vars) .. statements) -> fn",
+    "alias for (lambda)",
+    {},
+    StdLib::Lambda, 
+    FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2), FuncDef::OneArg(Function::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "def", 
+    "(def name (.. vars) .. statements) -> fn",
+    "define named function",
+    {{"(def add (a b) (+ a b))", "<Function:add>"}},
+    StdLib::Def, 
+    FuncDef { FuncDef::Args({&Symbol::TypeInstance, &Sexp::TypeInstance, &Sexp::TypeInstance}), FuncDef::OneArg(Function::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "apply", 
+    "(apply fn arglist) -> value",
+    "evaluate fn with arglist",
+    {{"(apply + (1 2 3))", "6"}},
+    StdLib::Apply, 
+    FuncDef { FuncDef::Args({ &Function::TypeInstance, &Sexp::TypeInstance }), FuncDef::OneArg(Literal::TypeInstance) }
+  );
 
   // Conversion operators
 
-  symbols.PutSymbolFunction("type", StdLib::TypeFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Function::TypeInstance) });
+  symbols.PutSymbolFunction(
+    "type", 
+    "(type value) -> type",
+    "get the type of value",
+    {{"(type 42)", "int"}},
+    StdLib::TypeFunc, 
+    FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Function::TypeInstance) }
+  );
 
-  symbols.PutSymbolFunction("atom?", StdLib::TypeQFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
-  symbols.PutSymbolFunction("bool?", StdLib::TypeQFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
-  symbols.PutSymbolFunction("int?", StdLib::TypeQFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
-  symbols.PutSymbolFunction("float?", StdLib::TypeQFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
-  symbols.PutSymbolFunction("str?", StdLib::TypeQFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
-  symbols.PutSymbolFunction("list?", StdLib::TypeQFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
-  symbols.PutSymbolFunction("fn?", StdLib::TypeQFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
+  symbols.PutSymbolFunction(
+    "atom?", 
+    "(atom? value) -> bool",
+    "is value not a list?",
+    {{"(atom? 42)", "true"}},
+    StdLib::TypeQFunc, 
+    FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "bool?", 
+    "(bool? value) -> bool",
+    "is value a bool?",
+    {{"(bool? 42)", "false"}},
+    StdLib::TypeQFunc, 
+    FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "int?", 
+    "(int? value) -> bool",
+    "is value an int?",
+    {{"(int? 42)", "true"}},
+    StdLib::TypeQFunc, 
+    FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "float?", 
+    "(float? value) -> bool",
+    "is value a float?",
+    {{"(float? 42)", "false"}},
+    StdLib::TypeQFunc, 
+    FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "str?", 
+    "(str? value) -> bool",
+    "is value a str?",
+    {{"(str? 42)", "false"}},
+    StdLib::TypeQFunc, 
+    FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "list?", 
+    "(list? value) -> bool",
+    "is value a list?",
+    {{"(list? 42)", "false"}},
+    StdLib::TypeQFunc, 
+    FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "fn?", 
+    "(fn? value) -> bool",
+    "is value a fn?",
+    {{"(fn? 42)", "false"}},
+    StdLib::TypeQFunc, 
+    FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) }
+  );
 
-  symbols.PutSymbolFunction("bool", StdLib::BoolFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
-  symbols.PutSymbolFunction("int", StdLib::IntFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Int::TypeInstance) });
-  symbols.PutSymbolFunction("float", StdLib::FloatFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Float::TypeInstance) });
-  symbols.PutSymbolFunction("str", StdLib::StrFunc, FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Str::TypeInstance) });
+  symbols.PutSymbolFunction(
+    "bool",
+    "(bool value) -> bool",
+    "convert value to bool",
+    {{"(bool 42)", "true"}},
+    StdLib::BoolFunc, 
+    FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "int", 
+    "(int value) -> int",
+    "convert value to int",
+    {{"(int 42)", "42"}},
+    StdLib::IntFunc, 
+    FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Int::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "float", 
+    "(float value) -> float",
+    "convert value to float",
+    {{"(float 42)", "42"}},
+    StdLib::FloatFunc, 
+    FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Float::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "str", 
+    "(str value) -> str",
+    "convert value to str",
+    {{"(str 42)", "\"42\""}},
+    StdLib::StrFunc, 
+    FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Str::TypeInstance) }
+  );
 
   // Register infix operators by precedence (using C++ rules, where appropriate)
   settings.RegisterInfixSymbol("..");
@@ -475,17 +1538,31 @@ bool StdLib::Quit(EvaluationContext &ctx) {
 bool StdLib::Help(EvaluationContext &ctx) {
   string defaultSexp = ctx.Interp.GetSettings().GetDefaultSexp();
   stringstream ss;
-  Interpreter::SymbolFunctor functor = [&ss, &defaultSexp](const string &symbolName, ExpressionPtr &expr) {
+  bool fullHelp = false;
+  Interpreter::SymbolFunctor functor = [&ss, &defaultSexp, &fullHelp](const string &symbolName, ExpressionPtr &expr) {
     if (symbolName != defaultSexp) {
-      if (auto fn = TypeHelper::GetValue<Function>(expr))
-        ss << "(" << symbolName << fn->Def.ToString() << endl;
+      if (auto fn = TypeHelper::GetValue<Function>(expr)) {
+        if (!fn->Signatures.empty())
+          ss << fn->Signatures << endl;
+        if (fullHelp) {
+          if (!fn->Doc.empty())
+            ss << fn->Doc << endl;
+          for (auto &ex : fn->Examples) {
+            ss << "Example: " << ex.Code << " => " << ex.ExpectedValue << endl;
+          }
+          ss << endl;
+        }
+      }
     }
   };
 
   auto &symbols = ctx.Interp.GetDynamicSymbols();
-  if (ctx.Args.empty())
+  if (ctx.Args.empty()) {
+    fullHelp = false;
     symbols.ForEach(functor);
+  }
   else {
+    fullHelp = true;
     while (!ctx.Args.empty()) {
       ExpressionPtr currArg = move(ctx.Args.front());
       ctx.Args.pop_front();
@@ -2797,12 +3874,4 @@ bool StdLib::PredicateHelper(EvaluationContext &ctx, F fn, R defaultResult) {
 
   ctx.Expr = ExpressionPtr { result.Clone() };
   return true;
-}
-
-void StdLib::RegisterBinaryFunction(SymbolTable &symbolTable, const string& name, SlipFunction fn) {
-  symbolTable.PutSymbolFunction(name, fn, FuncDef { FuncDef::AtleastOneArg(Int::TypeInstance), FuncDef::OneArg(Int::TypeInstance) });
-}
-
-void StdLib::RegisterComparator(SymbolTable &symbolTable, const string& name, SlipFunction fn) {
-  symbolTable.PutSymbolFunction(name, fn, FuncDef { FuncDef::AtleastOneArg(), FuncDef::OneArg(Bool::TypeInstance) });
 }

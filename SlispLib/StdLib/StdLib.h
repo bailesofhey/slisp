@@ -203,9 +203,6 @@ class StdLib: public Library {
 
     static bool BinaryLogicalFunc(EvaluationContext &ctx, bool isAnd);
 
-    static void RegisterBinaryFunction(SymbolTable &symbolTable, const std::string &name, SlipFunction fn);
-    static void RegisterComparator(SymbolTable &symbolTable, const std::string& name, SlipFunction fn);
-
     template <class T, class F, class R>
     static bool PredicateHelper(EvaluationContext &ctx, F fn, R defaultResult);
 

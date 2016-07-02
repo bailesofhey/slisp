@@ -344,7 +344,10 @@ Function::Function(FuncDef &&def, ExpressionPtr &sym):
 Function::Function(const Function &rhs):
   Literal { TypeInstance },
   Def { rhs.Def },
-  Symbol { }
+  Symbol { },
+  Signatures { rhs.Signatures },
+  Doc { rhs.Doc },
+  Examples { rhs.Examples }
 {
   if (rhs.Symbol)
     Symbol = rhs.Symbol->Clone();
@@ -361,7 +364,9 @@ void Function::Display(ostream &out) const {
 
 bool Function::operator==(const Function &rhs) const {
   return Def == rhs.Def &&
-         (Symbol && rhs.Symbol && *Symbol == *rhs.Symbol);
+         (Symbol && rhs.Symbol && *Symbol == *rhs.Symbol) &&
+         Signatures == rhs.Signatures &&
+         Doc == rhs.Doc;
 }
 
 //=============================================================================

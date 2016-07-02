@@ -98,11 +98,48 @@ class FuncDef {
     ArgDefPtr Out;
 };
 
+// Begin 0.2
+struct ExampleDef {
+  std::string Code;
+  std::string ExpectedValue;
+};
+
+struct ParamDef {
+  enum Flags {
+    Standard = 0,
+    Rest     = 1 << 1,
+    Keyword  = 1 << 2,
+    Quoted   = 1 << 3,
+  };
+
+  std::string Name;
+  TypeInfo &Type;
+  int Flags;
+  ExpressionPtr DefaultValue;
+  std::string Doc;
+};
+
+struct SignatureDef {
+  TypeInfo &Type;
+  std::vector<ParamDef> Params;
+};
+
+struct FuncDef2 {
+  std::string Name;
+  std::vector<SignatureDef> Signatures;
+  std::string Doc;
+  std::vector<ExampleDef> Examples;
+};
+// End 0.2
+
 struct Function: public Literal {
   static const TypeInfo TypeInstance;
 
   FuncDef Def;
   ExpressionPtr Symbol;
+  std::string Signatures;
+  std::string Doc;
+  std::vector<ExampleDef> Examples;
 
   explicit Function();
   explicit Function(FuncDef &&func);

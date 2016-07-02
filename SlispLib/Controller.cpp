@@ -230,7 +230,14 @@ void Controller::SetupModules() {
   OutManager.SetFlags(OutputManager::ShowPrompt | OutputManager::ShowResults);
 
   auto &symbols = Interpreter_.GetDynamicSymbols();
-  symbols.PutSymbolFunction("import", ImportModuleFunctor(*this), FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) });
+  symbols.PutSymbolFunction(
+    "import", 
+    "(import file) -> nil",
+    "import \"file.slisp\" in the current directory",
+    {{"(import foo)", "nil"}},
+    ImportModuleFunctor(*this), 
+    FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) }
+  );
 }
 
 void Controller::DisplayHelp() {

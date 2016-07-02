@@ -20,7 +20,14 @@ class ParserTest: public ::testing::Test {
       Tokenizer(),
       Parser(CommandInterface, Tokenizer, Settings)
     {
-      DummySymbols.PutSymbolFunction("+", &DummyFn, FuncDef { FuncDef::NoArgs(), FuncDef::NoArgs() });
+      DummySymbols.PutSymbolFunction(
+        "+", 
+        "(+) -> nil",
+        "no help",
+        {},
+        &DummyFn, 
+        FuncDef { FuncDef::NoArgs(), FuncDef::NoArgs() }
+      );
       Settings.RegisterInfixSymbol("+");
       Settings.RegisterInfixSymbol("=");
     }

@@ -24,7 +24,7 @@ class SymbolTable {
     void PutSymbolFloat(const std::string &symbolName, double value);
     void PutSymbolStr(const std::string &symbolName, const std::string &value);
     void PutSymbolFunction(const std::string &symbolName, Function &&func);
-    void PutSymbolFunction(const std::string &symbolName, SlipFunction fn, FuncDef &&def);
+    void PutSymbolFunction(const std::string &symbolName, const std::string &signatures, const std::string &doc, std::initializer_list<ExampleDef> examples, SlipFunction fn, FuncDef &&def);
     void PutSymbolQuote(const std::string &symbolName, ExpressionPtr &&value);
     bool GetSymbol(const std::string &symbolName, ExpressionPtr &valueCopy);
     bool GetSymbol(const std::string &symbolName, Expression *&value);

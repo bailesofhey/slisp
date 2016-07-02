@@ -72,7 +72,14 @@ TEST(SymbolTable, TestPutSymbolFunction) {
   ExpressionPtr f2 { new CompiledFunction(move(def2), slispFn2) };
   table.PutSymbolFunction("f1", move(dynamic_cast<CompiledFunction&>(*f1->Clone())));
   table.PutSymbolFunction("f2", move(dynamic_cast<CompiledFunction&>(*f2->Clone())));
-  table.PutSymbolFunction("f3", slispFn2, def2.Clone());
+  table.PutSymbolFunction(
+    "f3", 
+    "(f3 string) -> nil",
+    "no help",
+    {},
+    slispFn2, 
+    def2.Clone()
+  );
   ASSERT_TRUE(table.GetSymbol("f1", temp));
   ASSERT_TRUE(table.GetSymbol("f2", temp));
   ASSERT_TRUE(table.GetSymbol("f3", temp));
