@@ -20,7 +20,11 @@ class StdLib: public Library {
     static bool Print(EvaluationContext &ctx);
     static bool Prompt(EvaluationContext &ctx);
     static bool Quit(EvaluationContext &ctx);
+    static bool Symbols(EvaluationContext &ctx);
     static bool Help(EvaluationContext &ctx);
+    static bool HelpSignatures(EvaluationContext &ctx);
+    static bool HelpDoc(EvaluationContext &ctx);
+    static bool HelpExamples(EvaluationContext &ctx);
     static bool InfixRegister(EvaluationContext &ctx);
     static bool InfixUnregister(EvaluationContext &ctx);
 
@@ -180,6 +184,7 @@ class StdLib: public Library {
     static bool IntFunc(EvaluationContext &ctx);
     static bool FloatFunc(EvaluationContext &ctx);
     static bool StrFunc(EvaluationContext &ctx);
+    static bool SymbolFunc(EvaluationContext &ctx);
 
     // Helpers
     static bool TakeSkip(EvaluationContext &ctx, bool isTake);

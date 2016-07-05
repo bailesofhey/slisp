@@ -733,15 +733,14 @@ TEST_F(EvaluationTest, TestSexpInterpretedFunction) {
 }
 
 TEST_F(EvaluationTest, TestSexpList) {
-  ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { new Sexp() }));
-  ASSERT_FALSE(EvaluationTest::MyListFuncCalled);
-
-  Interpreter_.GetSettings().PutListFunction(CompiledFunction {
+  auto &settings = Interpreter_.GetSettings();
+  settings.PutListFunction(CompiledFunction {
     FuncDef { FuncDef::AnyArgs(), FuncDef::OneArg(Quote::TypeInstance) },
     &MyListFunc
   });
 
-  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp() }));
+  ExpressionPtr listSym { new Symbol(settings.GetListSexp()) };
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({ listSym->Clone() }) }));
   ASSERT_TRUE(EvaluationTest::MyListFuncCalled);
   ASSERT_EQ(0, MyListLastArgCount);
 
@@ -751,6 +750,7 @@ TEST_F(EvaluationTest, TestSexpList) {
                 strValue { new Str("foo") },
                 symValue { new Symbol("myCompiledFunc") };
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
+    listSym->Clone(),
     boolValue->Clone(),
     intValue->Clone(),
     floatValue->Clone(),

@@ -92,29 +92,11 @@ bool EvaluationContext::GetSymbol(const string &symName, Expression *&value) {
   return Interp.GetCurrentStackFrame().GetSymbol(symName, value);
 }
 
-bool EvaluationContext::IsSexpAList(Sexp &sexp) {
-  if (sexp.Args.empty())
-    return true;
-  else {
-    auto &firstSexpArg = sexp.Args.front();
-    if (auto sym = TypeHelper::GetValue<Symbol>(firstSexpArg)) {
-      ExpressionPtr symValue;
-      if (GetSymbol(sym->Value, symValue)) {
-        if (TypeHelper::IsA<Function>(symValue))
-          return false;
-        else
-          return true;
-      }
-    }
-    return true;
-  }
-}
-
 bool EvaluationContext::IsQuoteAList(Quote &quote) {
   auto &quoteValue = quote.Value;
   if (quoteValue) {
     if (auto sexp = TypeHelper::GetValue<Sexp>(quoteValue))
-      return IsSexpAList(*sexp);
+      return true; 
     else
       return false;
   }
@@ -135,23 +117,13 @@ Sexp* EvaluationContext::GetRequiredListValue(ExpressionPtr &expr) {
   return result;
 }
 
-Sexp* EvaluationContext::GetSexp(ExpressionPtr &expr) {
+Sexp* EvaluationContext::GetList(ExpressionPtr &expr) {
   Sexp* result = nullptr;
-  if (auto sexp = TypeHelper::GetValue<Sexp>(expr))
-    result = sexp;
-  else if (auto quote = TypeHelper::GetValue<Quote>(expr)) {
+  if (auto quote = TypeHelper::GetValue<Quote>(expr)) {
     if (auto sexp = TypeHelper::GetValue<Sexp>(quote->Value))
       result = sexp;
   }
   return result;
-}
-
-Sexp* EvaluationContext::GetList(ExpressionPtr &expr) {
-  if (auto sexp = GetSexp(expr)) {
-    if (IsSexpAList(*sexp))
-      return sexp;
-  }
-  return nullptr;
 }
 
 const string EvaluationContext::GetThisFunctionName() {
@@ -350,6 +322,7 @@ bool Interpreter::ReduceSymbol(ExpressionPtr &expr) {
 bool Interpreter::ReduceSexp(ExpressionPtr &expr) {
   auto sexp = static_cast<Sexp*>(expr.get());
   auto &args = sexp->Args;
+  int argNum = 0;
   if (!args.empty()) {
     ExpressionPtr firstArg = move(args.front());
     args.pop_front();
@@ -357,6 +330,14 @@ bool Interpreter::ReduceSexp(ExpressionPtr &expr) {
     if (EvaluatePartial(firstArg)) {
       args.push_front(move(firstArg));
       auto &funcExpr = args.front();
+
+      if (argNum++ == 0) {
+        if (auto sym = TypeHelper::GetValue<Symbol>(funcExpr)) {
+          if (!ReduceSymbol(funcExpr))
+            return false; 
+        }
+      }
+
       if (auto func = TypeHelper::GetValue<Function>(funcExpr))
         return ReduceSexpFunction(expr, *func);
       else if (TypeHelper::TypeMatches(Literal::TypeInstance, funcExpr.get()->Type())) 
@@ -453,21 +434,16 @@ bool Interpreter::EvaluateArgs(ArgList &args) {
 }
 
 bool Interpreter::BuildListSexp(Sexp &wrappedSexp, ArgList &args) {
-  wrappedSexp.Args.push_front(ExpressionPtr { new Symbol(Settings.GetListSexp()) });
   ArgListHelper::CopyTo(args, wrappedSexp.Args);
   return true;
 }
 
 bool Interpreter::ReduceSexpList(ExpressionPtr &expr, ArgList &args) {
-  if (EvaluateArgs(args)) {
-    ExpressionPtr wrappedExpr { new Sexp {} };
-    auto wrappedSexp = static_cast<Sexp*>(wrappedExpr.get());
-    if (!BuildListSexp(*wrappedSexp, args))
-      return false;
-
-    expr = move(wrappedExpr);
-    return ReduceSexp(expr);
-  }
-  else
+  ExpressionPtr wrappedExpr { new Sexp {} };
+  auto wrappedSexp = static_cast<Sexp*>(wrappedExpr.get());
+  if (!BuildListSexp(*wrappedSexp, args))
     return false;
+
+  expr.reset(new Quote(move(wrappedExpr)));
+  return true;
 }

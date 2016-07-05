@@ -1,7 +1,6 @@
 #include "FileSystemInterface.h"
 
 FileInterface::~FileInterface() {
-  Close();
 }
 
 bool FileInterface::Close() {

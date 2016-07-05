@@ -10,12 +10,22 @@ using namespace std;
 
 File::File(fstream &&stream, FileSystemInterface::Modes mode):
   Stream(move(stream)),
-  Mode(mode)
+  Mode(mode),
+  ShouldClose(true)
 {
 }
 
+File::~File() {
+  Close();
+}
+
 bool File::Close() {
-  Stream.close();
+  if (ShouldClose) {
+    if (Mode == FileSystemInterface::Modes::Write && Stream.is_open())
+      Stream.flush();
+    Stream.close();
+    ShouldClose = false;
+  }
   return true;
 }
 

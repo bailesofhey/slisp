@@ -7,6 +7,7 @@
 
 class File: public FileInterface {
 public:
+  virtual ~File();
   virtual bool ReadLine(std::string &line) override;
   virtual bool WriteLine(const std::string &line) override;
   virtual bool Reset() override;
@@ -14,6 +15,7 @@ public:
 private:
   std::fstream Stream;
   FileSystemInterface::Modes Mode;
+  bool ShouldClose;
 
   explicit File(std::fstream &&stream, FileSystemInterface::Modes mode);
 

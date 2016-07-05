@@ -74,7 +74,7 @@ TEST_F(StdLibDefaultFunctionTest, TestLiterals) {
   ASSERT_TRUE(RunSuccess(args, "42"));
   ASSERT_TRUE(RunSuccess(args, "3.14"));
   ASSERT_TRUE(RunSuccess(args, "\"foo\""));
-  ASSERT_TRUE(RunSuccess(args, "Function"));
+  ASSERT_TRUE(RunSuccess(args, "+"));
   ASSERT_TRUE(RunSuccess(args, "1"));
   ASSERT_TRUE(RunSuccess(args, "2"));
   ASSERT_TRUE(RunSuccess(args, "3"));
@@ -90,13 +90,13 @@ TEST_F(StdLibDefaultFunctionTest, TestImplicitSexp) {
 TEST_F(StdLibDefaultFunctionTest, TestInfix) {
   // Explicit sexp
   ASSERT_TRUE(RunSuccess("(2)", "(2)"));
-  ASSERT_TRUE(RunSuccess("(2 +)", "(2 <Function:+>)"));
+  ASSERT_TRUE(RunSuccess("(2 +)", "(2 +)"));
 
   ASSERT_TRUE(RunSuccess("(2 + 4)", "6"));
   ASSERT_TRUE(RunSuccess("(2 + 4 + 8)", "14"));
   ASSERT_TRUE(RunSuccess("(2 + 4 * 8)", "34"));
   ASSERT_TRUE(RunSuccess("(2 - 4 * 8)", "-30"));
-  ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "(2 <Function:help> 4 <Function:help> 8)"));
+  ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "(2 help 4 help 8)"));
 
   ASSERT_TRUE(RunSuccess("(a = 3)", "3"));
   ASSERT_TRUE(RunSuccess("(unset a)", "3"));
@@ -118,13 +118,13 @@ TEST_F(StdLibDefaultFunctionTest, TestInfix) {
 
   // Implicit sexp
   ASSERT_TRUE(RunSuccess("2", "2"));
-  ASSERT_TRUE(RunSuccess("2 +", "(2 <Function:+>)"));
+  ASSERT_TRUE(RunSuccess("2 +", "(2 +)"));
 
   ASSERT_TRUE(RunSuccess("2 + 4", "6"));
   ASSERT_TRUE(RunSuccess("2 + 4 + 8", "14"));
 
   ASSERT_TRUE(RunSuccess("2 + 4 * 8", "34"));
-  ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "(2 <Function:help> 4 <Function:help> 8)"));
+  ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "(2 help 4 help 8)"));
 
   ASSERT_TRUE(RunSuccess("a = 3", "3"));
   ASSERT_TRUE(RunSuccess("unset a", "3"));
@@ -146,21 +146,21 @@ TEST_F(StdLibDefaultFunctionTest, TestInfix) {
 }
 
 TEST_F(StdLibDefaultFunctionTest, TestInfix_InterpretedFunction) {
-  ASSERT_TRUE(RunSuccess("def myAdd (a b) (+ a b)", "Function"));
-  ASSERT_TRUE(RunSuccess("def myFuncWithNoArgs () 10", "Function"));
+  ASSERT_TRUE(RunSuccess("(def myAdd (a b) (+ a b))", "Function"));
+  ASSERT_TRUE(RunSuccess("(def myFuncWithNoArgs () 10)", "Function"));
 
   ASSERT_TRUE(RunSuccess("2 + 4", "6"));
-  ASSERT_TRUE(RunSuccess("2 myAdd 4", "(2 <Function:myAdd> 4)"));
+  ASSERT_TRUE(RunSuccess("2 myAdd 4", "(2 myAdd 4)"));
   ASSERT_TRUE(RunSuccess("infix-register myAdd", "()"));
   ASSERT_TRUE(RunSuccess("2 myAdd 4", "6"));
   ASSERT_TRUE(RunSuccess("2 myAdd (myFuncWithNoArgs)", "12"));
 
   ASSERT_TRUE(RunSuccess("infix-unregister myAdd", "()"));
-  ASSERT_TRUE(RunSuccess("2 myAdd 4", "(2 <Function:myAdd> 4)"));
-  ASSERT_TRUE(RunSuccess("2 myAdd (myFuncWithNoArgs)", "(2 <Function:myAdd> 10)"));
+  ASSERT_TRUE(RunSuccess("2 myAdd 4", "(2 myAdd 4)"));
+  ASSERT_TRUE(RunSuccess("2 myAdd (myFuncWithNoArgs)", "(2 myAdd (myFuncWithNoArgs))"));
   ASSERT_TRUE(RunSuccess("2 + 4", "6"));
   ASSERT_TRUE(RunSuccess("infix-unregister +", "()"));
-  ASSERT_TRUE(RunSuccess("2 + 4", "(2 <Function:+> 4)"));
+  ASSERT_TRUE(RunSuccess("2 + 4", "(2 + 4)"));
 }
 
 TEST_F(StdLibDefaultFunctionTest, TestInfix_Multiline) {
@@ -245,6 +245,12 @@ TEST_F(StdLibInterpreterTest, TestQuit) {
   ASSERT_EQ(Out.str().find("20"), string::npos);
 }
 
+TEST_F(StdLibInterpreterTest, TestSymbols) {
+  ASSERT_TRUE(RunSuccess("(set syms (symbols))", ""));
+  ASSERT_TRUE(RunSuccess("(length syms) > 20", "true"));
+  ASSERT_TRUE(RunSuccess("syms", "symbols"));
+}
+
 TEST_F(StdLibInterpreterTest, TestHelp) {
   ASSERT_TRUE(RunSuccess("(help)", "help"));
   ASSERT_TRUE(RunSuccess("(help)", "+"));
@@ -253,9 +259,25 @@ TEST_F(StdLibInterpreterTest, TestHelp) {
   ASSERT_TRUE(RunFail("(help 3)"));
   ASSERT_TRUE(RunFail("(help \"foo\")"));
   ASSERT_TRUE(RunSuccess("(help true)", "()"));
-  ASSERT_TRUE(RunSuccess("(help +)", "+"));
+  ASSERT_TRUE(RunSuccess("(help *)", "*"));
+  ASSERT_TRUE(RunSuccess("(help \"*\")", "*"));
   ASSERT_LT(NOutputLines, helpAllLines);
   ASSERT_TRUE(RunSuccess("(help help)", "help"));
+}
+
+TEST_F(StdLibInterpreterTest, DISABLED_TestHelpSignatures) {
+  ASSERT_TRUE(RunSuccess("(help.signatures *)", "(* .. nums) -> num"));
+  ASSERT_TRUE(RunSuccess("(help.signatures \"*\")", "(* .. nums) -> num"));
+}
+
+TEST_F(StdLibInterpreterTest, DISABLED_TestHelpDoc) {
+  ASSERT_TRUE(RunSuccess("(help.doc *)", "multiply"));
+  ASSERT_TRUE(RunSuccess("(help.doc \"*\")", "multiply"));
+}
+
+TEST_F(StdLibInterpreterTest, DISABLED_TestHelpExamples) {
+  ASSERT_TRUE(RunSuccess("(help.examples *)", "((\"(* 2 3)\" \"6\"))"));
+  ASSERT_TRUE(RunSuccess("(help.examples \"*\")", "((\"(* 2 3)\" \"6\"))"));
 }
 
 class StdLibIOTest: public StdLibTest {
@@ -418,7 +440,7 @@ TEST_F(StdLibAssignmentTest, TestUnSet) {
 
 TEST_F(StdLibAssignmentTest, TestSetWithOpSingleArg) {
   ASSERT_TRUE(RunSuccess("a = 42", "42"));
-  ASSERT_TRUE(RunSuccess("a +=", "(42 <Function:+=>)"));
+  ASSERT_TRUE(RunSuccess("a +=", "(42 +=)"));
   ASSERT_TRUE(RunFail("a += \"foo\""));
   ASSERT_TRUE(RunSuccess("a += 10", "52"));
   ASSERT_TRUE(RunSuccess("a -= 10", "42"));
@@ -2333,6 +2355,31 @@ TEST_F(StdLibOperatorsTest, TestStr) {
 
   ASSERT_TRUE(RunSuccess("(str \"-42\")", "\"-42\""));
   ASSERT_TRUE(RunSuccess("(str \"0xfe\")", "\"0xfe\""));
+}
+
+TEST_F(StdLibOperatorsTest, TestSymbol) {
+  ASSERT_TRUE(RunFail("(symbol)"));
+  ASSERT_TRUE(RunFail("(symbol 3 4)"));
+
+  ASSERT_TRUE(RunFail("(symbol true)"));
+  ASSERT_TRUE(RunFail("(symbol false)"));
+
+  ASSERT_TRUE(RunFail("(symbol 0)"));
+  ASSERT_TRUE(RunFail("(symbol 1)"));
+  ASSERT_TRUE(RunFail("(symbol 3)"));
+  ASSERT_TRUE(RunFail("(symbol 3.14)"));
+
+  ASSERT_TRUE(RunFail("(symbol \"\")"));
+  ASSERT_TRUE(RunSuccess("(symbol \"foo\")", "foo"));
+  ASSERT_TRUE(RunFail("(symbol \"foo bar\")"));
+  ASSERT_TRUE(RunFail("(symbol \"1foo\")"));
+  ASSERT_TRUE(RunSuccess("(symbol \"foo1\")", "foo1"));
+  ASSERT_TRUE(RunFail("(symbol \"0\")"));
+  ASSERT_TRUE(RunFail("(symbol \"42\")"));
+  ASSERT_TRUE(RunFail("(symbol \"3.14\")"));
+
+  ASSERT_TRUE(RunFail("(symbol \"-42\")"));
+  ASSERT_TRUE(RunFail("(symbol \"0xfe\")"));
 }
 
 TEST_F(StdLibOperatorsTest, TestType) {
