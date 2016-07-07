@@ -371,7 +371,8 @@ bool Interpreter::ReduceSexpFunction(ExpressionPtr &expr, Function &function) {
       return PushError(EvalError { ErrorWhere, "Unsupported Function Type" });
   }
   else {
-    PushError(EvalError { ErrorWhere, "Invalid arguments for function" });
+    string fnName = function.SymbolName();
+    PushError(EvalError { ErrorWhere, (fnName.empty() ? "" : fnName + ": ") + "Invalid arguments for function" });
     return PushError(EvalError { ErrorWhere, error });
   }
 }
@@ -434,16 +435,21 @@ bool Interpreter::EvaluateArgs(ArgList &args) {
 }
 
 bool Interpreter::BuildListSexp(Sexp &wrappedSexp, ArgList &args) {
+  wrappedSexp.Args.push_front(ExpressionPtr { new Symbol(Settings.GetListSexp()) });
   ArgListHelper::CopyTo(args, wrappedSexp.Args);
   return true;
 }
 
 bool Interpreter::ReduceSexpList(ExpressionPtr &expr, ArgList &args) {
-  ExpressionPtr wrappedExpr { new Sexp {} };
-  auto wrappedSexp = static_cast<Sexp*>(wrappedExpr.get());
-  if (!BuildListSexp(*wrappedSexp, args))
-    return false;
+  if (EvaluateArgs(args)) {
+    ExpressionPtr wrappedExpr { new Sexp {} };
+    auto wrappedSexp = static_cast<Sexp*>(wrappedExpr.get());
+    if (!BuildListSexp(*wrappedSexp, args))
+      return false;
 
-  expr.reset(new Quote(move(wrappedExpr)));
-  return true;
+    expr = move(wrappedExpr);
+    return ReduceSexp(expr);
+  }
+  else
+    return false;
 }

@@ -1,0 +1,40 @@
+(set outpath (nth sys.args 0))
+(set lines
+  (list
+    "<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en' lang='en' >"
+    (format "<head><title>{sys.version} API Documentation</title></head>")
+    (format "<body><h1>{sys.version} API Documentation</h1>")
+  )
+)
+
+(def isFunc (symName)
+  (fn? (unquote (symbol symName))))
+
+(for sym in (filter isFunc (symbols))
+  (let  ((doc      (help.doc sym))
+         (sigs     (help.signatures sym))
+         (examples (help.examples sym)))
+    (if (not (empty? sigs))
+      (begin
+        (+= lines ((format "<hr/><b><![CDATA[{sym}]]></b><p/>")))
+        (for sig in sigs
+          (+= lines ((format "Usage: <![CDATA[{sig}]]><br/>"))))
+        (+= lines ("<p/>"))
+        (if (not (empty? doc))
+          (+= lines ((format "<![CDATA[{doc}]]><br/>"))))
+        (if (not (empty? examples))
+          (begin
+            (+= lines ("<br/>Examples:<br/>"))
+            (for example in examples
+              (+= lines ((format "<![CDATA[>>> {0}]]><br/>" (nth example 0))))
+              (+= lines ((format "<![CDATA[{0}]]><br/>" (nth example 1))))
+            )
+          )
+        )
+      )
+    )
+  )
+)
+
+(+= lines ("</body></html>"))
+(file.writelines outpath lines)

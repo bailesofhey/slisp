@@ -56,7 +56,7 @@ void SymbolTable::PutSymbolFunction(const string &symbolName, Function &&func) {
   PutSymbol(symbolName, func.Clone());
 }
 
-void SymbolTable::PutSymbolFunction(const string &symbolName, const string &signatures, const string &doc, initializer_list<ExampleDef> examples, SlipFunction fn, FuncDef &&def) {
+void SymbolTable::PutSymbolFunction(const string &symbolName, initializer_list<string> signatures, const string &doc, initializer_list<ExampleDef> examples, SlipFunction fn, FuncDef &&def) {
   ExpressionPtr funcExpr { new CompiledFunction { move(def), fn } };
   if (funcExpr) {
     auto *func = static_cast<CompiledFunction*>(funcExpr.get());

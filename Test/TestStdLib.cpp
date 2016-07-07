@@ -90,13 +90,13 @@ TEST_F(StdLibDefaultFunctionTest, TestImplicitSexp) {
 TEST_F(StdLibDefaultFunctionTest, TestInfix) {
   // Explicit sexp
   ASSERT_TRUE(RunSuccess("(2)", "(2)"));
-  ASSERT_TRUE(RunSuccess("(2 +)", "(2 +)"));
+  ASSERT_TRUE(RunSuccess("(2 +)", "(2 <Function:+>)"));
 
   ASSERT_TRUE(RunSuccess("(2 + 4)", "6"));
   ASSERT_TRUE(RunSuccess("(2 + 4 + 8)", "14"));
   ASSERT_TRUE(RunSuccess("(2 + 4 * 8)", "34"));
   ASSERT_TRUE(RunSuccess("(2 - 4 * 8)", "-30"));
-  ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "(2 help 4 help 8)"));
+  ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "(2 <Function:help> 4 <Function:help> 8)"));
 
   ASSERT_TRUE(RunSuccess("(a = 3)", "3"));
   ASSERT_TRUE(RunSuccess("(unset a)", "3"));
@@ -118,13 +118,13 @@ TEST_F(StdLibDefaultFunctionTest, TestInfix) {
 
   // Implicit sexp
   ASSERT_TRUE(RunSuccess("2", "2"));
-  ASSERT_TRUE(RunSuccess("2 +", "(2 +)"));
+  ASSERT_TRUE(RunSuccess("2 +", "(2 <Function:+>)"));
 
   ASSERT_TRUE(RunSuccess("2 + 4", "6"));
   ASSERT_TRUE(RunSuccess("2 + 4 + 8", "14"));
 
   ASSERT_TRUE(RunSuccess("2 + 4 * 8", "34"));
-  ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "(2 help 4 help 8)"));
+  ASSERT_TRUE(RunSuccess("(2 help 4 help 8)", "(2 <Function:help> 4 <Function:help> 8)"));
 
   ASSERT_TRUE(RunSuccess("a = 3", "3"));
   ASSERT_TRUE(RunSuccess("unset a", "3"));
@@ -150,17 +150,17 @@ TEST_F(StdLibDefaultFunctionTest, TestInfix_InterpretedFunction) {
   ASSERT_TRUE(RunSuccess("(def myFuncWithNoArgs () 10)", "Function"));
 
   ASSERT_TRUE(RunSuccess("2 + 4", "6"));
-  ASSERT_TRUE(RunSuccess("2 myAdd 4", "(2 myAdd 4)"));
+  ASSERT_TRUE(RunSuccess("2 myAdd 4", "(2 <Function:myAdd> 4)"));
   ASSERT_TRUE(RunSuccess("infix-register myAdd", "()"));
   ASSERT_TRUE(RunSuccess("2 myAdd 4", "6"));
   ASSERT_TRUE(RunSuccess("2 myAdd (myFuncWithNoArgs)", "12"));
 
   ASSERT_TRUE(RunSuccess("infix-unregister myAdd", "()"));
-  ASSERT_TRUE(RunSuccess("2 myAdd 4", "(2 myAdd 4)"));
-  ASSERT_TRUE(RunSuccess("2 myAdd (myFuncWithNoArgs)", "(2 myAdd (myFuncWithNoArgs))"));
+  ASSERT_TRUE(RunSuccess("2 myAdd 4", "(2 <Function:myAdd> 4)"));
+  ASSERT_TRUE(RunSuccess("2 myAdd (myFuncWithNoArgs)", "(2 <Function:myAdd> 10)"));
   ASSERT_TRUE(RunSuccess("2 + 4", "6"));
   ASSERT_TRUE(RunSuccess("infix-unregister +", "()"));
-  ASSERT_TRUE(RunSuccess("2 + 4", "(2 + 4)"));
+  ASSERT_TRUE(RunSuccess("2 + 4", "(2 <Function:+> 4)"));
 }
 
 TEST_F(StdLibDefaultFunctionTest, TestInfix_Multiline) {
@@ -258,24 +258,24 @@ TEST_F(StdLibInterpreterTest, TestHelp) {
   ASSERT_GT(helpAllLines, 20);
   ASSERT_TRUE(RunFail("(help 3)"));
   ASSERT_TRUE(RunFail("(help \"foo\")"));
-  ASSERT_TRUE(RunSuccess("(help true)", "()"));
+  ASSERT_TRUE(RunFail("(help true)"));
   ASSERT_TRUE(RunSuccess("(help *)", "*"));
   ASSERT_TRUE(RunSuccess("(help \"*\")", "*"));
   ASSERT_LT(NOutputLines, helpAllLines);
   ASSERT_TRUE(RunSuccess("(help help)", "help"));
 }
 
-TEST_F(StdLibInterpreterTest, DISABLED_TestHelpSignatures) {
+TEST_F(StdLibInterpreterTest, TestHelpSignatures) {
   ASSERT_TRUE(RunSuccess("(help.signatures *)", "(* .. nums) -> num"));
   ASSERT_TRUE(RunSuccess("(help.signatures \"*\")", "(* .. nums) -> num"));
 }
 
-TEST_F(StdLibInterpreterTest, DISABLED_TestHelpDoc) {
+TEST_F(StdLibInterpreterTest, TestHelpDoc) {
   ASSERT_TRUE(RunSuccess("(help.doc *)", "multiply"));
   ASSERT_TRUE(RunSuccess("(help.doc \"*\")", "multiply"));
 }
 
-TEST_F(StdLibInterpreterTest, DISABLED_TestHelpExamples) {
+TEST_F(StdLibInterpreterTest, TestHelpExamples) {
   ASSERT_TRUE(RunSuccess("(help.examples *)", "((\"(* 2 3)\" \"6\"))"));
   ASSERT_TRUE(RunSuccess("(help.examples \"*\")", "((\"(* 2 3)\" \"6\"))"));
 }
@@ -440,7 +440,7 @@ TEST_F(StdLibAssignmentTest, TestUnSet) {
 
 TEST_F(StdLibAssignmentTest, TestSetWithOpSingleArg) {
   ASSERT_TRUE(RunSuccess("a = 42", "42"));
-  ASSERT_TRUE(RunSuccess("a +=", "(42 +=)"));
+  ASSERT_TRUE(RunSuccess("a +=", "(42 <Function:+=>)"));
   ASSERT_TRUE(RunFail("a += \"foo\""));
   ASSERT_TRUE(RunSuccess("a += 10", "52"));
   ASSERT_TRUE(RunSuccess("a -= 10", "42"));
@@ -1413,6 +1413,8 @@ TEST_F(StdLibListTest, TestList) {
   ASSERT_TRUE(RunSuccess("(1 \"foo\" false)", "(1 \"foo\" false)"));
   ASSERT_TRUE(RunSuccess("(((((((((())))))))))", "(((((((((())))))))))"));
   ASSERT_TRUE(RunSuccess("((((((((((42))))))))))", "((((((((((42))))))))))"));
+  ASSERT_TRUE(RunSuccess("(\"a\" (format \"\"))", "(\"a\" \"\")"));
+  ASSERT_TRUE(RunSuccess("(list \"a\" (format \"\"))", "(\"a\" \"\")"));
 }
 
 TEST_F(StdLibListTest, TestMap) {
@@ -1496,9 +1498,9 @@ TEST_F(StdLibListTest, TestAny) {
   ASSERT_TRUE(RunSuccess("(any even? (1 2))", "true"));
   ASSERT_TRUE(RunSuccess("(any even? (1 3))", "false"));
   ASSERT_TRUE(RunSuccess("(any even? (2 4))", "true"));
-  ASSERT_TRUE(RunSuccess("(any even? (2 \"this should not get passed to even?\"))", "true"));
-  ASSERT_TRUE(RunSuccess("(any even? (2 thisShouldNotGetEvaluated))", "true"));
-  ASSERT_TRUE(RunFail("(any even? (1 thisShouldNotGetEvaluated))"));
+  ASSERT_TRUE(RunSuccess("(any even? (quote (2 \"this should not get passed to even?\")))", "true"));
+  ASSERT_TRUE(RunSuccess("(any even? (quote (2 thisShouldNotGetEvaluated)))", "true"));
+  ASSERT_TRUE(RunFail("(any even? (quote (1 thisWillGetEvaluated)))"));
 }
 
 TEST_F(StdLibListTest, TestAll) {
@@ -1509,9 +1511,10 @@ TEST_F(StdLibListTest, TestAll) {
   ASSERT_TRUE(RunSuccess("(all even? (1 2))", "false"));
   ASSERT_TRUE(RunSuccess("(all even? (1 3))", "false"));
   ASSERT_TRUE(RunSuccess("(all even? (2 4))", "true"));
-  ASSERT_TRUE(RunFail("(all even? (2 \"this should not get passed to even?\"))"));
-  ASSERT_TRUE(RunFail("(all even? (2 thisShouldNotGetEvaluated))"));
-  ASSERT_TRUE(RunSuccess("(all even? (1 thisShouldNotGetEvaluated))", "false"));
+  ASSERT_TRUE(RunFail("(all even? (quote (2 \"this should not get passed to even?\")))"));
+  ASSERT_TRUE(RunFail("(all even? (quote (2 thisWillGetEvaluated)))"));
+  ASSERT_TRUE(RunSuccess("(all even? (quote (1 thisShouldNotGetEvaluated)))", "false"));
+  ASSERT_TRUE(RunFail("(all even? (1 thisWillGetEvaluated))"));
 }
 
 TEST_F(StdLibListTest, TestTake) {
@@ -1999,7 +2002,8 @@ TEST_F(StdLibBranchTest, TestSwitch) {
 TEST_F(StdLibBranchTest, TestIf) {
   ASSERT_TRUE(RunFail("(if)"));
   ASSERT_TRUE(RunFail("(if true)"));
-  ASSERT_TRUE(RunFail("(if true 1)"));
+  ASSERT_TRUE(RunSuccess("(if true 1)", "1"));
+  ASSERT_TRUE(RunSuccess("(if false 1)", "()"));
   ASSERT_TRUE(RunSuccess("(if true 1 0)", "1"));
   ASSERT_TRUE(RunSuccess("(if false 1 0)", "0"));
   ASSERT_TRUE(RunSuccess("(if true 1 a)", "1"));
@@ -2114,6 +2118,9 @@ TEST_F(StdLibBranchTest, TestLet) {
   ASSERT_TRUE(RunSuccess("(let ((v1 32)) (set v1 33) v1)", "33"));
 
   ASSERT_TRUE(RunSuccess("v1", "4")); // #20
+
+  // eval func in let
+  ASSERT_TRUE(RunSuccess("(let ((l (length \"abc\"))) l)", "3"));
 }
 
 TEST_F(StdLibBranchTest, TestQuoteFn) {

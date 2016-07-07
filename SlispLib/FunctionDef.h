@@ -46,6 +46,8 @@ class FuncDef {
     static ArgDefPtr ManyArgs(const TypeInfo &type, size_t minArgs, size_t maxArgs);
     static ArgDefPtr Args(std::initializer_list<const TypeInfo*> &&args);
 
+    std::string Name;
+
     explicit FuncDef(ArgDefPtr &in, ArgDefPtr &out);
     FuncDef(const FuncDef &val);
     FuncDef(FuncDef &&rval);
@@ -60,7 +62,6 @@ class FuncDef {
   private:
     class VarArgDef: public ArgDef {
       public:
-
         explicit VarArgDef(const TypeInfo &type, size_t nArgs);
         explicit VarArgDef(const TypeInfo &type, size_t minArgs, size_t maxArgs);
         virtual ArgDefPtr Clone() const override;
@@ -137,7 +138,7 @@ struct Function: public Literal {
 
   FuncDef Def;
   ExpressionPtr Symbol;
-  std::string Signatures;
+  std::vector<std::string> Signatures;
   std::string Doc;
   std::vector<ExampleDef> Examples;
 
@@ -147,6 +148,7 @@ struct Function: public Literal {
   explicit Function(const Function &rhs);
   virtual void Display(std::ostream &out) const override;
   bool operator==(const Function &rhs) const;
+  std::string SymbolName() const;
 };
 using FunctionPtr = std::unique_ptr<Function>;
 
@@ -282,4 +284,3 @@ public:
   }
 
 };
-

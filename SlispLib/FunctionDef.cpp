@@ -305,7 +305,9 @@ bool FuncDef::ValidateArgs(ExpressionEvaluator evaluator, ExpressionPtr &expr, s
   stringstream ss;
   string tmpError;
   if (!In->Validate(evaluator, expr, tmpError)) {
-    ss << "Wrong input args: " << tmpError;
+    if (!Name.empty())
+      ss << Name << ": ";
+    ss <<"Wrong input args: " << tmpError;
     error = ss.str();
     return false;
   }
@@ -339,6 +341,7 @@ Function::Function(FuncDef &&def, ExpressionPtr &sym):
   Def { move(def) },
   Symbol { move(sym) }
 {
+  Def.Name = SymbolName();
 }
 
 Function::Function(const Function &rhs):
@@ -351,6 +354,7 @@ Function::Function(const Function &rhs):
 {
   if (rhs.Symbol)
     Symbol = rhs.Symbol->Clone();
+  Def.Name = SymbolName();
 }
 
 void Function::Display(ostream &out) const {
@@ -367,6 +371,14 @@ bool Function::operator==(const Function &rhs) const {
          (Symbol && rhs.Symbol && *Symbol == *rhs.Symbol) &&
          Signatures == rhs.Signatures &&
          Doc == rhs.Doc;
+}
+
+std::string Function::SymbolName() const {
+  if (Symbol) {
+    if (auto *sym = dynamic_cast<::Symbol*>(Symbol.get()))
+      return sym->Value;
+  }
+  return "";
 }
 
 //=============================================================================

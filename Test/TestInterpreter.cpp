@@ -74,7 +74,7 @@ TEST(SymbolTable, TestPutSymbolFunction) {
   table.PutSymbolFunction("f2", move(dynamic_cast<CompiledFunction&>(*f2->Clone())));
   table.PutSymbolFunction(
     "f3", 
-    "(f3 string) -> nil",
+    {"(f3 string) -> nil"},
     "no help",
     {},
     slispFn2, 

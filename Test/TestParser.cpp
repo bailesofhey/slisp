@@ -22,7 +22,7 @@ class ParserTest: public ::testing::Test {
     {
       DummySymbols.PutSymbolFunction(
         "+", 
-        "(+) -> nil",
+        {"(+) -> nil"},
         "no help",
         {},
         &DummyFn, 

@@ -232,7 +232,7 @@ void Controller::SetupModules() {
   auto &symbols = Interpreter_.GetDynamicSymbols();
   symbols.PutSymbolFunction(
     "import", 
-    "(import file) -> nil",
+    {"(import file) -> nil"},
     "import \"file.slisp\" in the current directory",
     {{"(import foo)", "nil"}},
     ImportModuleFunctor(*this), 

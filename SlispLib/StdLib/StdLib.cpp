@@ -33,7 +33,7 @@ void StdLib::Load(Interpreter &interpreter) {
   FuncDef dispDef { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() };
   symbols.PutSymbolFunction(
     "display",
-    "(display .. args) -> nil",
+    {"(display .. args) -> nil"},
     "dump each arg to console. similar to (print)",
     {{"(display \"hello world\")", "\"hello world\""}},
     StdLib::Display,
@@ -41,7 +41,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "print",
-    "(print .. args) -> nil", 
+    {"(print .. args) -> nil"}, 
     "print each arg (strings are not show with quotes). similar to (display)",
     {{"(print \"hello world\")", "hello world"}},
     StdLib::Print,
@@ -49,7 +49,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "prompt",
-    "(prompt prefix) -> str",
+    {"(prompt prefix) -> str"},
     "print prefix, then read a line from stdin",
     {{"(prompt \"name: \")", "name: John\n\"John\""}},
     StdLib::Prompt,
@@ -57,7 +57,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "quit",
-    "(quit) -> nil",
+    {"(quit) -> nil"},
     "exit the REPL",
     {},
     StdLib::Quit,
@@ -65,7 +65,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "symbols",
-    "(symbols) -> list",
+    {"(symbols) -> list"},
     "get list of all symbols", 
     {},
     StdLib::Symbols,
@@ -73,8 +73,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "help",
-    "(help symbol) -> nil\n"
-    "(help str)    -> nil",
+    {"(help symbol) -> nil", "(help str) -> nil"},
     "get help on a particular symbol. see also: help.signatures, help.doc, help.examples, symbols",
     {},
     StdLib::Help,
@@ -82,8 +81,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "help.signatures",
-    "(help.signatures symbol) -> str\n"
-    "(help.signatures str)    -> str",
+    {"(help.signatures symbol) -> str", "(help.signatures str) -> str"},
     "get signatures of a particular symbol",
     {},
     StdLib::HelpSignatures,
@@ -91,8 +89,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "help.doc",
-    "(help.doc symbol) -> str\n"
-    "(help.doc str)    -> str",
+    {"(help.doc symbol) -> str", "(help.doc str) -> str"},
     "get doc of a particular symbol",
     {},
     StdLib::HelpDoc,
@@ -100,8 +97,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "help.examples",
-    "(help.examples symbol) -> list\n"
-    "(help.examples str)    -> list",
+    {"(help.examples symbol) -> list", "(help.examples str) -> list"},
     "get examples of a particular symbol",
     {},
     StdLib::HelpExamples,
@@ -109,7 +105,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "infix-register",
-    "(infix-register symbol) -> nil",
+    {"(infix-register symbol) -> nil"},
     "support calling symbol (a binary function) in infix form",
     {{"(set add +)", ""}, {"(infix-register add)", ""}, {"(3 add 4)", "7"}},
     StdLib::InfixRegister,
@@ -117,7 +113,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "infix-unregister",
-    "(infix-unregister symbol) -> nil",
+    {"(infix-unregister symbol) -> nil"},
     "unregister previously defined infix symbol",
     {{"(infix-unregister add)",""}},
     StdLib::InfixUnregister,
@@ -134,7 +130,7 @@ void StdLib::Load(Interpreter &interpreter) {
   
   symbols.PutSymbolFunction(
     "file.exists",
-    "(file.exists filepath) -> bool",
+    {"(file.exists filepath) -> bool"},
     "does filepath exist",
     ioExample,
     StdLib::Exists,
@@ -142,7 +138,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "file.delete",
-    "(file.delete filepath) -> bool",
+    {"(file.delete filepath) -> bool"},
     "delete filepath",
     ioExample,
     StdLib::Delete,
@@ -150,7 +146,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "file.readlines",
-    "(file.readlines filepath) -> list",
+    {"(file.readlines filepath) -> list"},
     "returns a list of all lines in filepath",
     ioExample,
     StdLib::ReadLines,
@@ -158,7 +154,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "file.writelines",
-    "(file.writelines filepath lines) -> bool",
+    {"(file.writelines filepath lines) -> bool"},
     "write list of lines into filepath (overwrite what's already there)",
     ioExample,
     StdLib::WriteLines,
@@ -170,7 +166,7 @@ void StdLib::Load(Interpreter &interpreter) {
   FuncDef setDef { FuncDef::Args({&Symbol::TypeInstance, &Sexp::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) };  
   symbols.PutSymbolFunction(
     "set", 
-    "(set symbol value) -> value",
+    {"(set symbol value) -> value"},
     "sets a symbol to value",
     {{"(set foo 42)", "42"}},
     StdLib::Set,
@@ -178,7 +174,7 @@ void StdLib::Load(Interpreter &interpreter) {
   ); 
   symbols.PutSymbolFunction(
     "=",
-    "(= symbol value) -> value",
+    {"(= symbol value) -> value"},
     "alias for (set)",
     {{"(= foo 42)", "42"}},
     StdLib::Set,   
@@ -189,7 +185,7 @@ void StdLib::Load(Interpreter &interpreter) {
   string setWithOpDoc = "perform operation on current symbol and return new value. value can be: int, float, str, list";
   symbols.PutSymbolFunction(
     "+=",
-    "(+= symbol value) -> value",
+    {"(+= symbol value) -> value"},
     setWithOpDoc,
     {{"(= foo 2)", "2"}, {"(+= foo 3)", "5"}},
     StdLib::Set, 
@@ -197,7 +193,7 @@ void StdLib::Load(Interpreter &interpreter) {
   ); 
   symbols.PutSymbolFunction(
     "-=",
-    "(-= symbol value) -> value",
+    {"(-= symbol value) -> value"},
     setWithOpDoc,
     {{"(= foo 2)", "2"}, {"(-= foo 3)", "-1"}},
     StdLib::Set,
@@ -205,7 +201,7 @@ void StdLib::Load(Interpreter &interpreter) {
   ); 
   symbols.PutSymbolFunction(
     "*=",
-    "(*= symbol value) -> value",
+    {"(*= symbol value) -> value"},
     setWithOpDoc,
     {{"(= foo 2)", "2"}, {"(*= foo 3)", "6"}},
     StdLib::Set,
@@ -213,7 +209,7 @@ void StdLib::Load(Interpreter &interpreter) {
   ); 
   symbols.PutSymbolFunction(
     "/=",
-    "(/= symbol value) -> value",
+    {"(/= symbol value) -> value"},
     setWithOpDoc,
     {{"(= foo 2)", "2"}, {"(/= foo 3)", "0"}},
     StdLib::Set,
@@ -221,7 +217,7 @@ void StdLib::Load(Interpreter &interpreter) {
   ); 
   symbols.PutSymbolFunction(
     "%=",
-    "(%= symbol value) -> value",
+    {"(%= symbol value) -> value"},
     setWithOpDoc,
     {{"(= foo 2)", "2"}, {"(%= foo 3)", "2"}},
     StdLib::Set,
@@ -229,7 +225,7 @@ void StdLib::Load(Interpreter &interpreter) {
   ); 
   symbols.PutSymbolFunction(
     "<<=",
-    "(<<= symbol value) -> value",
+    {"(<<= symbol value) -> value"},
     setWithOpDoc, 
     {{"(= foo 2)", "2"}, {"(<<= foo 3)", "16"}},
     StdLib::Set,
@@ -237,7 +233,7 @@ void StdLib::Load(Interpreter &interpreter) {
   ); 
   symbols.PutSymbolFunction(
     ">>=",
-    "(>>= symbol value) -> value",
+    {"(>>= symbol value) -> value"},
     setWithOpDoc,
     {{"(= foo 2)", "2"}, {"(>>= foo 3)", "0"}},
     StdLib::Set,
@@ -245,7 +241,7 @@ void StdLib::Load(Interpreter &interpreter) {
   ); 
   symbols.PutSymbolFunction(
     "&=",
-    "(&= symbol value) -> value",
+    {"(&= symbol value) -> value"},
     setWithOpDoc,
     {{"(= foo 2)", "2"}, {"(&= foo 3)", "2"}},
     StdLib::Set,
@@ -253,7 +249,7 @@ void StdLib::Load(Interpreter &interpreter) {
   ); 
   symbols.PutSymbolFunction(
     "^=",
-    "(^= symbol value) -> value",
+    {"(^= symbol value) -> value"},
     setWithOpDoc,
     {{"(= foo 2)", "2"}, {"(^= foo 3)", "1"}},
     StdLib::Set, 
@@ -261,7 +257,7 @@ void StdLib::Load(Interpreter &interpreter) {
   ); 
   symbols.PutSymbolFunction(
     "|=",
-    "(|= symbol value) -> value",
+    {"(|= symbol value) -> value"},
     setWithOpDoc,
     {{"(= foo 2)", "2"}, {"(|= foo 3)", "3"}},
     StdLib::Set,  
@@ -271,7 +267,7 @@ void StdLib::Load(Interpreter &interpreter) {
   FuncDef incrDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) };
   symbols.PutSymbolFunction(
     "++",
-    "(++ symbol) -> value",
+    {"(++ symbol) -> value"},
     "increment symbol and return new value",
     {{"(= foo 2)", "2"}, {"(++ foo)", "3"}},
     StdLib::Set,
@@ -279,7 +275,7 @@ void StdLib::Load(Interpreter &interpreter) {
   ); 
   symbols.PutSymbolFunction(
     "--",
-    "(-- symbol) -> value",
+    {"(-- symbol) -> value"},
     "decrement symbol and return new value",
     {{"(= foo 2)", "2"}, {"(-- foo)", "1"}},
     StdLib::Set, 
@@ -288,7 +284,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction(
     "unset",
-    "(unset symbol) -> value",
+    {"(unset symbol) -> value"},
     "make symbol undefined",
     {},
     StdLib::UnSet,
@@ -299,7 +295,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction(
     "length",
-    "(length iterable) -> int",
+    {"(length iterable) -> int"},
     "return the length of iterable (str, list)",
     {{"(length \"abc\")", "3"}, {"(length (42 53 64))", "3"}},
     StdLib::Length, 
@@ -307,7 +303,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "+",
-    "(+ .. values) -> value",
+    {"(+ .. values) -> value"},
     "add each value and return result. all values must be same type which can be: int, float, str, list",
     {{"(+ 2 3)", "5"}, {"(+ \"a\" \"bc\")", "\"abc\""}},
     StdLib::Add,
@@ -315,7 +311,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "empty?",
-    "(empty? iterable) -> bool",
+    {"(empty? iterable) -> bool"},
     "return whether iterable (list, str) is empty",
     {{"(empty? \"abc\")", "false"}},
     StdLib::EmptyQ,
@@ -323,7 +319,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "-",
-    "(- .. nums) -> num",
+    {"(- .. nums) -> num"},
     "subtract each num and return result. all values must be same type which can be: int, float",
     {{"(- 42 10)", "32"}},
     StdLib::Sub,
@@ -331,7 +327,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "*",
-    "(* .. nums) -> num",
+    {"(* .. nums) -> num"},
     "multiply each num and return result. all values must be same type which can be: int, float",
     {{"(* 2 3)", "6"}},
     StdLib::Mult, 
@@ -339,7 +335,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "/",
-    "(/ .. nums) -> num",
+    {"(/ .. nums) -> num"},
     "divide each num and return result. all values must be same type which can be: int, float",
     {{"(/ 42 6)", "7"}},
     StdLib::Div, 
@@ -348,7 +344,7 @@ void StdLib::Load(Interpreter &interpreter) {
   FuncDef powDef { FuncDef::ManyArgs(Literal::TypeInstance, 2), FuncDef::OneArg(Literal::TypeInstance) };
   symbols.PutSymbolFunction(
     "pow",
-    "(pow base exponent) -> num",
+    {"(pow base exponent) -> num"},
     "base to the power of exponent. base and exponent must be same type which can be: int, float",
     {{"(pow 2 3)", "8"}},
     StdLib::Pow,
@@ -356,7 +352,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "**",
-    "(** base expontent) -> num",
+    {"(** base expontent) -> num"},
     "alias for (pow)",
     {},
     StdLib::Pow,
@@ -364,7 +360,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "abs",
-    "(abs num) -> num",
+    {"(abs num) -> num"},
     "absolute value of num which can be: int, float",
     {},
     StdLib::Abs,
@@ -372,7 +368,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "max",
-    "(max .. nums) -> num",
+    {"(max .. nums) -> num"},
     "return maximum num",
     {{"(max 42 54 23)", "54"}},
     StdLib::Max,
@@ -380,7 +376,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "min",
-    "(min .. nums) -> num",
+    {"(min .. nums) -> num"},
     "return minimum num",
     {{"(min 42 54 23)", "23"}},
     StdLib::Min,
@@ -390,10 +386,8 @@ void StdLib::Load(Interpreter &interpreter) {
   FuncDef foreachDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, ArgDef::ANY_ARGS), FuncDef::OneArg(Literal::TypeInstance) };
   symbols.PutSymbolFunction(
     "foreach",
-    "(foreach item iterable .. expressions)    -> value\n"
-    "(foreach item in iterable .. expressions) -> value\n"
-    "(foreach item : iterable .. expressions)  -> value\n"
-    "(foreach iterable fn)                     -> value",
+    {"(foreach item iterable .. expressions) -> value", "(foreach item in iterable .. expressions) -> value",
+    "(foreach item : iterable .. expressions) -> value", "(foreach iterable fn) -> value"},
     "evaluate fn or expressions on each item in iterable. return last expression evaluated",
     {{"(foreach num (42 54 23) (print num))", "42\n54\n23\n23"}},
     StdLib::Foreach,
@@ -401,10 +395,8 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "for",
-    "(for item iterable .. expressions)    -> value\n"
-    "(for item in iterable .. expressions) -> value\n"
-    "(for item : iterable .. expressions)  -> value\n"
-    "(for iterable fn)                     -> value",
+    {"(for item iterable .. expressions) -> value", "(for item in iterable .. expressions) -> value"
+    "(for item : iterable .. expressions) -> value", "(for iterable fn) -> value"},
     "alias for (foreach)",
     {},
     StdLib::Foreach, 
@@ -413,7 +405,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction(
     "reverse",
-    "(reverse iterable) -> new-iterable",
+    {"(reverse iterable) -> new-iterable"},
     "return the reverse of iterable which can be: str, list",
     {{"(reverse \"abc\")", "\"cba\""}},
     StdLib::Reverse,
@@ -423,7 +415,7 @@ void StdLib::Load(Interpreter &interpreter) {
   FuncDef headDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Literal::TypeInstance) };
   symbols.PutSymbolFunction(
     "head",
-    "(head iterable) -> value",
+    {"(head iterable) -> value"},
     "return first item in iterable which can be: str, list",
     {{"(reverse \"abc\")", "\"a\""}},
     StdLib::Head,
@@ -431,7 +423,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "car",
-    "(car iterable) -> value",
+    {"(car iterable) -> value"},
     "alias for (head)",
     {},
     StdLib::Head,
@@ -439,7 +431,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "first",
-    "(first iterable) -> value",
+    {"(first iterable) -> value"},
     "alias for (head)",
     {},
     StdLib::Head,
@@ -447,7 +439,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "front",
-    "(front iterable) -> value",
+    {"(front iterable) -> value"},
     "alias for (head)",
     {},
     StdLib::Head,
@@ -456,7 +448,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction(
     "tail",
-    "(tail iterable) -> iterable",
+    {"(tail iterable) -> iterable"},
     "returns new iterable (str, list) without first element",
     {{"(tail \"abc\")", "bc"}},
     StdLib::Tail,
@@ -464,7 +456,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "cdr", 
-    "(cdr iterable) -> iterable",
+    {"(cdr iterable) -> iterable"},
     "alias for (tail)",
     {},
     StdLib::Tail,
@@ -472,7 +464,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "rest", 
-    "(rest iterable) -> iterable",
+    {"(rest iterable) -> iterable"},
     "alias for (tail)",
     {},
     StdLib::Tail, 
@@ -481,7 +473,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction(
     "last",
-    "(last iterable) -> iterable",
+    {"(last iterable) -> iterable"},
     "return last item in iterable (str, list)",
     {{"(last \"abc\")", "\"c\""}},
     StdLib::Last, 
@@ -489,7 +481,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "back", 
-    "(back iterable) -> iterable",
+    {"(back iterable) -> iterable"},
     "alias for (last)",
     {},
     StdLib::Last, 
@@ -499,7 +491,7 @@ void StdLib::Load(Interpreter &interpreter) {
   FuncDef atDef { FuncDef::Args({&Literal::TypeInstance, &Int::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance)};
   symbols.PutSymbolFunction(
     "at", 
-    "(at iterable index) -> value",
+    {"(at iterable index) -> value"},
     "return index (zero based) of iterable (str, list)",
     {{"(at \"abc\" 1)", "\"b\""}},
     StdLib::At,
@@ -507,7 +499,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "nth", 
-    "(nth iterable index) -> value",
+    {"(nth iterable index) -> value"},
     "alias for (at)",
     {},
     StdLib::At, 
@@ -524,7 +516,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction(
     "exp", 
-    "(exp float) -> float",
+    {"(exp float) -> float"},
     "E to the power",
     {},
     StdLib::Exp, 
@@ -532,7 +524,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "log", 
-    "(log float) -> float",
+    {"(log float) -> float"},
     "natural logarithm (base E)",
     {},
     StdLib::Log, 
@@ -540,7 +532,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "sqrt", 
-    "(sqrt float) -> float",
+    {"(sqrt float) -> float"},
     "square root",
     {},
     StdLib::Sqrt, 
@@ -548,7 +540,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "ceil", 
-    "(ceil float) -> float",
+    {"(ceil float) -> float"},
     "ceiling",
     {{"(ceil 1.4)", "2.0"}},
     StdLib::Ceil, 
@@ -556,7 +548,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "floor", 
-    "(floor float) -> float",
+    {"(floor float) -> float"},
     "floor",
     {{"(floor 1.4)", "1.0"}},
     StdLib::Floor, 
@@ -564,7 +556,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "round", 
-    "(round float) -> float",
+    {"(round float) -> float"},
     "round to the nearest whole number",
     {{"(round 1.4)", "1.0"}},
     StdLib::Round, 
@@ -572,7 +564,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "cos", 
-    "(cos radians) -> float",
+    {"(cos radians) -> float"},
     "cosine of angle in radians",
     {{"(cos (PI / 2))", "0"}},
     StdLib::Cos, 
@@ -580,7 +572,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "sin", 
-    "(sin radians) -> float",
+    {"(sin radians) -> float"},
     "sine of angle in radians",
     {{"(sin (PI / 2))", "1.0"}},
     StdLib::Sin, 
@@ -588,7 +580,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "tan", 
-    "(tan radians) -> float",
+    {"(tan radians) -> float"},
     "tangent of angle in radians",
     {},
     StdLib::Tan, 
@@ -596,7 +588,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "acos", 
-    "(acos float) -> float",
+    {"(acos float) -> float"},
     "arc cosine",
     {},
     StdLib::ACos, 
@@ -604,7 +596,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "asin", 
-    "(asin float) -> float",
+    {"(asin float) -> float"},
     "arc sine",
     {},
     StdLib::ASin, 
@@ -612,7 +604,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "atan", 
-    "(atan float) -> float",
+    {"(atan float) -> float"},
     "arc tangent",
     {},
     StdLib::ATan, 
@@ -620,7 +612,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "atan2", 
-    "(atan2 x y) -> float",
+    {"(atan2 x y) -> float"},
     "arc tangent of y/x (both must be floats)",
     {},
     StdLib::ATan2, 
@@ -628,7 +620,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "cosh", 
-    "(cosh float) -> float",
+    {"(cosh float) -> float"},
     "hyperbolic cosine",
     {},
     StdLib::Cosh, 
@@ -636,7 +628,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "sinh", 
-    "(sinh float) -> float",
+    {"(sinh float) -> float"},
     "hyperbolic sine",
     {},
     StdLib::Sinh, 
@@ -644,7 +636,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "tanh", 
-    "(tanh float) -> float",
+    {"(tanh float) -> float"},
     "hyperbolic tan",
     {},
     StdLib::Tanh, 
@@ -652,7 +644,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "acosh", 
-    "(acosh float) -> float",
+    {"(acosh float) -> float"},
     "arc hyperbolic cosine",
     {},
     StdLib::ACosh, 
@@ -660,7 +652,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "asinh", 
-    "(asinh float) -> float",
+    {"(asinh float) -> float"},
     "arc hyperbolic sine",
     {},
     StdLib::ASinh, 
@@ -668,7 +660,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "atanh", 
-    "(atanh float) -> float",
+    {"(atanh float) -> float"},
     "arc hyperbolic tangent",
     {},
     StdLib::ATanh, 
@@ -679,7 +671,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction(
     "incr", 
-    "(incr int) -> int",
+    {"(incr int) -> int"},
     "alias for (++)",
     {},
     StdLib::Incr, 
@@ -687,7 +679,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "decr", 
-    "(decr int) -> int",
+    {"(decr int) -> int"},
     "alias for (--)",
     {},
     StdLib::Decr, 
@@ -695,7 +687,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "%", 
-    "(% .. values) -> int",
+    {"(% .. values) -> int"},
     "modulus",
     {{"(% 5 2)", "1"}},
     StdLib::Mod, 
@@ -705,7 +697,7 @@ void StdLib::Load(Interpreter &interpreter) {
   FuncDef baseFn { FuncDef::OneArg(Int::TypeInstance), FuncDef::OneArg(Str::TypeInstance) };
   symbols.PutSymbolFunction(
     "hex", 
-    "(hex int) -> str",
+    {"(hex int) -> str"},
     "return str of int converted to base 16",
     {{"(hex 12)", "\"0xc\""}},
     StdLib::Hex, 
@@ -713,7 +705,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "bin", 
-    "(bin int) -> str",
+    {"(bin int) -> str"},
     "return str of int converted to base 2",
     {{"(bin 12)", "\"0b1100\""}},
     StdLib::Bin,
@@ -721,7 +713,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "dec", 
-    "(dec int) -> str",
+    {"(dec int) -> str"},
     "return str of int converted to base 10",
     {{"(dec 0xc)", "\"12\""}},
     StdLib::Dec, 
@@ -731,7 +723,7 @@ void StdLib::Load(Interpreter &interpreter) {
   FuncDef intPredDef { FuncDef::OneArg(Int::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) };
   symbols.PutSymbolFunction(
     "even?", 
-    "(even? int) -> bool",
+    {"(even? int) -> bool"},
     "true if int is even",
     {{"(even? 42)", "true"}},
     StdLib::Even, 
@@ -739,7 +731,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "odd?", 
-    "(odd? int) -> bool",
+    {"(odd? int) -> bool"},
     "true if int is odd",
     {{"(odd? 42)", "false"}},
     StdLib::Odd, 
@@ -747,7 +739,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "zero?", 
-    "(zero? int) -> bool",
+    {"(zero? int) -> bool"},
     "true if int is zero",
     {{"(zero? 42)", "false"}},
     StdLib::Zero, 
@@ -758,7 +750,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction(
     "<<", 
-    "(<< .. ints) -> int",
+    {"(<< .. ints) -> int"},
     "left bitwise shift",
     {{"(<< 1 3)", "8"}},
     StdLib::LeftShift, 
@@ -766,7 +758,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     ">>", 
-    "(>> .. ints) -> int",
+    {"(>> .. ints) -> int"},
     "right bitwise shift",
     {{"(>> 8 3)", "1"}},
     StdLib::RightShift, 
@@ -774,7 +766,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "&", 
-    "(& .. ints) -> int",
+    {"(& .. ints) -> int"},
     "bitwise and",
     {{"(& 3 6)", "2"}},
     StdLib::BitAnd, 
@@ -782,7 +774,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "|", 
-    "(| .. ints) -> int",
+    {"(| .. ints) -> int"},
     "bitwise or",
     {{"(| 3 4)", "7"}},
     StdLib::BitOr, 
@@ -790,7 +782,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "^", 
-    "(^ .. ints) -> int",
+    {"(^ .. ints) -> int"},
     "bitwise xor",
     {{"(^ 3 6)", "5"}},
     StdLib::BitXor, 
@@ -798,7 +790,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "~", 
-    "(~ int) -> int",
+    {"(~ int) -> int"},
     "bitwise not",
     {{"(~ 0)", "-1"}},
     StdLib::BitNot, 
@@ -810,7 +802,7 @@ void StdLib::Load(Interpreter &interpreter) {
   FuncDef trimDef { FuncDef::OneArg(Str::TypeInstance), FuncDef::OneArg(Str::TypeInstance) };
   symbols.PutSymbolFunction(
     "trim", 
-    "(trim str) -> str",
+    {"(trim str) -> str"},
     "return str that has leading and trailing whitespace removed",
     {{"(trim \" abc  \")", "\"abc\""}},
     StdLib::Trim, 
@@ -818,7 +810,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "upper", 
-    "(upper str) -> str",
+    {"(upper str) -> str"},
     "return upper cased str",
     {{"(uppper \"aBc\")", "\"ABC\""}},
     StdLib::Upper, 
@@ -826,7 +818,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "lower", 
-    "(lower str) -> str",
+    {"(lower str) -> str"},
     "return lower cased str",
     {{"(lower \"AbC\")", "\"abc\""}},
     StdLib::Lower,
@@ -835,8 +827,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction(
     "substr", 
-    "(substr str start)\n"
-    "(substr str start count)",
+    {"(substr str start) -> str", "(substr str start count) -> str"},
     "returns new str starting at start (zero based) and optionally spanning a maximum of count number of characters",
     {{"(substr \"abcde\" 1)", "\"bcde\""}, {"(substr \"abcde\" 1 2)", "\"bc\""}},
     StdLib::SubStr, 
@@ -846,7 +837,7 @@ void StdLib::Load(Interpreter &interpreter) {
   FuncDef compareDef { FuncDef::ManyArgs(Str::TypeInstance, 2), FuncDef::OneArg(Int::TypeInstance) };
   symbols.PutSymbolFunction(
     "compare", 
-    "(compare str1 str2) -> int",
+    {"(compare str1 str2) -> int"},
     "lexiographical comparison of str1 and str2.\nstr1 < str2 returns -1\nstr1 == str2 returns 0\nstr1 > str2 returns 1",
     {{"(compare \"abc\" \"abc\")", "0"}},
     StdLib::Compare, 
@@ -856,8 +847,7 @@ void StdLib::Load(Interpreter &interpreter) {
   FuncDef findDef { FuncDef::ManyArgs(Literal::TypeInstance, 2, 3), FuncDef::OneArg(Int::TypeInstance) };
   symbols.PutSymbolFunction(
     "find", 
-    "(find haystack needle)       -> int\n"
-    "(find haystack needle start) -> int",
+    {"(find haystack needle) -> int", "(find haystack needle start) -> int"},
     "find needle in haystack, optionally starting at start (zero based)",
     {{"(find \"hello caramellow!\" \"lo\")", "3"}, {"(find \"hello caramellow!\" \"lo\" 5)", "13"}},
     StdLib::Find, 
@@ -865,8 +855,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "rfind", 
-    "(rfind haystack needle)       -> int\n"
-    "(rfind haystack needle start) -> int",
+    {"(rfind haystack needle) -> int", "(rfind haystack needle start) -> int"},
     "find needle in haystack starting at the end of haystack, optionally starting at start (zero based)",
     {},
     StdLib::RFind, 
@@ -876,7 +865,7 @@ void StdLib::Load(Interpreter &interpreter) {
   FuncDef containsDef { FuncDef::ManyArgs(Str::TypeInstance, 2), FuncDef::OneArg(Bool::TypeInstance) };
   symbols.PutSymbolFunction(
     "contains", 
-    "(contains haystack needle) -> bool",
+    {"(contains haystack needle) -> bool"},
     "true if haystack contains needle",
     {{"(contains \"abcde\" \"cd\")", "true"}},
     StdLib::Contains, 
@@ -884,7 +873,7 @@ void StdLib::Load(Interpreter &interpreter) {
   ); 
   symbols.PutSymbolFunction(
     "startswith",
-    "(startswith haystack needle) -> bool",
+    {"(startswith haystack needle) -> bool"},
     "true if haystack starts with needle",
     {{"(startswith \"abcde\" \"ab\")", "true"}},
     StdLib::StartsWith, 
@@ -892,7 +881,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "endswith", 
-    "(endswith haystack needle) -> bool",
+    {"(endswith haystack needle) -> bool"},
     "true if haystack ends with needle",
     {{"(endswith \"abcde\" \"de\")", "true"}},
     StdLib::EndsWith, 
@@ -901,9 +890,8 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction(
     "replace", 
-    "(replace haystack needle)                             -> str\n"
-    "(replace haystack needle replacement)                 -> str\n"
-    "(replace haystack needle replacement maxReplacements) -> str",
+    {"(replace haystack needle) -> str", "(replace haystack needle replacement) -> str",
+     "(replace haystack needle replacement maxReplacements) -> str"},
     "replace needle with replacement inside haystack for maxReplacements times. if replacement isn't specified, the empty string is used.",
     {{"(replace \"hello world\" \"o\")", "\"hell wrld\""},
      {"(replace \"hello world\" \"o\" \"X\")", "\"hellX wXrld\""},
@@ -913,26 +901,24 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "split", 
-    "(split str)           -> list\n"
-    "(split str delimiter) -> list",
-    "split str using delimiter (space if not specified)",
+    {"(split str delimiter) -> list"},
+    "split str using delimiter", 
     {{"(split \"jon,42\" \",\")", "(\"jon\" \"42\")"}},
     StdLib::Split, 
     FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2, 3), FuncDef::OneArg(Quote::TypeInstance) }
   );
   symbols.PutSymbolFunction(
     "join", 
-    "(join list)           -> str\n"
-    "(join list delimiter) -> str",
-    "build a str by joining all items in list together with delimiter (space if not specified)",
-    {{"(join (\"jon\" \"42\"))", "jon,42"}},
+    {"(join list delimiter) -> str"},
+    "build a str by joining all items in list together with delimiter",
+    {{"(join (\"jon\" \"42\") \",\")", "jon,42"}},
     StdLib::Join, 
     FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2, 3), FuncDef::OneArg(Str::TypeInstance) }
   );
 
   symbols.PutSymbolFunction(
     "format", 
-    "(format pattern .. args) -> str",
+    {"(format pattern .. args) -> str"},
     "build a str using pattern and args.\n{} means pick next positional arg\n{0} means pick first arg\n{foo} means get value of variable foo in the current scope",
     {{"(format \"{} is {} years old\" \"jon\" 42)", "jon is 42 years old"},
      {"(format \"{0} is {1} years old\" \"jon\" 42)", "jon is 42 years old"},
@@ -956,7 +942,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction(
     "list",
-    "(list .. values) -> list",
+    {"(list .. values) -> list"},
     "construct a list from values",
     {{"(list 1 2)", "(1 2)"}},
     StdLib::List,
@@ -971,7 +957,7 @@ void StdLib::Load(Interpreter &interpreter) {
   FuncDef lstTransformDef { FuncDef::Args({&Function::TypeInstance, &Sexp::TypeInstance}), FuncDef::OneArg(Quote::TypeInstance) };
   symbols.PutSymbolFunction(
     "map", 
-    "(map fn list) -> list",
+    {"(map fn list) -> list"},
     "returns new list with fn applied to each element",
     {{"(map even? (1 2 3))", "(false true false)"}},
     StdLib::Map,
@@ -979,7 +965,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "filter", 
-    "(filter predicate list) -> list",
+    {"(filter predicate list) -> list"},
     "returns new list containing only elements which match the predicate",
     {{"(filter even? (1 2 3))", "(2)"}},
     StdLib::Filter, 
@@ -987,7 +973,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "reduce", 
-    "(reduce binaryFn list) -> value",
+    {"(reduce binaryFn list) -> value"},
     "aggregate elements in list using binaryFn",
     {{"(reduce + (1 2 3))", "6"}},
     StdLib::Reduce,
@@ -997,8 +983,7 @@ void StdLib::Load(Interpreter &interpreter) {
   FuncDef takeDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2), FuncDef::OneArg(Quote::TypeInstance) };
   symbols.PutSymbolFunction(
     "take", 
-    "(take num list)       -> list\n"
-    "(take predicate list) -> list",
+    {"(take num list) -> list", "(take predicate list) -> list"},
     "take from list num elements or as long as each element matches predicate",
     {{"(take 2 (4 6 7 8))", "(4 6)"}, {"(take even? (4 6 7 8))", "(4 6)"}},
     StdLib::Take, 
@@ -1006,8 +991,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "skip", 
-    "(skip num list)       -> list\n"
-    "(skip predicate list) -> list",
+    {"(skip num list) -> list", "(skip predicate list) -> list"},
     "skip over num elements in list or until predicate no longer matches",
     {{"(skip 2 (4 6 7 8))", "(7 8)"}, {"(skip even? (4 6 7 8))", "(7 8)"}},
     StdLib::Skip, 
@@ -1017,7 +1001,7 @@ void StdLib::Load(Interpreter &interpreter) {
   FuncDef listPredDef { FuncDef::Args({&Function::TypeInstance, &Sexp::TypeInstance}), FuncDef::OneArg(Bool::TypeInstance) };
   symbols.PutSymbolFunction(
     "any",
-    "(any predicate list) -> bool",
+    {"(any predicate list) -> bool"},
     "true if any element in list matches predicate",
     {{"(any even? (1 2 3))", "true"}},
     StdLib::Any,
@@ -1025,7 +1009,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "all", 
-    "(all predicate list) -> bool",
+    {"(all predicate list) -> bool"},
     "true if all elements in list match predicate",
     {{"(all even? (1 2 3))", "false"}},
     StdLib::All, 
@@ -1034,8 +1018,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction(
     "zip", 
-    "(zip .. lists)    -> list\n"
-    "(zip fn .. lists) -> list",
+    {"(zip .. lists) -> list", "(zip fn .. lists) -> list"},
     "zip one or more lists together, optionally using applying fn",
     {{"(zip (1 2) (99 98))", "((1 99) (2 98))"}, {"(zip + (1 2) (99 98))", "(100 100)"}},
     StdLib::Zip,
@@ -1044,7 +1027,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction(
     "cons", 
-    "(cons item list) -> list",
+    {"(cons item list) -> list"},
     "add item into front of list",
     {{"(cons 3 (4))", "(3 4)"}},
     StdLib::Cons,
@@ -1052,8 +1035,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "range", 
-    "(range start end)        -> list\n"
-    "(range start end stride) -> list",
+    {"(range start end) -> list", "(range start end stride) -> list"},
     "return a list of all numbers between and start and end, optionally increasing by stride (defaults to 1)",
     {{"(range 2 8)", "(2 3 4 5 6 7 8)"}, {"(range 2 8 4)", "(2 6)"}},
     StdLib::Range,
@@ -1061,8 +1043,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "..", 
-    "(.. start end)        -> list\n"
-    "(.. start end stride) -> list",
+    {"(.. start end) -> list", "(.. start end stride) -> list"},
     "alias for (range)",
     {},
     StdLib::Range, 
@@ -1073,7 +1054,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction(
     "and", 
-    "(and .. expressions) -> bool",
+    {"(and .. expressions) -> bool"},
     "logical and of each boolean expression. shortcuits if false expression encountered",
     {{"(and false true)", "false"}},
     StdLib::And, 
@@ -1081,7 +1062,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "&&", 
-    "(&& .. expressions) -> bool",
+    {"(&& .. expressions) -> bool"},
     "alias for (and)",
     {},
     StdLib::And, 
@@ -1090,7 +1071,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction(
     "or", 
-    "(or .. expressions) -> bool",
+    {"(or .. expressions) -> bool"},
     "logical or of each expression. shortcuits if true expression encountered",
     {{"(or true false)", "true"}},
     StdLib::Or, 
@@ -1098,7 +1079,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "||", 
-    "(|| .. expressions) -> bool",
+    {"(|| .. expressions) -> bool"},
     "alias for (or)",
     {},
     StdLib::Or, 
@@ -1107,7 +1088,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction(
     "not", 
-    "(not expression) -> bool",
+    {"(not expression) -> bool"},
     "logical not of expression",
     {{"(not false)", "true"}},
     StdLib::Not, 
@@ -1115,7 +1096,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "!", 
-    "(! expression) -> bool",
+    {"(! expression) -> bool"},
     "alias for (not)",
     {},
     StdLib::Not, 
@@ -1126,7 +1107,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction(
     "==", 
-    "(== .. values) -> bool",
+    {"(== .. values) -> bool"},
     "true if all values are equal",
     {{"(== 3 4 5)", "false"}},
     StdLib::Eq, 
@@ -1134,7 +1115,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "!=", 
-    "(!= .. values) -> bool",
+    {"(!= .. values) -> bool"},
     "true if all values are not equal",
     {{"(!= 3 4 5)", "true"}},
     StdLib::Ne, 
@@ -1142,7 +1123,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "<", 
-    "(< .. ints) -> bool",
+    {"(< .. ints) -> bool"},
     "true if all values are monotonically decreasing",
     {{"(< 4 3 2)", "true"}},
     StdLib::Lt, 
@@ -1150,7 +1131,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     ">", 
-    "(> .. ints) -> bool",
+    {"(> .. ints) -> bool"},
     "true if all values are monotonically increasing",
     {{"(> 2 3 4)", "true"}},
     StdLib::Gt, 
@@ -1158,7 +1139,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "<=", 
-    "(<= .. values) -> bool",
+    {"(<= .. values) -> bool"},
     "true if all values are less than or equal to each other",
     {{"(<= 4 3 3)", "true"}},
     StdLib::Lte, 
@@ -1166,7 +1147,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     ">=", 
-    "(>= .. values) -> bool",
+    {"(>= .. values) -> bool"},
     "true if all values are greater than or equal to each other",
     {{"(>= 2 3 3)", "true"}},
     StdLib::Gte, 
@@ -1177,7 +1158,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction(
     "quote", 
-    "(quote expression) -> quote",
+    {"(quote expression) -> quote"},
     "quote expression (prevent evaluation)",
     {{"(quote (+ 3 4))", "(+ 3 4)"}},
     StdLib::QuoteFn, 
@@ -1185,7 +1166,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "'", 
-    "(' expression) -> quote",
+    {"(' expression) -> quote"},
     "alias for (quote)",
     {},
     StdLib::QuoteFn, 
@@ -1193,7 +1174,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "unquote", 
-    "(unquote quotedExpression) -> value",
+    {"(unquote quotedExpression) -> value"},
     "unquote (evaluate) expression",
     {{"(unquote (quote (+ 3 4)))", "7"}},
     StdLib::Unquote, 
@@ -1202,17 +1183,16 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction(
     "if", 
-    "(if expr trueBranch)             -> value\n"
-    "(if expr trueBranch falseBranch) -> value",
+    {"(if expr trueBranch) -> value", "(if expr trueBranch falseBranch) -> value"},
     "if expr is true, evaluate trueBranch. Otherwise, evaluate falseBranch (if defined)",
     {{"(if (2 < 3) true)", "true"}, {"(if (2 > 3) true false)", "false"}},
     StdLib::If,
-    FuncDef { FuncDef::Args({&Bool::TypeInstance, &Sexp::TypeInstance, &Sexp::TypeInstance}), FuncDef::OneArg(Literal::TypeInstance) }
+    FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2, 3), FuncDef::OneArg(Literal::TypeInstance) }
   );
 
   symbols.PutSymbolFunction(
     "cond", 
-    "(cond ((expr1 branch1) .. (exprN branchN) (true defaultBranch))) -> value",
+    {"(cond ((expr1 branch1) .. (exprN branchN) (true defaultBranch))) -> value"},
     "generalization of if/else if",
     {{"(cond ((2 < 3) \"less than\") ((2 > 3) \"greater than\") (true \"equal\"))", "less than"}},
     StdLib::Cond, 
@@ -1220,8 +1200,8 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "switch", 
-    "(switch expr (value1 branch1) .. (valueN branchN) (defaultBranch))                   -> value\n"
-    "(switch expr (case value1 branch1) .. (case valueN branchN) (default defaultBranch)) -> value",
+    {"(switch expr (value1 branch1) .. (valueN branchN) (defaultBranch)) -> value",
+    "(switch expr (case value1 branch1) .. (case valueN branchN) (default defaultBranch)) -> value"},
     "evaluate expr, then evaluate the statement that matches appropriate value (otherwise evaluate defaultValueStatement)",
     {{"(switch 3 (1 \"one\") (2 \"two\") (\"other\"))", "\"other\""}},
     StdLib::Switch, 
@@ -1229,7 +1209,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "while", 
-    "(while expr .. statements) -> value",
+    {"(while expr .. statements) -> value"},
     "execute statements as long as expr evaluates to true",
     {{"(while false \"this line doesn't evalute\")", "nil"}},
     StdLib::While, 
@@ -1237,7 +1217,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "let", 
-    "(let ((name1 value1) ..) .. statements) -> value",
+    {"(let ((name1 value1) ..) .. statements) -> value"},
     "evaluate statements with bound variables",
     {{"(let ((a 3) (b 4)) (+ a b))", "7"}},
     StdLib::Let, 
@@ -1245,7 +1225,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "begin", 
-    "(begin .. statements) -> value",
+    {"(begin .. statements) -> value"},
     "evaluate statements",
     {},
     StdLib::Begin, 
@@ -1253,7 +1233,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "lambda", 
-    "(lambda (.. vars) .. statements) -> fn",
+    {"(lambda (.. vars) .. statements) -> fn"},
     "create anonymous function",
     {{"(lambda (x) (+ x 10))", "<Function>"}},
     StdLib::Lambda, 
@@ -1261,7 +1241,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "fn", 
-    "(fn (.. vars) .. statements) -> fn",
+    {"(fn (.. vars) .. statements) -> fn"},
     "alias for (lambda)",
     {},
     StdLib::Lambda, 
@@ -1269,7 +1249,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "def", 
-    "(def name (.. vars) .. statements) -> fn",
+    {"(def name (.. vars) .. statements) -> fn"},
     "define named function",
     {{"(def add (a b) (+ a b))", "<Function:add>"}},
     StdLib::Def, 
@@ -1277,7 +1257,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "apply", 
-    "(apply fn arglist) -> value",
+    {"(apply fn arglist) -> value"},
     "evaluate fn with arglist",
     {{"(apply + (1 2 3))", "6"}},
     StdLib::Apply, 
@@ -1288,7 +1268,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction(
     "type", 
-    "(type value) -> type",
+    {"(type value) -> type"},
     "get the type of value",
     {{"(type 42)", "int"}},
     StdLib::TypeFunc, 
@@ -1297,7 +1277,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction(
     "atom?", 
-    "(atom? value) -> bool",
+    {"(atom? value) -> bool"},
     "is value not a list?",
     {{"(atom? 42)", "true"}},
     StdLib::TypeQFunc, 
@@ -1305,7 +1285,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "bool?", 
-    "(bool? value) -> bool",
+    {"(bool? value) -> bool"},
     "is value a bool?",
     {{"(bool? 42)", "false"}},
     StdLib::TypeQFunc, 
@@ -1313,7 +1293,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "int?", 
-    "(int? value) -> bool",
+    {"(int? value) -> bool"},
     "is value an int?",
     {{"(int? 42)", "true"}},
     StdLib::TypeQFunc, 
@@ -1321,7 +1301,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "float?", 
-    "(float? value) -> bool",
+    {"(float? value) -> bool"},
     "is value a float?",
     {{"(float? 42)", "false"}},
     StdLib::TypeQFunc, 
@@ -1329,7 +1309,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "str?", 
-    "(str? value) -> bool",
+    {"(str? value) -> bool"},
     "is value a str?",
     {{"(str? 42)", "false"}},
     StdLib::TypeQFunc, 
@@ -1337,7 +1317,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "symbol?", 
-    "(symbol? value) -> bool",
+    {"(symbol? value) -> bool"},
     "is value a symbol?",
     {{"(symbol? 42)", "false"}},
     StdLib::TypeQFunc, 
@@ -1345,7 +1325,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "list?", 
-    "(list? value) -> bool",
+    {"(list? value) -> bool"},
     "is value a list?",
     {{"(list? 42)", "false"}},
     StdLib::TypeQFunc, 
@@ -1353,7 +1333,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "fn?", 
-    "(fn? value) -> bool",
+    {"(fn? value) -> bool"},
     "is value a fn?",
     {{"(fn? 42)", "false"}},
     StdLib::TypeQFunc, 
@@ -1362,7 +1342,7 @@ void StdLib::Load(Interpreter &interpreter) {
 
   symbols.PutSymbolFunction(
     "bool",
-    "(bool value) -> bool",
+    {"(bool value) -> bool"},
     "convert value to bool",
     {{"(bool 42)", "true"}},
     StdLib::BoolFunc, 
@@ -1370,7 +1350,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "int", 
-    "(int value) -> int",
+    {"(int value) -> int"},
     "convert value to int",
     {{"(int 42)", "42"}},
     StdLib::IntFunc, 
@@ -1378,7 +1358,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "float", 
-    "(float value) -> float",
+    {"(float value) -> float"},
     "convert value to float",
     {{"(float 42)", "42"}},
     StdLib::FloatFunc, 
@@ -1386,7 +1366,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "str", 
-    "(str value) -> str",
+    {"(str value) -> str"},
     "convert value to str",
     {{"(str 42)", "\"42\""}},
     StdLib::StrFunc, 
@@ -1394,7 +1374,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "symbol", 
-    "(symbol str) -> symbol",
+    {"(symbol str) -> symbol"},
     "convert str to symbol",
     {{"(symbol \"foo\")", "foo"}},
     StdLib::SymbolFunc, 
@@ -1597,6 +1577,31 @@ bool StdLib::Symbols(EvaluationContext &ctx) {
   return true;
 }
 
+bool LookupSymbol(EvaluationContext &ctx, ExpressionPtr &currArg, string &symName, ExpressionPtr &symValue) {
+  if (ctx.Evaluate(currArg, 1)) {
+    if (auto *fn = TypeHelper::GetValue<Function>(currArg)) {
+      if (auto *sym = TypeHelper::GetValue<Symbol>(fn->Symbol)) {
+        symName = sym->Value;
+        symValue = fn->Clone();
+        return true;
+      }
+      else
+        return ctx.Error("no symbol info for function");
+    }
+    else if (auto *str = TypeHelper::GetValue<Str>(currArg)) {
+      symName = str->Value;
+      if (ctx.GetSymbol(symName, symValue))
+        return true;
+      else
+        return ctx.UnknownSymbolError(symName);
+    }
+    else
+      return ctx.TypeError("symbol or str", currArg);
+  }
+  else
+    return true;
+}
+
 bool StdLib::Help(EvaluationContext &ctx) {
   string defaultSexp = ctx.Interp.GetSettings().GetDefaultSexp();
   stringstream ss;
@@ -1604,8 +1609,8 @@ bool StdLib::Help(EvaluationContext &ctx) {
   Interpreter::SymbolFunctor functor = [&ss, &defaultSexp, &fullHelp](const string &symbolName, ExpressionPtr &expr) {
     if (symbolName != defaultSexp) {
       if (auto fn = TypeHelper::GetValue<Function>(expr)) {
-        if (!fn->Signatures.empty())
-          ss << fn->Signatures << endl;
+        for (auto &sig : fn->Signatures)
+          ss << sig << endl;
         if (fullHelp) {
           if (!fn->Doc.empty())
             ss << fn->Doc << endl;
@@ -1629,25 +1634,12 @@ bool StdLib::Help(EvaluationContext &ctx) {
       ExpressionPtr currArg = move(ctx.Args.front());
       ctx.Args.pop_front();
 
-      string symName = "";
-      if (auto *sym = TypeHelper::GetValue<Symbol>(currArg))
-        symName = sym->Value;
-      else if (ctx.Evaluate(currArg, 1)) {
-        if (auto *str = TypeHelper::GetValue<Str>(currArg))
-          symName = str->Value;
-        else if (auto *sym = TypeHelper::GetValue<Symbol>(currArg))
-          symName = sym->Value;
-        else
-          return ctx.TypeError("symbol or str", currArg);
-      }
+      string symName;
+      ExpressionPtr symValue;
+      if (LookupSymbol(ctx, currArg, symName, symValue))
+        functor(symName, symValue);
       else
         return false;
-
-      ExpressionPtr currValue;
-      if (symbols.GetSymbol(symName, currValue))
-        functor(symName, currValue);
-      else
-        return ctx.UnknownSymbolError(symName);
     }
   }
 
@@ -1656,16 +1648,48 @@ bool StdLib::Help(EvaluationContext &ctx) {
   return true;
 }
 
+template <class F>
+bool HelpSubFunction(EvaluationContext &ctx, F functor) {
+  string symName;
+  ExpressionPtr symValue;
+  if (LookupSymbol(ctx, ctx.Args.front(), symName, symValue)) {
+    if (auto fn = TypeHelper::GetValue<Function>(symValue)) {
+      ctx.Expr.reset(functor(*fn));
+      return true;
+    }
+  }
+  return false;
+}
+
 bool StdLib::HelpSignatures(EvaluationContext &ctx) {
-  return true;
+  return HelpSubFunction(ctx, [](Function &fn) { 
+    ExpressionPtr listExpr { new Sexp };
+    Sexp &list = static_cast<Sexp&>(*listExpr);
+    for (auto &sig : fn.Signatures)
+      list.Args.emplace_back(new Str(sig));
+    return new Quote(move(listExpr)); 
+  });
 }
 
 bool StdLib::HelpDoc(EvaluationContext &ctx) {
-  return true;
+  return HelpSubFunction(ctx, [](Function &fn) { 
+    return new Str(fn.Doc); 
+  });
 }
 
 bool StdLib::HelpExamples(EvaluationContext &ctx) {
-  return true;
+  return HelpSubFunction(ctx, [](Function &fn) { 
+    ExpressionPtr listExpr { new Sexp };
+    Sexp &list = static_cast<Sexp&>(*listExpr);
+    for (auto &example : fn.Examples) {
+      ExpressionPtr exExpr { new Sexp };
+      Sexp &ex = static_cast<Sexp&>(*exExpr);
+      ex.Args.emplace_back(new Str(example.Code));
+      ex.Args.emplace_back(new Str(example.ExpectedValue));
+      list.Args.emplace_back(new Quote(move(exExpr)));
+    }
+    return new Quote(move(listExpr));
+  });
 }
 
 void BuildOpSexp(EvaluationContext &ctx, const string &op, ExpressionPtr &symToSetExpr) {
@@ -3542,17 +3566,31 @@ bool StdLib::If(EvaluationContext &ctx) {
   ExpressionPtr trueExpr = move(ctx.Args.front());
   ctx.Args.pop_front();
    
-  ExpressionPtr falseExpr = move(ctx.Args.front());
-  ctx.Args.pop_front();
+  ExpressionPtr falseExpr;
+  if (!ctx.Args.empty()) {
+    falseExpr = move(ctx.Args.front());
+    ctx.Args.pop_front();
+  }
 
-  if (auto cond = ctx.GetRequiredValue<Bool>(condExpr)) {
-    ExpressionPtr *branchExpr = cond->Value ? &trueExpr : &falseExpr;
-    if (ctx.Evaluate(*branchExpr, "branch")) {
-      ctx.Expr = move(*branchExpr);
-      return true;
+  if (ctx.Evaluate(condExpr, "condition")) {
+    if (auto cond = ctx.GetRequiredValue<Bool>(condExpr)) {
+      ExpressionPtr branchExpr;
+      if (cond->Value)
+        branchExpr = move(trueExpr);
+      else if (falseExpr)
+        branchExpr = move(falseExpr);
+      else 
+        branchExpr = List::GetNil();
+
+      if (ctx.Evaluate(branchExpr, "branch")) {
+        ctx.Expr = move(branchExpr);
+        return true;
+      }
+      else
+        return false; 
     }
     else
-      return false; 
+      return false;
   }
   else
     return false;

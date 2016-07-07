@@ -1,0 +1,1068 @@
+<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en' lang='en' >
+<head><title>Slisp 0.1.0.1 API Documentation</title></head>
+<body><h1>Slisp 0.1.0.1 API Documentation</h1>
+<hr/><b><![CDATA[!]]></b><p/>
+Usage: <![CDATA[(! expression) -> bool]]><br/>
+<p/>
+<![CDATA[alias for (not)]]><br/>
+<hr/><b><![CDATA[!=]]></b><p/>
+Usage: <![CDATA[(!= .. values) -> bool]]><br/>
+<p/>
+<![CDATA[true if all values are not equal]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (!= 3 4 5)]]><br/>
+<![CDATA[true]]><br/>
+<hr/><b><![CDATA[%]]></b><p/>
+Usage: <![CDATA[(% .. values) -> int]]><br/>
+<p/>
+<![CDATA[modulus]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (% 5 2)]]><br/>
+<![CDATA[1]]><br/>
+<hr/><b><![CDATA[%=]]></b><p/>
+Usage: <![CDATA[(%= symbol value) -> value]]><br/>
+<p/>
+<![CDATA[perform operation on current symbol and return new value. value can be: int, float, str, list]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (= foo 2)]]><br/>
+<![CDATA[2]]><br/>
+<![CDATA[>>> (%= foo 3)]]><br/>
+<![CDATA[2]]><br/>
+<hr/><b><![CDATA[&]]></b><p/>
+Usage: <![CDATA[(& .. ints) -> int]]><br/>
+<p/>
+<![CDATA[bitwise and]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (& 3 6)]]><br/>
+<![CDATA[2]]><br/>
+<hr/><b><![CDATA[&&]]></b><p/>
+Usage: <![CDATA[(&& .. expressions) -> bool]]><br/>
+<p/>
+<![CDATA[alias for (and)]]><br/>
+<hr/><b><![CDATA[&=]]></b><p/>
+Usage: <![CDATA[(&= symbol value) -> value]]><br/>
+<p/>
+<![CDATA[perform operation on current symbol and return new value. value can be: int, float, str, list]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (= foo 2)]]><br/>
+<![CDATA[2]]><br/>
+<![CDATA[>>> (&= foo 3)]]><br/>
+<![CDATA[2]]><br/>
+<hr/><b><![CDATA[']]></b><p/>
+Usage: <![CDATA[(' expression) -> quote]]><br/>
+<p/>
+<![CDATA[alias for (quote)]]><br/>
+<hr/><b><![CDATA[*]]></b><p/>
+Usage: <![CDATA[(* .. nums) -> num]]><br/>
+<p/>
+<![CDATA[multiply each num and return result. all values must be same type which can be: int, float]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (* 2 3)]]><br/>
+<![CDATA[6]]><br/>
+<hr/><b><![CDATA[**]]></b><p/>
+Usage: <![CDATA[(** base expontent) -> num]]><br/>
+<p/>
+<![CDATA[alias for (pow)]]><br/>
+<hr/><b><![CDATA[*=]]></b><p/>
+Usage: <![CDATA[(*= symbol value) -> value]]><br/>
+<p/>
+<![CDATA[perform operation on current symbol and return new value. value can be: int, float, str, list]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (= foo 2)]]><br/>
+<![CDATA[2]]><br/>
+<![CDATA[>>> (*= foo 3)]]><br/>
+<![CDATA[6]]><br/>
+<hr/><b><![CDATA[+]]></b><p/>
+Usage: <![CDATA[(+ .. values) -> value]]><br/>
+<p/>
+<![CDATA[add each value and return result. all values must be same type which can be: int, float, str, list]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (+ 2 3)]]><br/>
+<![CDATA[5]]><br/>
+<![CDATA[>>> (+ "a" "bc")]]><br/>
+<![CDATA["abc"]]><br/>
+<hr/><b><![CDATA[++]]></b><p/>
+Usage: <![CDATA[(++ symbol) -> value]]><br/>
+<p/>
+<![CDATA[increment symbol and return new value]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (= foo 2)]]><br/>
+<![CDATA[2]]><br/>
+<![CDATA[>>> (++ foo)]]><br/>
+<![CDATA[3]]><br/>
+<hr/><b><![CDATA[+=]]></b><p/>
+Usage: <![CDATA[(+= symbol value) -> value]]><br/>
+<p/>
+<![CDATA[perform operation on current symbol and return new value. value can be: int, float, str, list]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (= foo 2)]]><br/>
+<![CDATA[2]]><br/>
+<![CDATA[>>> (+= foo 3)]]><br/>
+<![CDATA[5]]><br/>
+<hr/><b><![CDATA[-]]></b><p/>
+Usage: <![CDATA[(- .. nums) -> num]]><br/>
+<p/>
+<![CDATA[subtract each num and return result. all values must be same type which can be: int, float]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (- 42 10)]]><br/>
+<![CDATA[32]]><br/>
+<hr/><b><![CDATA[--]]></b><p/>
+Usage: <![CDATA[(-- symbol) -> value]]><br/>
+<p/>
+<![CDATA[decrement symbol and return new value]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (= foo 2)]]><br/>
+<![CDATA[2]]><br/>
+<![CDATA[>>> (-- foo)]]><br/>
+<![CDATA[1]]><br/>
+<hr/><b><![CDATA[-=]]></b><p/>
+Usage: <![CDATA[(-= symbol value) -> value]]><br/>
+<p/>
+<![CDATA[perform operation on current symbol and return new value. value can be: int, float, str, list]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (= foo 2)]]><br/>
+<![CDATA[2]]><br/>
+<![CDATA[>>> (-= foo 3)]]><br/>
+<![CDATA[-1]]><br/>
+<hr/><b><![CDATA[..]]></b><p/>
+Usage: <![CDATA[(.. start end) -> list]]><br/>
+Usage: <![CDATA[(.. start end stride) -> list]]><br/>
+<p/>
+<![CDATA[alias for (range)]]><br/>
+<hr/><b><![CDATA[/]]></b><p/>
+Usage: <![CDATA[(/ .. nums) -> num]]><br/>
+<p/>
+<![CDATA[divide each num and return result. all values must be same type which can be: int, float]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (/ 42 6)]]><br/>
+<![CDATA[7]]><br/>
+<hr/><b><![CDATA[/=]]></b><p/>
+Usage: <![CDATA[(/= symbol value) -> value]]><br/>
+<p/>
+<![CDATA[perform operation on current symbol and return new value. value can be: int, float, str, list]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (= foo 2)]]><br/>
+<![CDATA[2]]><br/>
+<![CDATA[>>> (/= foo 3)]]><br/>
+<![CDATA[0]]><br/>
+<hr/><b><![CDATA[<]]></b><p/>
+Usage: <![CDATA[(< .. ints) -> bool]]><br/>
+<p/>
+<![CDATA[true if all values are monotonically decreasing]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (< 4 3 2)]]><br/>
+<![CDATA[true]]><br/>
+<hr/><b><![CDATA[<<]]></b><p/>
+Usage: <![CDATA[(<< .. ints) -> int]]><br/>
+<p/>
+<![CDATA[left bitwise shift]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (<< 1 3)]]><br/>
+<![CDATA[8]]><br/>
+<hr/><b><![CDATA[<<=]]></b><p/>
+Usage: <![CDATA[(<<= symbol value) -> value]]><br/>
+<p/>
+<![CDATA[perform operation on current symbol and return new value. value can be: int, float, str, list]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (= foo 2)]]><br/>
+<![CDATA[2]]><br/>
+<![CDATA[>>> (<<= foo 3)]]><br/>
+<![CDATA[16]]><br/>
+<hr/><b><![CDATA[<=]]></b><p/>
+Usage: <![CDATA[(<= .. values) -> bool]]><br/>
+<p/>
+<![CDATA[true if all values are less than or equal to each other]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (<= 4 3 3)]]><br/>
+<![CDATA[true]]><br/>
+<hr/><b><![CDATA[=]]></b><p/>
+Usage: <![CDATA[(= symbol value) -> value]]><br/>
+<p/>
+<![CDATA[alias for (set)]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (= foo 42)]]><br/>
+<![CDATA[42]]><br/>
+<hr/><b><![CDATA[==]]></b><p/>
+Usage: <![CDATA[(== .. values) -> bool]]><br/>
+<p/>
+<![CDATA[true if all values are equal]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (== 3 4 5)]]><br/>
+<![CDATA[false]]><br/>
+<hr/><b><![CDATA[>]]></b><p/>
+Usage: <![CDATA[(> .. ints) -> bool]]><br/>
+<p/>
+<![CDATA[true if all values are monotonically increasing]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (> 2 3 4)]]><br/>
+<![CDATA[true]]><br/>
+<hr/><b><![CDATA[>=]]></b><p/>
+Usage: <![CDATA[(>= .. values) -> bool]]><br/>
+<p/>
+<![CDATA[true if all values are greater than or equal to each other]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (>= 2 3 3)]]><br/>
+<![CDATA[true]]><br/>
+<hr/><b><![CDATA[>>]]></b><p/>
+Usage: <![CDATA[(>> .. ints) -> int]]><br/>
+<p/>
+<![CDATA[right bitwise shift]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (>> 8 3)]]><br/>
+<![CDATA[1]]><br/>
+<hr/><b><![CDATA[>>=]]></b><p/>
+Usage: <![CDATA[(>>= symbol value) -> value]]><br/>
+<p/>
+<![CDATA[perform operation on current symbol and return new value. value can be: int, float, str, list]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (= foo 2)]]><br/>
+<![CDATA[2]]><br/>
+<![CDATA[>>> (>>= foo 3)]]><br/>
+<![CDATA[0]]><br/>
+<hr/><b><![CDATA[^]]></b><p/>
+Usage: <![CDATA[(^ .. ints) -> int]]><br/>
+<p/>
+<![CDATA[bitwise xor]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (^ 3 6)]]><br/>
+<![CDATA[5]]><br/>
+<hr/><b><![CDATA[^=]]></b><p/>
+Usage: <![CDATA[(^= symbol value) -> value]]><br/>
+<p/>
+<![CDATA[perform operation on current symbol and return new value. value can be: int, float, str, list]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (= foo 2)]]><br/>
+<![CDATA[2]]><br/>
+<![CDATA[>>> (^= foo 3)]]><br/>
+<![CDATA[1]]><br/>
+<hr/><b><![CDATA[abs]]></b><p/>
+Usage: <![CDATA[(abs num) -> num]]><br/>
+<p/>
+<![CDATA[absolute value of num which can be: int, float]]><br/>
+<hr/><b><![CDATA[acos]]></b><p/>
+Usage: <![CDATA[(acos float) -> float]]><br/>
+<p/>
+<![CDATA[arc cosine]]><br/>
+<hr/><b><![CDATA[acosh]]></b><p/>
+Usage: <![CDATA[(acosh float) -> float]]><br/>
+<p/>
+<![CDATA[arc hyperbolic cosine]]><br/>
+<hr/><b><![CDATA[all]]></b><p/>
+Usage: <![CDATA[(all predicate list) -> bool]]><br/>
+<p/>
+<![CDATA[true if all elements in list match predicate]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (all even? (1 2 3))]]><br/>
+<![CDATA[false]]><br/>
+<hr/><b><![CDATA[and]]></b><p/>
+Usage: <![CDATA[(and .. expressions) -> bool]]><br/>
+<p/>
+<![CDATA[logical and of each boolean expression. shortcuits if false expression encountered]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (and false true)]]><br/>
+<![CDATA[false]]><br/>
+<hr/><b><![CDATA[any]]></b><p/>
+Usage: <![CDATA[(any predicate list) -> bool]]><br/>
+<p/>
+<![CDATA[true if any element in list matches predicate]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (any even? (1 2 3))]]><br/>
+<![CDATA[true]]><br/>
+<hr/><b><![CDATA[apply]]></b><p/>
+Usage: <![CDATA[(apply fn arglist) -> value]]><br/>
+<p/>
+<![CDATA[evaluate fn with arglist]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (apply + (1 2 3))]]><br/>
+<![CDATA[6]]><br/>
+<hr/><b><![CDATA[asin]]></b><p/>
+Usage: <![CDATA[(asin float) -> float]]><br/>
+<p/>
+<![CDATA[arc sine]]><br/>
+<hr/><b><![CDATA[asinh]]></b><p/>
+Usage: <![CDATA[(asinh float) -> float]]><br/>
+<p/>
+<![CDATA[arc hyperbolic sine]]><br/>
+<hr/><b><![CDATA[at]]></b><p/>
+Usage: <![CDATA[(at iterable index) -> value]]><br/>
+<p/>
+<![CDATA[return index (zero based) of iterable (str, list)]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (at "abc" 1)]]><br/>
+<![CDATA["b"]]><br/>
+<hr/><b><![CDATA[atan]]></b><p/>
+Usage: <![CDATA[(atan float) -> float]]><br/>
+<p/>
+<![CDATA[arc tangent]]><br/>
+<hr/><b><![CDATA[atan2]]></b><p/>
+Usage: <![CDATA[(atan2 x y) -> float]]><br/>
+<p/>
+<![CDATA[arc tangent of y/x (both must be floats)]]><br/>
+<hr/><b><![CDATA[atanh]]></b><p/>
+Usage: <![CDATA[(atanh float) -> float]]><br/>
+<p/>
+<![CDATA[arc hyperbolic tangent]]><br/>
+<hr/><b><![CDATA[atom?]]></b><p/>
+Usage: <![CDATA[(atom? value) -> bool]]><br/>
+<p/>
+<![CDATA[is value not a list?]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (atom? 42)]]><br/>
+<![CDATA[true]]><br/>
+<hr/><b><![CDATA[back]]></b><p/>
+Usage: <![CDATA[(back iterable) -> iterable]]><br/>
+<p/>
+<![CDATA[alias for (last)]]><br/>
+<hr/><b><![CDATA[begin]]></b><p/>
+Usage: <![CDATA[(begin .. statements) -> value]]><br/>
+<p/>
+<![CDATA[evaluate statements]]><br/>
+<hr/><b><![CDATA[bin]]></b><p/>
+Usage: <![CDATA[(bin int) -> str]]><br/>
+<p/>
+<![CDATA[return str of int converted to base 2]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (bin 12)]]><br/>
+<![CDATA["0b1100"]]><br/>
+<hr/><b><![CDATA[bool]]></b><p/>
+Usage: <![CDATA[(bool value) -> bool]]><br/>
+<p/>
+<![CDATA[convert value to bool]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (bool 42)]]><br/>
+<![CDATA[true]]><br/>
+<hr/><b><![CDATA[bool?]]></b><p/>
+Usage: <![CDATA[(bool? value) -> bool]]><br/>
+<p/>
+<![CDATA[is value a bool?]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (bool? 42)]]><br/>
+<![CDATA[false]]><br/>
+<hr/><b><![CDATA[car]]></b><p/>
+Usage: <![CDATA[(car iterable) -> value]]><br/>
+<p/>
+<![CDATA[alias for (head)]]><br/>
+<hr/><b><![CDATA[cdr]]></b><p/>
+Usage: <![CDATA[(cdr iterable) -> iterable]]><br/>
+<p/>
+<![CDATA[alias for (tail)]]><br/>
+<hr/><b><![CDATA[ceil]]></b><p/>
+Usage: <![CDATA[(ceil float) -> float]]><br/>
+<p/>
+<![CDATA[ceiling]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (ceil 1.4)]]><br/>
+<![CDATA[2.0]]><br/>
+<hr/><b><![CDATA[compare]]></b><p/>
+Usage: <![CDATA[(compare str1 str2) -> int]]><br/>
+<p/>
+<![CDATA[lexiographical comparison of str1 and str2.
+str1 < str2 returns -1
+str1 == str2 returns 0
+str1 > str2 returns 1]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (compare "abc" "abc")]]><br/>
+<![CDATA[0]]><br/>
+<hr/><b><![CDATA[cond]]></b><p/>
+Usage: <![CDATA[(cond ((expr1 branch1) .. (exprN branchN) (true defaultBranch))) -> value]]><br/>
+<p/>
+<![CDATA[generalization of if/else if]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (cond ((2 < 3) "less than") ((2 > 3) "greater than") (true "equal"))]]><br/>
+<![CDATA[less than]]><br/>
+<hr/><b><![CDATA[cons]]></b><p/>
+Usage: <![CDATA[(cons item list) -> list]]><br/>
+<p/>
+<![CDATA[add item into front of list]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (cons 3 (4))]]><br/>
+<![CDATA[(3 4)]]><br/>
+<hr/><b><![CDATA[contains]]></b><p/>
+Usage: <![CDATA[(contains haystack needle) -> bool]]><br/>
+<p/>
+<![CDATA[true if haystack contains needle]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (contains "abcde" "cd")]]><br/>
+<![CDATA[true]]><br/>
+<hr/><b><![CDATA[cos]]></b><p/>
+Usage: <![CDATA[(cos radians) -> float]]><br/>
+<p/>
+<![CDATA[cosine of angle in radians]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (cos (PI / 2))]]><br/>
+<![CDATA[0]]><br/>
+<hr/><b><![CDATA[cosh]]></b><p/>
+Usage: <![CDATA[(cosh float) -> float]]><br/>
+<p/>
+<![CDATA[hyperbolic cosine]]><br/>
+<hr/><b><![CDATA[dec]]></b><p/>
+Usage: <![CDATA[(dec int) -> str]]><br/>
+<p/>
+<![CDATA[return str of int converted to base 10]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (dec 0xc)]]><br/>
+<![CDATA["12"]]><br/>
+<hr/><b><![CDATA[decr]]></b><p/>
+Usage: <![CDATA[(decr int) -> int]]><br/>
+<p/>
+<![CDATA[alias for (--)]]><br/>
+<hr/><b><![CDATA[def]]></b><p/>
+Usage: <![CDATA[(def name (.. vars) .. statements) -> fn]]><br/>
+<p/>
+<![CDATA[define named function]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (def add (a b) (+ a b))]]><br/>
+<![CDATA[<Function:add>]]><br/>
+<hr/><b><![CDATA[display]]></b><p/>
+Usage: <![CDATA[(display .. args) -> nil]]><br/>
+<p/>
+<![CDATA[dump each arg to console. similar to (print)]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (display "hello world")]]><br/>
+<![CDATA["hello world"]]><br/>
+<hr/><b><![CDATA[empty?]]></b><p/>
+Usage: <![CDATA[(empty? iterable) -> bool]]><br/>
+<p/>
+<![CDATA[return whether iterable (list, str) is empty]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (empty? "abc")]]><br/>
+<![CDATA[false]]><br/>
+<hr/><b><![CDATA[endswith]]></b><p/>
+Usage: <![CDATA[(endswith haystack needle) -> bool]]><br/>
+<p/>
+<![CDATA[true if haystack ends with needle]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (endswith "abcde" "de")]]><br/>
+<![CDATA[true]]><br/>
+<hr/><b><![CDATA[even?]]></b><p/>
+Usage: <![CDATA[(even? int) -> bool]]><br/>
+<p/>
+<![CDATA[true if int is even]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (even? 42)]]><br/>
+<![CDATA[true]]><br/>
+<hr/><b><![CDATA[exp]]></b><p/>
+Usage: <![CDATA[(exp float) -> float]]><br/>
+<p/>
+<![CDATA[E to the power]]><br/>
+<hr/><b><![CDATA[file.delete]]></b><p/>
+Usage: <![CDATA[(file.delete filepath) -> bool]]><br/>
+<p/>
+<![CDATA[delete filepath]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (file.writelines "ioExample.txt" ("line1" "line2"))]]><br/>
+<![CDATA[true]]><br/>
+<![CDATA[>>> (file.readlines "ioExample.txt")]]><br/>
+<![CDATA[("line1" "line2")]]><br/>
+<![CDATA[>>> (file.delete "ioExample.txt")]]><br/>
+<![CDATA[true]]><br/>
+<![CDATA[>>> (file.exists "ioExample.txt")]]><br/>
+<![CDATA[false]]><br/>
+<hr/><b><![CDATA[file.exists]]></b><p/>
+Usage: <![CDATA[(file.exists filepath) -> bool]]><br/>
+<p/>
+<![CDATA[does filepath exist]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (file.writelines "ioExample.txt" ("line1" "line2"))]]><br/>
+<![CDATA[true]]><br/>
+<![CDATA[>>> (file.readlines "ioExample.txt")]]><br/>
+<![CDATA[("line1" "line2")]]><br/>
+<![CDATA[>>> (file.delete "ioExample.txt")]]><br/>
+<![CDATA[true]]><br/>
+<![CDATA[>>> (file.exists "ioExample.txt")]]><br/>
+<![CDATA[false]]><br/>
+<hr/><b><![CDATA[file.readlines]]></b><p/>
+Usage: <![CDATA[(file.readlines filepath) -> list]]><br/>
+<p/>
+<![CDATA[returns a list of all lines in filepath]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (file.writelines "ioExample.txt" ("line1" "line2"))]]><br/>
+<![CDATA[true]]><br/>
+<![CDATA[>>> (file.readlines "ioExample.txt")]]><br/>
+<![CDATA[("line1" "line2")]]><br/>
+<![CDATA[>>> (file.delete "ioExample.txt")]]><br/>
+<![CDATA[true]]><br/>
+<![CDATA[>>> (file.exists "ioExample.txt")]]><br/>
+<![CDATA[false]]><br/>
+<hr/><b><![CDATA[file.writelines]]></b><p/>
+Usage: <![CDATA[(file.writelines filepath lines) -> bool]]><br/>
+<p/>
+<![CDATA[write list of lines into filepath (overwrite what's already there)]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (file.writelines "ioExample.txt" ("line1" "line2"))]]><br/>
+<![CDATA[true]]><br/>
+<![CDATA[>>> (file.readlines "ioExample.txt")]]><br/>
+<![CDATA[("line1" "line2")]]><br/>
+<![CDATA[>>> (file.delete "ioExample.txt")]]><br/>
+<![CDATA[true]]><br/>
+<![CDATA[>>> (file.exists "ioExample.txt")]]><br/>
+<![CDATA[false]]><br/>
+<hr/><b><![CDATA[filter]]></b><p/>
+Usage: <![CDATA[(filter predicate list) -> list]]><br/>
+<p/>
+<![CDATA[returns new list containing only elements which match the predicate]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (filter even? (1 2 3))]]><br/>
+<![CDATA[(2)]]><br/>
+<hr/><b><![CDATA[find]]></b><p/>
+Usage: <![CDATA[(find haystack needle) -> int]]><br/>
+Usage: <![CDATA[(find haystack needle start) -> int]]><br/>
+<p/>
+<![CDATA[find needle in haystack, optionally starting at start (zero based)]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (find "hello caramellow!" "lo")]]><br/>
+<![CDATA[3]]><br/>
+<![CDATA[>>> (find "hello caramellow!" "lo" 5)]]><br/>
+<![CDATA[13]]><br/>
+<hr/><b><![CDATA[first]]></b><p/>
+Usage: <![CDATA[(first iterable) -> value]]><br/>
+<p/>
+<![CDATA[alias for (head)]]><br/>
+<hr/><b><![CDATA[float]]></b><p/>
+Usage: <![CDATA[(float value) -> float]]><br/>
+<p/>
+<![CDATA[convert value to float]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (float 42)]]><br/>
+<![CDATA[42]]><br/>
+<hr/><b><![CDATA[float?]]></b><p/>
+Usage: <![CDATA[(float? value) -> bool]]><br/>
+<p/>
+<![CDATA[is value a float?]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (float? 42)]]><br/>
+<![CDATA[false]]><br/>
+<hr/><b><![CDATA[floor]]></b><p/>
+Usage: <![CDATA[(floor float) -> float]]><br/>
+<p/>
+<![CDATA[floor]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (floor 1.4)]]><br/>
+<![CDATA[1.0]]><br/>
+<hr/><b><![CDATA[fn]]></b><p/>
+Usage: <![CDATA[(fn (.. vars) .. statements) -> fn]]><br/>
+<p/>
+<![CDATA[alias for (lambda)]]><br/>
+<hr/><b><![CDATA[fn?]]></b><p/>
+Usage: <![CDATA[(fn? value) -> bool]]><br/>
+<p/>
+<![CDATA[is value a fn?]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (fn? 42)]]><br/>
+<![CDATA[false]]><br/>
+<hr/><b><![CDATA[for]]></b><p/>
+Usage: <![CDATA[(for item iterable .. expressions) -> value]]><br/>
+Usage: <![CDATA[(for item in iterable .. expressions) -> value(for item : iterable .. expressions) -> value]]><br/>
+Usage: <![CDATA[(for iterable fn) -> value]]><br/>
+<p/>
+<![CDATA[alias for (foreach)]]><br/>
+<hr/><b><![CDATA[foreach]]></b><p/>
+Usage: <![CDATA[(foreach item iterable .. expressions) -> value]]><br/>
+Usage: <![CDATA[(foreach item in iterable .. expressions) -> value]]><br/>
+Usage: <![CDATA[(foreach item : iterable .. expressions) -> value]]><br/>
+Usage: <![CDATA[(foreach iterable fn) -> value]]><br/>
+<p/>
+<![CDATA[evaluate fn or expressions on each item in iterable. return last expression evaluated]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (foreach num (42 54 23) (print num))]]><br/>
+<![CDATA[42
+54
+23
+23]]><br/>
+<hr/><b><![CDATA[format]]></b><p/>
+Usage: <![CDATA[(format pattern .. args) -> str]]><br/>
+<p/>
+<![CDATA[build a str using pattern and args.
+{} means pick next positional arg
+{0} means pick first arg
+{foo} means get value of variable foo in the current scope]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (format "{} is {} years old" "jon" 42)]]><br/>
+<![CDATA[jon is 42 years old]]><br/>
+<![CDATA[>>> (format "{0} is {1} years old" "jon" 42)]]><br/>
+<![CDATA[jon is 42 years old]]><br/>
+<![CDATA[>>> (let ((name "jon") (age 42)) (format "{name} is {age} years old"))]]><br/>
+<![CDATA[jon is 42 years old]]><br/>
+<hr/><b><![CDATA[front]]></b><p/>
+Usage: <![CDATA[(front iterable) -> value]]><br/>
+<p/>
+<![CDATA[alias for (head)]]><br/>
+<hr/><b><![CDATA[head]]></b><p/>
+Usage: <![CDATA[(head iterable) -> value]]><br/>
+<p/>
+<![CDATA[return first item in iterable which can be: str, list]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (reverse "abc")]]><br/>
+<![CDATA["a"]]><br/>
+<hr/><b><![CDATA[help]]></b><p/>
+Usage: <![CDATA[(help symbol) -> nil]]><br/>
+Usage: <![CDATA[(help str) -> nil]]><br/>
+<p/>
+<![CDATA[get help on a particular symbol. see also: help.signatures, help.doc, help.examples, symbols]]><br/>
+<hr/><b><![CDATA[help.doc]]></b><p/>
+Usage: <![CDATA[(help.doc symbol) -> str]]><br/>
+Usage: <![CDATA[(help.doc str) -> str]]><br/>
+<p/>
+<![CDATA[get doc of a particular symbol]]><br/>
+<hr/><b><![CDATA[help.examples]]></b><p/>
+Usage: <![CDATA[(help.examples symbol) -> list]]><br/>
+Usage: <![CDATA[(help.examples str) -> list]]><br/>
+<p/>
+<![CDATA[get examples of a particular symbol]]><br/>
+<hr/><b><![CDATA[help.signatures]]></b><p/>
+Usage: <![CDATA[(help.signatures symbol) -> str]]><br/>
+Usage: <![CDATA[(help.signatures str) -> str]]><br/>
+<p/>
+<![CDATA[get signatures of a particular symbol]]><br/>
+<hr/><b><![CDATA[hex]]></b><p/>
+Usage: <![CDATA[(hex int) -> str]]><br/>
+<p/>
+<![CDATA[return str of int converted to base 16]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (hex 12)]]><br/>
+<![CDATA["0xc"]]><br/>
+<hr/><b><![CDATA[if]]></b><p/>
+Usage: <![CDATA[(if expr trueBranch) -> value]]><br/>
+Usage: <![CDATA[(if expr trueBranch falseBranch) -> value]]><br/>
+<p/>
+<![CDATA[if expr is true, evaluate trueBranch. Otherwise, evaluate falseBranch (if defined)]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (if (2 < 3) true)]]><br/>
+<![CDATA[true]]><br/>
+<![CDATA[>>> (if (2 > 3) true false)]]><br/>
+<![CDATA[false]]><br/>
+<hr/><b><![CDATA[import]]></b><p/>
+Usage: <![CDATA[(import file) -> nil]]><br/>
+<p/>
+<![CDATA[import "file.slisp" in the current directory]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (import foo)]]><br/>
+<![CDATA[nil]]><br/>
+<hr/><b><![CDATA[incr]]></b><p/>
+Usage: <![CDATA[(incr int) -> int]]><br/>
+<p/>
+<![CDATA[alias for (++)]]><br/>
+<hr/><b><![CDATA[infix-register]]></b><p/>
+Usage: <![CDATA[(infix-register symbol) -> nil]]><br/>
+<p/>
+<![CDATA[support calling symbol (a binary function) in infix form]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (set add +)]]><br/>
+<![CDATA[]]><br/>
+<![CDATA[>>> (infix-register add)]]><br/>
+<![CDATA[]]><br/>
+<![CDATA[>>> (3 add 4)]]><br/>
+<![CDATA[7]]><br/>
+<hr/><b><![CDATA[infix-unregister]]></b><p/>
+Usage: <![CDATA[(infix-unregister symbol) -> nil]]><br/>
+<p/>
+<![CDATA[unregister previously defined infix symbol]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (infix-unregister add)]]><br/>
+<![CDATA[]]><br/>
+<hr/><b><![CDATA[int]]></b><p/>
+Usage: <![CDATA[(int value) -> int]]><br/>
+<p/>
+<![CDATA[convert value to int]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (int 42)]]><br/>
+<![CDATA[42]]><br/>
+<hr/><b><![CDATA[int?]]></b><p/>
+Usage: <![CDATA[(int? value) -> bool]]><br/>
+<p/>
+<![CDATA[is value an int?]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (int? 42)]]><br/>
+<![CDATA[true]]><br/>
+<hr/><b><![CDATA[join]]></b><p/>
+Usage: <![CDATA[(join list delimiter) -> str]]><br/>
+<p/>
+<![CDATA[build a str by joining all items in list together with delimiter]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (join ("jon" "42") ",")]]><br/>
+<![CDATA[jon,42]]><br/>
+<hr/><b><![CDATA[lambda]]></b><p/>
+Usage: <![CDATA[(lambda (.. vars) .. statements) -> fn]]><br/>
+<p/>
+<![CDATA[create anonymous function]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (lambda (x) (+ x 10))]]><br/>
+<![CDATA[<Function>]]><br/>
+<hr/><b><![CDATA[last]]></b><p/>
+Usage: <![CDATA[(last iterable) -> iterable]]><br/>
+<p/>
+<![CDATA[return last item in iterable (str, list)]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (last "abc")]]><br/>
+<![CDATA["c"]]><br/>
+<hr/><b><![CDATA[length]]></b><p/>
+Usage: <![CDATA[(length iterable) -> int]]><br/>
+<p/>
+<![CDATA[return the length of iterable (str, list)]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (length "abc")]]><br/>
+<![CDATA[3]]><br/>
+<![CDATA[>>> (length (42 53 64))]]><br/>
+<![CDATA[3]]><br/>
+<hr/><b><![CDATA[let]]></b><p/>
+Usage: <![CDATA[(let ((name1 value1) ..) .. statements) -> value]]><br/>
+<p/>
+<![CDATA[evaluate statements with bound variables]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (let ((a 3) (b 4)) (+ a b))]]><br/>
+<![CDATA[7]]><br/>
+<hr/><b><![CDATA[list?]]></b><p/>
+Usage: <![CDATA[(list? value) -> bool]]><br/>
+<p/>
+<![CDATA[is value a list?]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (list? 42)]]><br/>
+<![CDATA[false]]><br/>
+<hr/><b><![CDATA[log]]></b><p/>
+Usage: <![CDATA[(log float) -> float]]><br/>
+<p/>
+<![CDATA[natural logarithm (base E)]]><br/>
+<hr/><b><![CDATA[lower]]></b><p/>
+Usage: <![CDATA[(lower str) -> str]]><br/>
+<p/>
+<![CDATA[return lower cased str]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (lower "AbC")]]><br/>
+<![CDATA["abc"]]><br/>
+<hr/><b><![CDATA[map]]></b><p/>
+Usage: <![CDATA[(map fn list) -> list]]><br/>
+<p/>
+<![CDATA[returns new list with fn applied to each element]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (map even? (1 2 3))]]><br/>
+<![CDATA[(false true false)]]><br/>
+<hr/><b><![CDATA[max]]></b><p/>
+Usage: <![CDATA[(max .. nums) -> num]]><br/>
+<p/>
+<![CDATA[return maximum num]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (max 42 54 23)]]><br/>
+<![CDATA[54]]><br/>
+<hr/><b><![CDATA[min]]></b><p/>
+Usage: <![CDATA[(min .. nums) -> num]]><br/>
+<p/>
+<![CDATA[return minimum num]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (min 42 54 23)]]><br/>
+<![CDATA[23]]><br/>
+<hr/><b><![CDATA[not]]></b><p/>
+Usage: <![CDATA[(not expression) -> bool]]><br/>
+<p/>
+<![CDATA[logical not of expression]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (not false)]]><br/>
+<![CDATA[true]]><br/>
+<hr/><b><![CDATA[nth]]></b><p/>
+Usage: <![CDATA[(nth iterable index) -> value]]><br/>
+<p/>
+<![CDATA[alias for (at)]]><br/>
+<hr/><b><![CDATA[odd?]]></b><p/>
+Usage: <![CDATA[(odd? int) -> bool]]><br/>
+<p/>
+<![CDATA[true if int is odd]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (odd? 42)]]><br/>
+<![CDATA[false]]><br/>
+<hr/><b><![CDATA[or]]></b><p/>
+Usage: <![CDATA[(or .. expressions) -> bool]]><br/>
+<p/>
+<![CDATA[logical or of each expression. shortcuits if true expression encountered]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (or true false)]]><br/>
+<![CDATA[true]]><br/>
+<hr/><b><![CDATA[pow]]></b><p/>
+Usage: <![CDATA[(pow base exponent) -> num]]><br/>
+<p/>
+<![CDATA[base to the power of exponent. base and exponent must be same type which can be: int, float]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (pow 2 3)]]><br/>
+<![CDATA[8]]><br/>
+<hr/><b><![CDATA[print]]></b><p/>
+Usage: <![CDATA[(print .. args) -> nil]]><br/>
+<p/>
+<![CDATA[print each arg (strings are not show with quotes). similar to (display)]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (print "hello world")]]><br/>
+<![CDATA[hello world]]><br/>
+<hr/><b><![CDATA[prompt]]></b><p/>
+Usage: <![CDATA[(prompt prefix) -> str]]><br/>
+<p/>
+<![CDATA[print prefix, then read a line from stdin]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (prompt "name: ")]]><br/>
+<![CDATA[name: John
+"John"]]><br/>
+<hr/><b><![CDATA[quit]]></b><p/>
+Usage: <![CDATA[(quit) -> nil]]><br/>
+<p/>
+<![CDATA[exit the REPL]]><br/>
+<hr/><b><![CDATA[quote]]></b><p/>
+Usage: <![CDATA[(quote expression) -> quote]]><br/>
+<p/>
+<![CDATA[quote expression (prevent evaluation)]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (quote (+ 3 4))]]><br/>
+<![CDATA[(+ 3 4)]]><br/>
+<hr/><b><![CDATA[range]]></b><p/>
+Usage: <![CDATA[(range start end) -> list]]><br/>
+Usage: <![CDATA[(range start end stride) -> list]]><br/>
+<p/>
+<![CDATA[return a list of all numbers between and start and end, optionally increasing by stride (defaults to 1)]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (range 2 8)]]><br/>
+<![CDATA[(2 3 4 5 6 7 8)]]><br/>
+<![CDATA[>>> (range 2 8 4)]]><br/>
+<![CDATA[(2 6)]]><br/>
+<hr/><b><![CDATA[reduce]]></b><p/>
+Usage: <![CDATA[(reduce binaryFn list) -> value]]><br/>
+<p/>
+<![CDATA[aggregate elements in list using binaryFn]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (reduce + (1 2 3))]]><br/>
+<![CDATA[6]]><br/>
+<hr/><b><![CDATA[replace]]></b><p/>
+Usage: <![CDATA[(replace haystack needle) -> str]]><br/>
+Usage: <![CDATA[(replace haystack needle replacement) -> str]]><br/>
+Usage: <![CDATA[(replace haystack needle replacement maxReplacements) -> str]]><br/>
+<p/>
+<![CDATA[replace needle with replacement inside haystack for maxReplacements times. if replacement isn't specified, the empty string is used.]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (replace "hello world" "o")]]><br/>
+<![CDATA["hell wrld"]]><br/>
+<![CDATA[>>> (replace "hello world" "o" "X")]]><br/>
+<![CDATA["hellX wXrld"]]><br/>
+<![CDATA[>>> (replace "hello world" "o" "X" 1)]]><br/>
+<![CDATA["hellX world"]]><br/>
+<hr/><b><![CDATA[rest]]></b><p/>
+Usage: <![CDATA[(rest iterable) -> iterable]]><br/>
+<p/>
+<![CDATA[alias for (tail)]]><br/>
+<hr/><b><![CDATA[reverse]]></b><p/>
+Usage: <![CDATA[(reverse iterable) -> new-iterable]]><br/>
+<p/>
+<![CDATA[return the reverse of iterable which can be: str, list]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (reverse "abc")]]><br/>
+<![CDATA["cba"]]><br/>
+<hr/><b><![CDATA[rfind]]></b><p/>
+Usage: <![CDATA[(rfind haystack needle) -> int]]><br/>
+Usage: <![CDATA[(rfind haystack needle start) -> int]]><br/>
+<p/>
+<![CDATA[find needle in haystack starting at the end of haystack, optionally starting at start (zero based)]]><br/>
+<hr/><b><![CDATA[round]]></b><p/>
+Usage: <![CDATA[(round float) -> float]]><br/>
+<p/>
+<![CDATA[round to the nearest whole number]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (round 1.4)]]><br/>
+<![CDATA[1.0]]><br/>
+<hr/><b><![CDATA[set]]></b><p/>
+Usage: <![CDATA[(set symbol value) -> value]]><br/>
+<p/>
+<![CDATA[sets a symbol to value]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (set foo 42)]]><br/>
+<![CDATA[42]]><br/>
+<hr/><b><![CDATA[sin]]></b><p/>
+Usage: <![CDATA[(sin radians) -> float]]><br/>
+<p/>
+<![CDATA[sine of angle in radians]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (sin (PI / 2))]]><br/>
+<![CDATA[1.0]]><br/>
+<hr/><b><![CDATA[sinh]]></b><p/>
+Usage: <![CDATA[(sinh float) -> float]]><br/>
+<p/>
+<![CDATA[hyperbolic sine]]><br/>
+<hr/><b><![CDATA[skip]]></b><p/>
+Usage: <![CDATA[(skip num list) -> list]]><br/>
+Usage: <![CDATA[(skip predicate list) -> list]]><br/>
+<p/>
+<![CDATA[skip over num elements in list or until predicate no longer matches]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (skip 2 (4 6 7 8))]]><br/>
+<![CDATA[(7 8)]]><br/>
+<![CDATA[>>> (skip even? (4 6 7 8))]]><br/>
+<![CDATA[(7 8)]]><br/>
+<hr/><b><![CDATA[split]]></b><p/>
+Usage: <![CDATA[(split str delimiter) -> list]]><br/>
+<p/>
+<![CDATA[split str using delimiter]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (split "jon,42" ",")]]><br/>
+<![CDATA[("jon" "42")]]><br/>
+<hr/><b><![CDATA[sqrt]]></b><p/>
+Usage: <![CDATA[(sqrt float) -> float]]><br/>
+<p/>
+<![CDATA[square root]]><br/>
+<hr/><b><![CDATA[startswith]]></b><p/>
+Usage: <![CDATA[(startswith haystack needle) -> bool]]><br/>
+<p/>
+<![CDATA[true if haystack starts with needle]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (startswith "abcde" "ab")]]><br/>
+<![CDATA[true]]><br/>
+<hr/><b><![CDATA[str]]></b><p/>
+Usage: <![CDATA[(str value) -> str]]><br/>
+<p/>
+<![CDATA[convert value to str]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (str 42)]]><br/>
+<![CDATA["42"]]><br/>
+<hr/><b><![CDATA[str?]]></b><p/>
+Usage: <![CDATA[(str? value) -> bool]]><br/>
+<p/>
+<![CDATA[is value a str?]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (str? 42)]]><br/>
+<![CDATA[false]]><br/>
+<hr/><b><![CDATA[substr]]></b><p/>
+Usage: <![CDATA[(substr str start) -> str]]><br/>
+Usage: <![CDATA[(substr str start count) -> str]]><br/>
+<p/>
+<![CDATA[returns new str starting at start (zero based) and optionally spanning a maximum of count number of characters]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (substr "abcde" 1)]]><br/>
+<![CDATA["bcde"]]><br/>
+<![CDATA[>>> (substr "abcde" 1 2)]]><br/>
+<![CDATA["bc"]]><br/>
+<hr/><b><![CDATA[switch]]></b><p/>
+Usage: <![CDATA[(switch expr (value1 branch1) .. (valueN branchN) (defaultBranch)) -> value]]><br/>
+Usage: <![CDATA[(switch expr (case value1 branch1) .. (case valueN branchN) (default defaultBranch)) -> value]]><br/>
+<p/>
+<![CDATA[evaluate expr, then evaluate the statement that matches appropriate value (otherwise evaluate defaultValueStatement)]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (switch 3 (1 "one") (2 "two") ("other"))]]><br/>
+<![CDATA["other"]]><br/>
+<hr/><b><![CDATA[symbol]]></b><p/>
+Usage: <![CDATA[(symbol str) -> symbol]]><br/>
+<p/>
+<![CDATA[convert str to symbol]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (symbol "foo")]]><br/>
+<![CDATA[foo]]><br/>
+<hr/><b><![CDATA[symbol?]]></b><p/>
+Usage: <![CDATA[(symbol? value) -> bool]]><br/>
+<p/>
+<![CDATA[is value a symbol?]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (symbol? 42)]]><br/>
+<![CDATA[false]]><br/>
+<hr/><b><![CDATA[symbols]]></b><p/>
+Usage: <![CDATA[(symbols) -> list]]><br/>
+<p/>
+<![CDATA[get list of all symbols]]><br/>
+<hr/><b><![CDATA[tail]]></b><p/>
+Usage: <![CDATA[(tail iterable) -> iterable]]><br/>
+<p/>
+<![CDATA[returns new iterable (str, list) without first element]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (tail "abc")]]><br/>
+<![CDATA[bc]]><br/>
+<hr/><b><![CDATA[take]]></b><p/>
+Usage: <![CDATA[(take num list) -> list]]><br/>
+Usage: <![CDATA[(take predicate list) -> list]]><br/>
+<p/>
+<![CDATA[take from list num elements or as long as each element matches predicate]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (take 2 (4 6 7 8))]]><br/>
+<![CDATA[(4 6)]]><br/>
+<![CDATA[>>> (take even? (4 6 7 8))]]><br/>
+<![CDATA[(4 6)]]><br/>
+<hr/><b><![CDATA[tan]]></b><p/>
+Usage: <![CDATA[(tan radians) -> float]]><br/>
+<p/>
+<![CDATA[tangent of angle in radians]]><br/>
+<hr/><b><![CDATA[tanh]]></b><p/>
+Usage: <![CDATA[(tanh float) -> float]]><br/>
+<p/>
+<![CDATA[hyperbolic tan]]><br/>
+<hr/><b><![CDATA[trim]]></b><p/>
+Usage: <![CDATA[(trim str) -> str]]><br/>
+<p/>
+<![CDATA[return str that has leading and trailing whitespace removed]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (trim " abc  ")]]><br/>
+<![CDATA["abc"]]><br/>
+<hr/><b><![CDATA[type]]></b><p/>
+Usage: <![CDATA[(type value) -> type]]><br/>
+<p/>
+<![CDATA[get the type of value]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (type 42)]]><br/>
+<![CDATA[int]]><br/>
+<hr/><b><![CDATA[unquote]]></b><p/>
+Usage: <![CDATA[(unquote quotedExpression) -> value]]><br/>
+<p/>
+<![CDATA[unquote (evaluate) expression]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (unquote (quote (+ 3 4)))]]><br/>
+<![CDATA[7]]><br/>
+<hr/><b><![CDATA[unset]]></b><p/>
+Usage: <![CDATA[(unset symbol) -> value]]><br/>
+<p/>
+<![CDATA[make symbol undefined]]><br/>
+<hr/><b><![CDATA[upper]]></b><p/>
+Usage: <![CDATA[(upper str) -> str]]><br/>
+<p/>
+<![CDATA[return upper cased str]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (uppper "aBc")]]><br/>
+<![CDATA["ABC"]]><br/>
+<hr/><b><![CDATA[while]]></b><p/>
+Usage: <![CDATA[(while expr .. statements) -> value]]><br/>
+<p/>
+<![CDATA[execute statements as long as expr evaluates to true]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (while false "this line doesn't evalute")]]><br/>
+<![CDATA[nil]]><br/>
+<hr/><b><![CDATA[zero?]]></b><p/>
+Usage: <![CDATA[(zero? int) -> bool]]><br/>
+<p/>
+<![CDATA[true if int is zero]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (zero? 42)]]><br/>
+<![CDATA[false]]><br/>
+<hr/><b><![CDATA[zip]]></b><p/>
+Usage: <![CDATA[(zip .. lists) -> list]]><br/>
+Usage: <![CDATA[(zip fn .. lists) -> list]]><br/>
+<p/>
+<![CDATA[zip one or more lists together, optionally using applying fn]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (zip (1 2) (99 98))]]><br/>
+<![CDATA[((1 99) (2 98))]]><br/>
+<![CDATA[>>> (zip + (1 2) (99 98))]]><br/>
+<![CDATA[(100 100)]]><br/>
+<hr/><b><![CDATA[|]]></b><p/>
+Usage: <![CDATA[(| .. ints) -> int]]><br/>
+<p/>
+<![CDATA[bitwise or]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (| 3 4)]]><br/>
+<![CDATA[7]]><br/>
+<hr/><b><![CDATA[|=]]></b><p/>
+Usage: <![CDATA[(|= symbol value) -> value]]><br/>
+<p/>
+<![CDATA[perform operation on current symbol and return new value. value can be: int, float, str, list]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (= foo 2)]]><br/>
+<![CDATA[2]]><br/>
+<![CDATA[>>> (|= foo 3)]]><br/>
+<![CDATA[3]]><br/>
+<hr/><b><![CDATA[||]]></b><p/>
+Usage: <![CDATA[(|| .. expressions) -> bool]]><br/>
+<p/>
+<![CDATA[alias for (or)]]><br/>
+<hr/><b><![CDATA[~]]></b><p/>
+Usage: <![CDATA[(~ int) -> int]]><br/>
+<p/>
+<![CDATA[bitwise not]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (~ 0)]]><br/>
+<![CDATA[-1]]><br/>
+</body></html>
