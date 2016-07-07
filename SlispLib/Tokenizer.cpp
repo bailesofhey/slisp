@@ -36,6 +36,8 @@ ITokenizer& Tokenizer::operator++() {
           TokenizeParenOpen(currChar);
         else if (currChar == ')')
           TokenizeParenClose(currChar);
+        else if (currChar == '\'')
+          TokenizeQuote(currChar);
         else
           TokenizeUnknown(currChar);
       }
@@ -136,9 +138,14 @@ void Tokenizer::TokenizeParenClose(char &currChar) {
   CurrToken.Type = TokenTypes::PARENCLOSE;
 }
 
+void Tokenizer::TokenizeQuote(char &currChar) {
+  CurrToken.Value = currChar;
+  CurrToken.Type = TokenTypes::QUOTE;
+}
+
 void Tokenizer::TokenizeUnknown(char &currChar) {
-  CurrToken.Value += currChar;
-  CurrToken.Type = TokenTypes::UNKNOWN;
+  auto pred = [](char c) { return !isspace(c); };
+  TokenizeSequence(TokenTypes::UNKNOWN, currChar, pred, [](char c){} );
 }
 
 void Tokenizer::TokenizeNone() {
@@ -169,7 +176,7 @@ void Tokenizer::TokenizeSequence(TokenTypes tokenType, char &currChar, F pred, G
 }
 
 bool Tokenizer::SymbolPredicate(char c) {
-  return isdigit(c) || isalpha(c) || c == '\\' || c == '\''
+  return isdigit(c) || isalpha(c) || c == '\\' 
       || c == '~' || c == '`' || c == '!' || c == '@' || c == '#' || c == '$'
       || c == '%' || c == '^' || c == '&' || c == '*' || c == '-' || c == '_'
       || c == '=' || c == '+' || c == '{' || c == '[' || c == '}' || c == ']'

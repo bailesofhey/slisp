@@ -125,7 +125,6 @@ TEST(Tokenizer, TestSymbol) {
     { "\\", { Token(TokenTypes::SYMBOL, "\\") } },
     { ":", { Token(TokenTypes::SYMBOL, ":") } },
     { ";", { Token(TokenTypes::SYMBOL, ";") } },
-    { "'", { Token(TokenTypes::SYMBOL, "'") } },
     { "<", { Token(TokenTypes::SYMBOL, "<") } },
     { ",", { Token(TokenTypes::SYMBOL, ",") } },
     { ">", { Token(TokenTypes::SYMBOL, ">") } },
@@ -190,8 +189,25 @@ TEST(Tokenizer, TestParens) {
       Token(TokenTypes::PARENCLOSE, ")"),
       Token(TokenTypes::PARENOPEN, "("),
       Token(TokenTypes::PARENCLOSE, ")"),
-    }},
+    }}, 
+  });
+}
 
+TEST(Tokenizer, TestQuote) {
+  RunTests({
+    {"'", { Token(TokenTypes::QUOTE, "'") } },
+    {" ' ", { Token(TokenTypes::QUOTE, "'") } },
+    {"'foo", { Token(TokenTypes::QUOTE, "'"), Token(TokenTypes::SYMBOL, "foo") } },
+    {"'42", { Token(TokenTypes::QUOTE, "'"), Token(TokenTypes::NUMBER, "42") } },
+    {"'\"qux\"", { Token(TokenTypes::QUOTE, "'"), Token(TokenTypes::STRING, "qux") } },
+    {"'(+ 1 2)", { 
+      Token(TokenTypes::QUOTE, "'"), 
+      Token(TokenTypes::PARENOPEN, "("),
+      Token(TokenTypes::SYMBOL, "+"),
+      Token(TokenTypes::NUMBER, "1"),
+      Token(TokenTypes::NUMBER, "2"),
+      Token(TokenTypes::PARENCLOSE, ")"),
+    }},
   });
 }
 
@@ -210,10 +226,10 @@ TEST(Tokenizer, TestUnknown) {
     { "0b", { Token(TokenTypes::UNKNOWN, "0b") } },
     { "0b11012", { Token(TokenTypes::UNKNOWN, "0b11012") } },
 
-    { "'a'", { Token(TokenTypes::UNKNOWN, "'a'") } },
+    { "'a'", { Token(TokenTypes::QUOTE, "'"), Token(TokenTypes::UNKNOWN, "a'") } },
     { "a'", { Token(TokenTypes::UNKNOWN, "a'") } },
-    { "'a'b", { Token(TokenTypes::UNKNOWN, "'a'b") } },
-    { "'a'b'", { Token(TokenTypes::UNKNOWN, "'a'b'") } },
+    { "'a'b", { Token(TokenTypes::QUOTE, "'"), Token(TokenTypes::UNKNOWN, "a'b") } },
+    { "'a'b'", { Token(TokenTypes::QUOTE, "'"), Token(TokenTypes::UNKNOWN, "a'b'") } },
     { "a'b", { Token(TokenTypes::UNKNOWN, "a'b") } },
   });
 }

@@ -30,7 +30,7 @@ private:
 };
 
 struct Expression {
-  const TypeInfo& _Type;
+  const TypeInfo& Type_;
 
   explicit Expression(const TypeInfo& typeInfo);
   virtual ~Expression();

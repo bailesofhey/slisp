@@ -11,7 +11,8 @@ enum TokenTypes {
   SYMBOL,
   STRING,
   PARENOPEN,
-  PARENCLOSE
+  PARENCLOSE,
+  QUOTE,
 };
 
 struct Token {

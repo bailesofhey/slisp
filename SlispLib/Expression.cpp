@@ -32,7 +32,7 @@ ExpressionPtr TypeInfo::NewUndefined() {
 //=============================================================================
 
 Expression::Expression(const TypeInfo& typeInfo):
-  _Type { typeInfo }
+  Type_ { typeInfo }
 { 
 }
 
@@ -40,7 +40,7 @@ Expression::~Expression() {
 }
 
 const TypeInfo& Expression::Type() const {
-  return _Type;
+  return Type_;
 }
 
 ExpressionPtr Expression::New() const {

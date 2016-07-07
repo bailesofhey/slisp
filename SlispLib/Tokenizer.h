@@ -27,6 +27,7 @@ class Tokenizer: public ITokenizer {
     void TokenizeString(char &currChar);
     void TokenizeParenOpen(char &currChar);
     void TokenizeParenClose(char &currChar);
+    void TokenizeQuote(char &currChar);
     void TokenizeUnknown(char &currChar);
     void TokenizeNone();
     template <class F> void TokenizeSequence(TokenTypes tokenType, char &currChar, F pred);

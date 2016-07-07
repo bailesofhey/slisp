@@ -165,8 +165,6 @@ TEST_F(ParserTest, TestSingleSymbol) {
 
   string longSym = "abcdefghijklmnopqrstuvwxyz0123456789";
   ASSERT_PARSE({ Token(TokenTypes::SYMBOL, longSym) }, { new Symbol(longSym) });
-
-  ASSERT_PARSE({ Token(TokenTypes::SYMBOL, "'a") }, { new Sexp({ExpressionPtr {new Symbol("'")}, ExpressionPtr {new Symbol("a")} }) });
 }
 
 TEST_F(ParserTest, TestSingleString) {
@@ -182,6 +180,31 @@ TEST_F(ParserTest, TestSingleString) {
   // Unicode?
 
   ASSERT_PARSE({ Token(TokenTypes::STRING, "123") }, { new Str("123") });
+}
+
+TEST_F(ParserTest, TestQuote) {
+  ASSERT_NOPARSE({ Token(TokenTypes::QUOTE, "'") });
+  ASSERT_PARSE({ Token(TokenTypes::QUOTE, "'"), Token(TokenTypes::NUMBER, "42") }, { new Quote(ExpressionPtr {new Int(42)}) });
+  ASSERT_PARSE({ Token(TokenTypes::QUOTE, "'"), Token(TokenTypes::NUMBER, "3.14") }, { new Quote(ExpressionPtr {new Float(3.14)}) });
+  ASSERT_PARSE({ Token(TokenTypes::QUOTE, "'"), Token(TokenTypes::STRING, "qux") }, { new Quote(ExpressionPtr {new Str("qux")}) });
+  ASSERT_PARSE({ Token(TokenTypes::QUOTE, "'"), Token(TokenTypes::SYMBOL, "foo") }, { new Quote(ExpressionPtr {new Symbol("foo")}) });
+  ASSERT_PARSE(
+  { 
+    Token(TokenTypes::QUOTE, "'"), 
+    Token(TokenTypes::PARENOPEN, "("), 
+      Token(TokenTypes::SYMBOL, "+"), 
+      Token(TokenTypes::NUMBER, "1"), 
+      Token(TokenTypes::NUMBER, "2"), 
+    Token(TokenTypes::PARENCLOSE, ")"), 
+  }, 
+  {
+    new Quote(ExpressionPtr {new Sexp({
+      ExpressionPtr { new Symbol("+") }, 
+      ExpressionPtr { new Int(1) }, 
+      ExpressionPtr { new Int(2) }
+    })}) 
+  });
+  ASSERT_NOPARSE({ Token(TokenTypes::QUOTE, "'"), Token(TokenTypes::PARENCLOSE, ")") });
 }
 
 TEST_F(ParserTest, TestMultiples) {

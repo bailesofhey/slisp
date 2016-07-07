@@ -1415,6 +1415,8 @@ TEST_F(StdLibListTest, TestList) {
   ASSERT_TRUE(RunSuccess("((((((((((42))))))))))", "((((((((((42))))))))))"));
   ASSERT_TRUE(RunSuccess("(\"a\" (format \"\"))", "(\"a\" \"\")"));
   ASSERT_TRUE(RunSuccess("(list \"a\" (format \"\"))", "(\"a\" \"\")"));
+  ASSERT_TRUE(RunSuccess("'(\"a\" (format \"\"))", "(\"a\" (format \"\"))"));
+  ASSERT_TRUE(RunSuccess("'(list \"a\" (format \"\"))", "(list \"a\" (format \"\"))"));
 }
 
 TEST_F(StdLibListTest, TestMap) {
@@ -1498,9 +1500,9 @@ TEST_F(StdLibListTest, TestAny) {
   ASSERT_TRUE(RunSuccess("(any even? (1 2))", "true"));
   ASSERT_TRUE(RunSuccess("(any even? (1 3))", "false"));
   ASSERT_TRUE(RunSuccess("(any even? (2 4))", "true"));
-  ASSERT_TRUE(RunSuccess("(any even? (quote (2 \"this should not get passed to even?\")))", "true"));
-  ASSERT_TRUE(RunSuccess("(any even? (quote (2 thisShouldNotGetEvaluated)))", "true"));
-  ASSERT_TRUE(RunFail("(any even? (quote (1 thisWillGetEvaluated)))"));
+  ASSERT_TRUE(RunSuccess("(any even? '(2 \"this should not get passed to even?\"))", "true"));
+  ASSERT_TRUE(RunSuccess("(any even? '(2 thisShouldNotGetEvaluated))", "true"));
+  ASSERT_TRUE(RunFail("(any even? '(1 thisWillGetEvaluated))"));
 }
 
 TEST_F(StdLibListTest, TestAll) {
@@ -1511,9 +1513,9 @@ TEST_F(StdLibListTest, TestAll) {
   ASSERT_TRUE(RunSuccess("(all even? (1 2))", "false"));
   ASSERT_TRUE(RunSuccess("(all even? (1 3))", "false"));
   ASSERT_TRUE(RunSuccess("(all even? (2 4))", "true"));
-  ASSERT_TRUE(RunFail("(all even? (quote (2 \"this should not get passed to even?\")))"));
-  ASSERT_TRUE(RunFail("(all even? (quote (2 thisWillGetEvaluated)))"));
-  ASSERT_TRUE(RunSuccess("(all even? (quote (1 thisShouldNotGetEvaluated)))", "false"));
+  ASSERT_TRUE(RunFail("(all even? '(2 \"this will get passed to even?\"))"));
+  ASSERT_TRUE(RunFail("(all even? '(2 thisWillGetEvaluated))"));
+  ASSERT_TRUE(RunSuccess("(all even? '(1 thisShouldNotGetEvaluated))", "false"));
   ASSERT_TRUE(RunFail("(all even? (1 thisWillGetEvaluated))"));
 }
 
@@ -2145,8 +2147,13 @@ TEST_F(StdLibBranchTest, TestQuoteFn) {
   ASSERT_TRUE(RunSuccess("(set foo 5)", "5"));
   ASSERT_TRUE(RunSuccess("(* 4 q)", "20"));
 
-  ASSERT_TRUE(RunSuccess("'a", "a"));
-  ASSERT_TRUE(RunSuccess("'foobar", "foobar"));
+  // These don't actually call invoke quote func
+  ASSERT_TRUE(RunSuccess("'42", "42"));
+  ASSERT_TRUE(RunSuccess("'3.14", "3.14"));
+  ASSERT_TRUE(RunSuccess("'true", "true"));
+  ASSERT_TRUE(RunSuccess("'\"qux\"", "qux"));
+  ASSERT_TRUE(RunSuccess("'foo", "foo"));
+  ASSERT_TRUE(RunSuccess("'(+ 1 2)", "(+ 1 2)"));
 }
 
 TEST_F(StdLibBranchTest, TestUnquote) {
@@ -2162,6 +2169,9 @@ TEST_F(StdLibBranchTest, TestUnquote) {
   ASSERT_TRUE(RunFail("(unquote (quote thisdoesnotexist))"));
   ASSERT_TRUE(RunSuccess("(unquote (quote (quote (+ 2 3))))", "(+ 2 3)"));
   ASSERT_TRUE(RunSuccess("(unquote (unquote (quote (quote (+ 2 3)))))", "5"));
+
+  ASSERT_TRUE(RunFail("(unquote 'foo)"));
+  ASSERT_TRUE(RunSuccess("(unquote ''foo)", "foo"));
 }
 
 TEST_F(StdLibBranchTest, TestBegin) {

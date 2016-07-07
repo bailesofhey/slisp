@@ -204,6 +204,8 @@ bool Parser::ParseToken(Sexp &root) {
     return ParseParenOpen(root);
   else if (tokenType == TokenTypes::PARENCLOSE)
     return ParseParenClose(root);
+  else if (tokenType == TokenTypes::QUOTE)
+    return ParseQuote(root);
   else if (tokenType == TokenTypes::UNKNOWN) 
     return ParseUnknown(root);
   else if (tokenType == TokenTypes::NONE)
@@ -249,14 +251,7 @@ bool Parser::ParseNumber(Sexp &root) {
 bool Parser::ParseSymbol(Sexp &root) {
   auto &val = (*Tokenizer_).Value;
   if (!val.empty()) {
-    if (val.length() > 1 && val[0] == '\'') {
-      root.Args.push_back(ExpressionPtr { new Sexp({
-        ExpressionPtr { new Symbol("'") },
-        ExpressionPtr { new Symbol(val.substr(1)) }
-      }) });
-    }
-    else
-      root.Args.push_back(ExpressionPtr { new Symbol { val } });
+    root.Args.push_back(ExpressionPtr { new Symbol { val } });
     return true;
   }
   else {
@@ -328,6 +323,24 @@ begin:
     else
       throw exception("Logic bug: NONE should only be reached with Depth > 0");
   }
+}
+
+bool Parser::ParseQuote(Sexp &root) {
+  ExpressionPtr newExpr { new Sexp };
+  Sexp &newSexp = static_cast<Sexp&>(*newExpr);
+  ++Tokenizer_;
+  if (ParseToken(newSexp)) {
+    if (!newSexp.Args.empty()) {
+      root.Args.emplace_back(new Quote(move(newSexp.Args.front())));
+      newSexp.Args.pop_front();
+      return true;
+    }
+    else {
+      Error_ = "Invalid quote expression";
+      return false;
+    }
+  }
+  return false;
 }
 
 bool Parser::ParseUnknown(Sexp &root) {

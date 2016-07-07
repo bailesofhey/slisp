@@ -37,6 +37,7 @@ class Parser {
     bool ParseParenOpen(Sexp &root);
     bool ParseParenClose(Sexp &root);
     bool ParseSexpArgs(Sexp &root, Sexp &curr);
+    bool ParseQuote(Sexp &root);
     bool ParseUnknown(Sexp &root);
     bool ParseNone(Sexp &root);
 

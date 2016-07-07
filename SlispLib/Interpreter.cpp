@@ -330,14 +330,6 @@ bool Interpreter::ReduceSexp(ExpressionPtr &expr) {
     if (EvaluatePartial(firstArg)) {
       args.push_front(move(firstArg));
       auto &funcExpr = args.front();
-
-      if (argNum++ == 0) {
-        if (auto sym = TypeHelper::GetValue<Symbol>(funcExpr)) {
-          if (!ReduceSymbol(funcExpr))
-            return false; 
-        }
-      }
-
       if (auto func = TypeHelper::GetValue<Function>(funcExpr))
         return ReduceSexpFunction(expr, *func);
       else if (TypeHelper::TypeMatches(Literal::TypeInstance, funcExpr.get()->Type())) 

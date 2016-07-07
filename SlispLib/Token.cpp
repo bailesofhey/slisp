@@ -32,6 +32,8 @@ Token::operator string() const {
     str += "PARENOPEN";
   else if (Type == TokenTypes::PARENCLOSE)
     str += "PARENCLOSE";
+  else if (Type == TokenTypes::QUOTE)
+    str += "QUOTE";
   else if (Type == TokenTypes::UNKNOWN)
     str += "UNKNOWN";
   else
