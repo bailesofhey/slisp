@@ -3,7 +3,7 @@ Modern Lisp variant inspired by Python, Clojure & Arc
 
 ## Design Principles
 
-The following design principles describe how I'd like to see Slisp evolve over the next few years - not what's current possible in it.
+The following design principles describe how I'd like to see Slisp evolve over the next few years - not what's currently possible in it.
 
 ### A Modern Lisp
 
