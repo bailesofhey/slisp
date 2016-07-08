@@ -121,11 +121,62 @@ void Tokenizer::TokenizeSymbol(char &currChar) {
   }
 }
 
+      
+const string EscapeChars = "ntvbrfa\\\"'0x";
+const size_t HexEscapePos = 11;
+
+enum StrState {
+  Character,
+  EscapeStart,
+  HexFirstOctet,
+  HexSecondOctet,
+};
+
 void Tokenizer::TokenizeString(char &currChar) {
   Stream.get(currChar);
-  auto pred = [](char c) { return c != '"'; };
-  auto postSeqFn = [this](char& c) { Stream.get(c); };
+  StrState state = StrState::Character;
+  bool invalid = false;
+  auto pred = [&state, &invalid](char c) { 
+    if (state == StrState::Character) {
+      if (c == '\\')
+        state = StrState::EscapeStart;
+      return c != '"';
+    }
+    else if (state == StrState::EscapeStart) {
+      size_t pos = EscapeChars.find(c);
+      if (pos != string::npos) {
+        if (pos == HexEscapePos)
+          state = StrState::HexFirstOctet;
+        else
+          state = StrState::Character;
+      }
+      else {
+        invalid = true;
+        state = StrState::Character;
+      }
+      return true;
+    }
+    else if (state == StrState::HexFirstOctet || state == StrState::HexSecondOctet) {
+      invalid = !isxdigit(c);
+      if (c == '\"')
+        return false;
+      else if (invalid || state == StrState::HexSecondOctet)
+        state = StrState::Character;
+      else if (state == StrState::HexFirstOctet)
+        state = StrState::HexSecondOctet;
+      return true;
+    }
+    invalid = true;
+    state = StrState::Character;
+    return true;
+  };
+  auto postSeqFn = [this, &invalid](char& c) { 
+    Stream.get(c); 
+  };
   TokenizeSequence(TokenTypes::STRING, currChar, pred, postSeqFn);
+  if (invalid) {
+    CurrToken.Type = TokenTypes::UNKNOWN;
+  }
 }
 
 void Tokenizer::TokenizeParenOpen(char &currChar) {
@@ -145,7 +196,7 @@ void Tokenizer::TokenizeQuote(char &currChar) {
 
 void Tokenizer::TokenizeUnknown(char &currChar) {
   auto pred = [](char c) { return !isspace(c); };
-  TokenizeSequence(TokenTypes::UNKNOWN, currChar, pred, [](char c){} );
+  TokenizeSequence(TokenTypes::UNKNOWN, currChar, pred);
 }
 
 void Tokenizer::TokenizeNone() {
@@ -155,7 +206,7 @@ void Tokenizer::TokenizeNone() {
 
 template <class F>
 void Tokenizer::TokenizeSequence(TokenTypes tokenType, char &currChar, F pred) {
-  TokenizeSequence(tokenType, currChar, pred, [](char &c) {});
+  TokenizeSequence(tokenType, currChar, pred, [](char &c) { });
 }
 
 template <class F, class G>

@@ -167,7 +167,36 @@ TEST(Tokenizer, TestString) {
     { "\"Hello, world!\" # this is tokenize as a string", { Token(TokenTypes::STRING, "Hello, world!") } },
     { "\"This string has an octothorpe #\" # this is tokenize as a string and not loose the hash mark", { Token(TokenTypes::STRING, "This string has an octothorpe #") } },
 
-    // TODO: need to support escape characters: \" \\ \n \r \t
+    // escapes
+    { "\"\\n\"", { Token(TokenTypes::STRING, "\\n") } },
+    { "\"\\t\"", { Token(TokenTypes::STRING, "\\t") } },
+    { "\"\\v\"", { Token(TokenTypes::STRING, "\\v") } },
+    { "\"\\b\"", { Token(TokenTypes::STRING, "\\b") } },
+    { "\"\\r\"", { Token(TokenTypes::STRING, "\\r") } },
+    { "\"\\f\"", { Token(TokenTypes::STRING, "\\f") } },
+    { "\"\\a\"", { Token(TokenTypes::STRING, "\\a") } },
+    { "\"\\\\\"", { Token(TokenTypes::STRING, "\\\\") } },
+    { "\"\\'\"", { Token(TokenTypes::STRING, "\\'") } },
+    { "\"\\\"\"", { Token(TokenTypes::STRING, "\\\"") } },
+    { "\"\\0\"", { Token(TokenTypes::STRING, "\\0") } },
+    { "\"\\z\"", { Token(TokenTypes::UNKNOWN, "\\z") } },
+
+    // hex escapes
+    { "\"\\x0\"", { Token(TokenTypes::UNKNOWN, "\\x0") } },
+    { "\"\\xa\"", { Token(TokenTypes::UNKNOWN, "\\xa") } },
+    { "\"\\xg\"", { Token(TokenTypes::UNKNOWN, "\\xg") } },
+    { "\"\\xx\"", { Token(TokenTypes::UNKNOWN, "\\xx") } },
+    { "\"\\xn\"", { Token(TokenTypes::UNKNOWN, "\\xn") } },
+    { "\"\\x\\\"", { Token(TokenTypes::UNKNOWN, "\\x\\") } },
+    { "\"\\x1b\"", { Token(TokenTypes::STRING, "\\x1b") } },
+    { "\"\\x1g\"", { Token(TokenTypes::UNKNOWN, "\\x1g") } },
+    { "\"\\x1b2\"", { Token(TokenTypes::STRING, "\\x1b2") } },
+    { "\"\\x1bg\"", { Token(TokenTypes::STRING, "\\x1bg") } },
+    { "\"\\x0123456789abcdef\"", { Token(TokenTypes::STRING, "\\x0123456789abcdef") } },
+    { "\"\\x0123456789abcdefg\"", { Token(TokenTypes::STRING, "\\x0123456789abcdefg") } },
+
+    // strings + escape
+    { "\"this is a multiline\\nstring\"", { Token(TokenTypes::STRING, "this is a multiline\\nstring") } },
   });
 }
 
