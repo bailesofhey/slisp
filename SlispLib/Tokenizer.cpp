@@ -140,7 +140,6 @@ void Tokenizer::TokenizeString(char &currChar) {
     if (state == StrState::Character) {
       if (c == '\\')
         state = StrState::EscapeStart;
-      return c != '"';
     }
     else if (state == StrState::EscapeStart) {
       size_t pos = EscapeChars.find(c);
@@ -158,25 +157,16 @@ void Tokenizer::TokenizeString(char &currChar) {
     }
     else if (state == StrState::HexFirstOctet || state == StrState::HexSecondOctet) {
       invalid = !isxdigit(c);
-      if (c == '\"')
-        return false;
-      else if (invalid || state == StrState::HexSecondOctet)
+      if (invalid || state == StrState::HexSecondOctet)
         state = StrState::Character;
       else if (state == StrState::HexFirstOctet)
         state = StrState::HexSecondOctet;
-      return true;
     }
-    invalid = true;
-    state = StrState::Character;
-    return true;
+    return c != '"';
   };
-  auto postSeqFn = [this, &invalid](char& c) { 
-    Stream.get(c); 
-  };
-  TokenizeSequence(TokenTypes::STRING, currChar, pred, postSeqFn);
-  if (invalid) {
+  TokenizeSequence(TokenTypes::STRING, currChar, pred, [this, &invalid](char& c) { Stream.get(c); });
+  if (invalid) 
     CurrToken.Type = TokenTypes::UNKNOWN;
-  }
 }
 
 void Tokenizer::TokenizeParenOpen(char &currChar) {
