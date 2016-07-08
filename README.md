@@ -24,7 +24,8 @@ This might be the most controversial design choice. To many, the defining charac
 ### Scheme
 Scheme doesn't have a system for OO builtin (but you can roll your own, incomplete, incompatible, bug ridden one yourself as a weekend project). IMHO, a well designed facility for OO is important enough to be builtin to the platform itself. This is so that there isn't a proliferation of many, many ways to accomplish the same thing (there's that Python philosophy shining through).
 
-### Arc and Clojure both shun OO as overused, unnecessary and in conflict with functional programming (shared mutable state is the sworn enemy of concurrency). While some of the arguments may be true, good object oriented design can bring a lot good too - especially when it comes to large software projects consisting of dozens of developers working in huge code bases (hundreds of thousands of lines of code or more). Whether you subscribe to pure FP, pure OO or somewhere in the middle, Slisp will provide a system for doing OO anyway - use it if you want to.
+### Arc and Clojure 
+Both shun OO as overused, unnecessary and in conflict with functional programming (shared mutable state is the sworn enemy of concurrency). While some of the arguments may be true, good object oriented design can bring a lot good too, especially when it comes to large software projects consisting of dozens of developers working in huge code bases (hundreds of thousands of lines of code or more). Whether you subscribe to pure FP, pure OO or somewhere in the middle, Slisp will provide a system for doing OO anyway, use it if you want to.
 
 ### Common Lisp
 CL has CLOS which might be the most powerful OO platform ever constructed. Slisp's facilities for OO will probably never be as powerful as CLOS. However, if done properly it might be simpler to use and more comprehensible. We'll see (it hasn't been built yet!).
