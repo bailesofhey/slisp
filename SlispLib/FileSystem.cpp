@@ -1,6 +1,6 @@
 #include <fstream>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <Windows.h>
 #endif
 
@@ -66,7 +66,7 @@ bool FileSystem::Exists(const string &path) {
 }
 
 bool FileSystem::Delete(const string &path) {
-  #ifdef WIN32
+  #ifdef _WIN32
     return ::DeleteFileA(path.c_str()) == TRUE;
   #else
     return false;

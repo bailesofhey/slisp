@@ -7,3 +7,4 @@ Debug
 Debug(staticlib)
 /Test/TestOutputFile*.txt
 *.opendb
+/x64

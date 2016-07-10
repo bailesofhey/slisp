@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SlispLib", "SlispLib\SlispLib.vcxproj", "{92100138-79F8-4F7C-8FE0-D2FA4B9C7B27}"
 EndProject
@@ -38,8 +38,8 @@ Global
 		{92100138-79F8-4F7C-8FE0-D2FA4B9C7B27}.Debug|x64.Build.0 = Debug|x64
 		{92100138-79F8-4F7C-8FE0-D2FA4B9C7B27}.Release|Win32.ActiveCfg = Debug|Win32
 		{92100138-79F8-4F7C-8FE0-D2FA4B9C7B27}.Release|Win32.Build.0 = Debug|Win32
-		{92100138-79F8-4F7C-8FE0-D2FA4B9C7B27}.Release|x64.ActiveCfg = Debug|x64
-		{92100138-79F8-4F7C-8FE0-D2FA4B9C7B27}.Release|x64.Build.0 = Debug|x64
+		{92100138-79F8-4F7C-8FE0-D2FA4B9C7B27}.Release|x64.ActiveCfg = Release|x64
+		{92100138-79F8-4F7C-8FE0-D2FA4B9C7B27}.Release|x64.Build.0 = Release|x64
 		{3AF54C8A-10BF-4332-9147-F68ED9862032}.Debug(staticlib)|Win32.ActiveCfg = Debug|Win32
 		{3AF54C8A-10BF-4332-9147-F68ED9862032}.Debug(staticlib)|Win32.Build.0 = Debug|Win32
 		{3AF54C8A-10BF-4332-9147-F68ED9862032}.Debug(staticlib)|x64.ActiveCfg = Debug|x64
