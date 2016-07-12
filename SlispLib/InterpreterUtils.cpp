@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <vector>
+#include <sstream>
 
 #include "InterpreterUtils.h"
 
@@ -227,6 +228,12 @@ SlispVersion::SlispVersion(const int major, const int minor, const int subMinor,
   SubMinor(subMinor),
   Build(build)
 {
+}
+
+const std::string SlispVersion::ToString() const {
+  stringstream verDisp;
+  verDisp << "Slisp " << Major << "." << Minor << "." << SubMinor << "." << Build;
+  return verDisp.str();
 }
 
 //=============================================================================

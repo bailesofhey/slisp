@@ -1468,10 +1468,7 @@ void AddCommandLineArgs(SymbolTable &symbols, const string &name, const vector<s
 
 void StdLib::LoadEnvironment(SymbolTable &symbols, const Environment &env) {
   const SlispVersion &version = env.Version;
-  stringstream verDisp;
-  verDisp << "Slisp " << version.Major << "." << version.Minor << "." << version.SubMinor << "." << version.Build;
-
-  symbols.PutSymbolStr("sys.version", verDisp.str());
+  symbols.PutSymbolStr("sys.version", version.ToString());
   symbols.PutSymbolInt("sys.versionNumber.major", version.Major);
   symbols.PutSymbolInt("sys.versionNumber.minor", version.Minor);
   symbols.PutSymbolInt("sys.versionNumber.subMinor", version.SubMinor);

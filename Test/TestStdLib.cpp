@@ -2436,6 +2436,7 @@ TEST_F(StdLibOperatorsTest, TestTypeQ) {
   ASSERT_TRUE(RunSuccess("a = 3.14", "3.14"));
   ASSERT_TRUE(RunSuccess("(float? a)", "true"));
 
+  // #119
   ASSERT_TRUE(RunSuccess("(symbol? +)", "true"));
   ASSERT_TRUE(RunFail("(symbol? 3.14)"));
   ASSERT_TRUE(RunSuccess("(symbol? true)", "true"));

@@ -86,6 +86,7 @@ class Controller {
     void SetupEnvironment();
     void SetupModules();
     void DisplayHelp();
+    void StartInteractiveREPL();
     void REPL();
     void RunSingle();
 

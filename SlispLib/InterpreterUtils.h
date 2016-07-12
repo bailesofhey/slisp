@@ -85,6 +85,7 @@ struct SlispVersion {
   const int SubMinor;
   const int Build;
   explicit SlispVersion(const int major, const int minor, const int subMinor, const int build);
+  const std::string ToString() const;
 };
 
 struct Environment {

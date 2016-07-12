@@ -164,10 +164,8 @@ void Controller::Run() {
       CmdInterface.WriteError("Could not run: " + Args.Run);
   }
 
-  if (Args.Flags & ControllerArgs::REPL) {
-    CmdInterface.SetInput();
-    REPL();
-  }
+  if (Args.Flags & ControllerArgs::REPL)
+    StartInteractiveREPL();
 }
 
 void Controller::Run(istream &in) {
@@ -242,6 +240,14 @@ void Controller::SetupModules() {
 
 void Controller::DisplayHelp() {
   CmdInterface.WriteOutputLine(HelpText);
+}
+
+void Controller::StartInteractiveREPL() {
+  auto &env = Interpreter_.GetEnvironment();
+  CmdInterface.WriteOutputLine(env.Version.ToString());
+  CmdInterface.WriteOutputLine("\n");
+  CmdInterface.SetInput();
+  REPL();
 }
 
 void Controller::REPL() {
