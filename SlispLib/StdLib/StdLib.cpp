@@ -395,8 +395,8 @@ void StdLib::Load(Interpreter &interpreter) {
   );
   symbols.PutSymbolFunction(
     "for",
-    {"(for item iterable .. expressions) -> value", "(for item in iterable .. expressions) -> value"
-    "(for item : iterable .. expressions) -> value", "(for iterable fn) -> value"},
+    {"(for item iterable .. expressions) -> value", "(for item in iterable .. expressions) -> value",
+     "(for item : iterable .. expressions) -> value", "(for iterable fn) -> value"},
     "alias for (foreach)",
     {},
     StdLib::Foreach, 
@@ -1321,7 +1321,7 @@ void StdLib::Load(Interpreter &interpreter) {
     "is value a symbol?",
     {{"(symbol? 42)", "false"}},
     StdLib::TypeQFunc, 
-    FuncDef { FuncDef::OneArg(Literal::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) }
+    FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) }
   );
   symbols.PutSymbolFunction(
     "list?", 
@@ -3903,15 +3903,26 @@ bool StdLib::TypeQFunc(EvaluationContext &ctx) {
   if (!thisFuncName.empty()) {
     if (thisFuncName.back() == '?') {
       thisFuncName.erase(thisFuncName.end() - 1);
-      bool isAtomFunc = thisFuncName == "atom";
-      ExpressionPtr typeExpr { new Sexp };
-      auto *typeSexp = static_cast<Sexp*>(typeExpr.get());
-      typeSexp->Args.push_back(ExpressionPtr { new Symbol("type") });
-      typeSexp->Args.push_back(ctx.Args.front()->Clone());
-      ctx.Args.clear();
-      ctx.Args.push_back(ExpressionPtr { new Symbol(isAtomFunc ? "list" : thisFuncName) });
-      ctx.Args.push_back(move(typeExpr));
-      return isAtomFunc ? Ne(ctx) : Eq(ctx);
+      if (thisFuncName == "symbol") {
+        if (auto *sym = ctx.GetRequiredValue<Symbol>(ctx.Args.front())) {
+          Expression *value = nullptr;
+          ctx.Expr.reset(new Bool(ctx.GetSymbol(sym->Value, value)));
+          return true;
+        }
+        else
+          return false;
+      }
+      else {
+        bool isAtomFunc = thisFuncName == "atom";
+        ExpressionPtr typeExpr { new Sexp };
+        auto *typeSexp = static_cast<Sexp*>(typeExpr.get());
+        typeSexp->Args.push_back(ExpressionPtr { new Symbol("type") });
+        typeSexp->Args.push_back(ctx.Args.front()->Clone());
+        ctx.Args.clear();
+        ctx.Args.push_back(ExpressionPtr { new Symbol(isAtomFunc ? "list" : thisFuncName) });
+        ctx.Args.push_back(move(typeExpr));
+        return isAtomFunc ? Ne(ctx) : Eq(ctx);
+      }
     }
   }
   return false; 

@@ -232,6 +232,6 @@ SlispVersion::SlispVersion(const int major, const int minor, const int subMinor,
 //=============================================================================
 
 Environment::Environment():
-  Version(0, 1, 0, 1)
+  Version(0, 2, 0, 1)
 {
 }
