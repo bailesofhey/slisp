@@ -1619,12 +1619,18 @@ TEST_F(StdLibListTest, TestCons) {
   ASSERT_TRUE(RunFail("(cons)"));
   ASSERT_TRUE(RunFail("(cons 1)"));
   ASSERT_TRUE(RunFail("(cons (1))"));
-  ASSERT_TRUE(RunSuccess("(cons 1 2)", "(1 2)")); // Improper lists not supported
-  ASSERT_TRUE(RunSuccess("(cons (1) 2)", "(1 2)"));
+
+  // Improper lists not supported
+  ASSERT_TRUE(RunFail("(cons 1 2)")); 
+  ASSERT_TRUE(RunFail("(cons (1) 2)"));
+  ASSERT_TRUE(RunFail("(cons (1 2) 3)"));
+
+  ASSERT_TRUE(RunSuccess("(cons 1 nil)", "(1)"));
+  ASSERT_TRUE(RunSuccess("(cons 1 ())", "(1)"));
   ASSERT_TRUE(RunSuccess("(cons 1 (2))", "(1 2)"));
-  ASSERT_TRUE(RunSuccess("(cons (1) (2))", "(1 2)"));
+  ASSERT_TRUE(RunSuccess("(cons (1) (2))", "((1) 2)"));
   ASSERT_TRUE(RunSuccess("(cons 1 (2 3))", "(1 2 3)"));
-  ASSERT_TRUE(RunSuccess("(cons (1 2) 3)", "(1 2 3)"));
+  ASSERT_TRUE(RunSuccess("(cons 'a '(b c))", "(a b c)")); // #118
 }
 
 TEST_F(StdLibListTest, TestEmpty) {
@@ -2145,7 +2151,7 @@ TEST_F(StdLibBranchTest, TestQuoteFn) {
   ASSERT_TRUE(RunSuccess("(set q (quote foo))", "foo"));
   ASSERT_TRUE(RunFail("(* 4 q)"));
   ASSERT_TRUE(RunSuccess("(set foo 5)", "5"));
-  ASSERT_TRUE(RunSuccess("(* 4 q)", "20"));
+  ASSERT_TRUE(RunFail("(* 4 q)")); //#118
 
   // These don't actually call invoke quote func
   ASSERT_TRUE(RunSuccess("'42", "42"));

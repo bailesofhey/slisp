@@ -1028,10 +1028,10 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction(
     "cons", 
     {"(cons item list) -> list"},
-    "add item into front of list",
+    "add item to front of list",
     {{"(cons 3 (4))", "(3 4)"}},
     StdLib::Cons,
-    FuncDef { FuncDef::ManyArgs(Literal::TypeInstance, 2), FuncDef::OneArg(Quote::TypeInstance) }
+    FuncDef { FuncDef::Args({&Literal::TypeInstance, &Quote::TypeInstance}), FuncDef::OneArg(Quote::TypeInstance) }
   );
   symbols.PutSymbolFunction(
     "range", 
@@ -3060,24 +3060,17 @@ bool StdLib::Zip(EvaluationContext &ctx) {
 
 
 bool StdLib::Cons(EvaluationContext &ctx) {
-  auto arg1 = move(ctx.Args.front());
+  auto itemExpr = move(ctx.Args.front());
   ctx.Args.pop_front();
-  auto arg2 = move(ctx.Args.front());
+  auto listExpr = move(ctx.Args.front());
   ctx.Args.pop_front();
-
-  ExpressionPtr qExpr1 { };
-  if (TypeHelper::IsAtom(arg1->Type())) 
-    ctx.Args.push_back(ExpressionPtr { new Quote(ExpressionPtr { new Sexp({move(arg1)}) }) });
+  if (auto *list = ctx.GetRequiredListValue(listExpr)) {
+    list->Args.push_front(move(itemExpr));
+    ctx.Expr = move(listExpr);
+    return true;
+  }
   else
-    ctx.Args.push_back(move(arg1));
-
-  ExpressionPtr qExpr2 { };
-  if (TypeHelper::IsAtom(arg2->Type())) 
-    ctx.Args.push_back(ExpressionPtr { new Quote(ExpressionPtr { new Sexp({move(arg2)}) }) });
-  else
-    ctx.Args.push_back(move(arg2));
-
-  return Add(ctx);
+    return false;
 }
 
 bool StdLib::AddList(EvaluationContext &ctx) {
