@@ -148,7 +148,7 @@ class StdLib: public Library {
     static bool All(EvaluationContext &ctx);
     static bool Take(EvaluationContext &ctx);
     static bool Skip(EvaluationContext &ctx);
-    static bool Cons(EvaluationContext &ctx);
+    static bool Push(EvaluationContext &ctx);
     static bool Range(EvaluationContext &ctx);
 
     // Logical

@@ -1633,6 +1633,31 @@ TEST_F(StdLibListTest, TestCons) {
   ASSERT_TRUE(RunSuccess("(cons 'a '(b c))", "(a b c)")); // #118
 }
 
+TEST_F(StdLibListTest, TestPushFront) {
+  ASSERT_TRUE(RunFail("(push-front)"));
+  ASSERT_TRUE(RunFail("(push-front 1)"));
+  ASSERT_TRUE(RunFail("(push-front (1))"));
+  ASSERT_TRUE(RunFail("(push-front 1 nil"));
+  ASSERT_TRUE(RunSuccess("(push-front nil 1", "(1)"));
+  ASSERT_TRUE(RunSuccess("(push-front () 1", "(1)"));
+  ASSERT_TRUE(RunSuccess("(push-front (2) 1", "(1 2)"));
+  ASSERT_TRUE(RunSuccess("(push-front (2) nil", "(() 2)"));
+  ASSERT_TRUE(RunSuccess("(push-front (2) (1)", "((1) 2)"));
+  ASSERT_TRUE(RunSuccess("(push-front nil nil)", "(())"));
+}
+
+TEST_F(StdLibListTest, TestPushBack) {
+  ASSERT_TRUE(RunFail("(push-back)"));
+  ASSERT_TRUE(RunFail("(push-back 1)"));
+  ASSERT_TRUE(RunFail("(push-back (1))"));
+  ASSERT_TRUE(RunSuccess("(push-back nil 1", "(1)"));
+  ASSERT_TRUE(RunSuccess("(push-back () 1", "(1)"));
+  ASSERT_TRUE(RunSuccess("(push-back (2) 1", "(2 1)"));
+  ASSERT_TRUE(RunSuccess("(push-back (2) nil", "(2 ())"));
+  ASSERT_TRUE(RunSuccess("(push-back (2) (1)", "(2 (1))"));
+  ASSERT_TRUE(RunSuccess("(push-back nil nil)", "(())"));
+}
+
 TEST_F(StdLibListTest, TestEmpty) {
   ASSERT_TRUE(RunFail("(empty?)"));
   ASSERT_TRUE(RunFail("(empty? 3)"));

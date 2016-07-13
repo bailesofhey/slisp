@@ -1030,8 +1030,24 @@ void StdLib::Load(Interpreter &interpreter) {
     {"(cons item list) -> list"},
     "add item to front of list",
     {{"(cons 3 (4))", "(3 4)"}},
-    StdLib::Cons,
+    StdLib::Push,
     FuncDef { FuncDef::Args({&Literal::TypeInstance, &Quote::TypeInstance}), FuncDef::OneArg(Quote::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "push-front", 
+    {"(push-front list item) -> list"},
+    "add item to front of list",
+    {{"(push-front (4) 3)", "(3 4)"}},
+    StdLib::Push,
+    FuncDef { FuncDef::Args({&Quote::TypeInstance, &Literal::TypeInstance}), FuncDef::OneArg(Quote::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "push-back", 
+    {"(push-front list item) -> list"},
+    "add item to back of list",
+    {{"(push-back (4) 3)", "(4 3)"}},
+    StdLib::Push,
+    FuncDef { FuncDef::Args({&Quote::TypeInstance, &Literal::TypeInstance}), FuncDef::OneArg(Quote::TypeInstance) }
   );
   symbols.PutSymbolFunction(
     "range", 
@@ -3059,13 +3075,29 @@ bool StdLib::Zip(EvaluationContext &ctx) {
 }
 
 
-bool StdLib::Cons(EvaluationContext &ctx) {
-  auto itemExpr = move(ctx.Args.front());
+bool StdLib::Push(EvaluationContext &ctx) {
+  auto arg1 = move(ctx.Args.front());
   ctx.Args.pop_front();
-  auto listExpr = move(ctx.Args.front());
+  auto arg2 = move(ctx.Args.front());
   ctx.Args.pop_front();
+
+  ExpressionPtr listExpr;
+  ExpressionPtr itemExpr;
+  string thisFnName = ctx.GetThisFunctionName();
+  if (thisFnName == "cons") {
+    listExpr = move(arg2);
+    itemExpr = move(arg1);
+  }
+  else {
+    listExpr = move(arg1);
+    itemExpr = move(arg2);
+  }
+
   if (auto *list = ctx.GetRequiredListValue(listExpr)) {
-    list->Args.push_front(move(itemExpr));
+    if (thisFnName == "cons" || thisFnName == "push-front")
+      list->Args.push_front(move(itemExpr));
+    else
+      list->Args.push_back(move(itemExpr));
     ctx.Expr = move(listExpr);
     return true;
   }
