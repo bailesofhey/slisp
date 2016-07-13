@@ -149,6 +149,7 @@ class StdLib: public Library {
     static bool Take(EvaluationContext &ctx);
     static bool Skip(EvaluationContext &ctx);
     static bool Push(EvaluationContext &ctx);
+    static bool Pop(EvaluationContext &ctx);
     static bool Range(EvaluationContext &ctx);
 
     // Logical

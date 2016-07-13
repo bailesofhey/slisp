@@ -1050,6 +1050,22 @@ void StdLib::Load(Interpreter &interpreter) {
     FuncDef { FuncDef::Args({&Quote::TypeInstance, &Literal::TypeInstance}), FuncDef::OneArg(Quote::TypeInstance) }
   );
   symbols.PutSymbolFunction(
+    "pop-front", 
+    {"(pop-front list) -> list"},
+    "remove item from front of list",
+    {{"(pop-front (3 4))", "(4)"}},
+    StdLib::Pop,
+    FuncDef { FuncDef::Args({&Quote::TypeInstance}), FuncDef::OneArg(Quote::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "pop-back", 
+    {"(pop-back list) -> list"},
+    "remove item from back of list",
+    {{"(pop-back (3 4))", "(3)"}},
+    StdLib::Pop,
+    FuncDef { FuncDef::Args({&Quote::TypeInstance}), FuncDef::OneArg(Quote::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
     "range", 
     {"(range start end) -> list", "(range start end stride) -> list"},
     "return a list of all numbers between and start and end, optionally increasing by stride (defaults to 1)",
@@ -3074,7 +3090,6 @@ bool StdLib::Zip(EvaluationContext &ctx) {
   return true;
 }
 
-
 bool StdLib::Push(EvaluationContext &ctx) {
   auto arg1 = move(ctx.Args.front());
   ctx.Args.pop_front();
@@ -3096,8 +3111,30 @@ bool StdLib::Push(EvaluationContext &ctx) {
   if (auto *list = ctx.GetRequiredListValue(listExpr)) {
     if (thisFnName == "cons" || thisFnName == "push-front")
       list->Args.push_front(move(itemExpr));
-    else
+    else if (thisFnName == "push-back")
       list->Args.push_back(move(itemExpr));
+    else
+      return ctx.Error("Internal error: unknown function");
+    ctx.Expr = move(listExpr);
+    return true;
+  }
+  else
+    return false;
+}
+
+bool StdLib::Pop(EvaluationContext &ctx) {
+  auto listExpr = move(ctx.Args.front());
+  ctx.Args.pop_front();
+  string thisFnName = ctx.GetThisFunctionName();
+  if (auto *list = ctx.GetRequiredListValue(listExpr)) {
+    if (!list->Args.empty()) {
+      if (thisFnName == "pop-front")
+        list->Args.pop_front();
+      else if (thisFnName == "pop-back")
+        list->Args.pop_back();
+      else 
+        return ctx.Error("Internal error: unknown function");
+    }
     ctx.Expr = move(listExpr);
     return true;
   }

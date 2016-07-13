@@ -1658,6 +1658,34 @@ TEST_F(StdLibListTest, TestPushBack) {
   ASSERT_TRUE(RunSuccess("(push-back nil nil)", "(())"));
 }
 
+TEST_F(StdLibListTest, TestPopFront) {
+  ASSERT_TRUE(RunFail("(pop-front)"));
+  ASSERT_TRUE(RunFail("(pop-front 1)"));
+  ASSERT_TRUE(RunSuccess("(pop-front ())", "()"));
+  ASSERT_TRUE(RunSuccess("(pop-front (1))", "()"));
+  ASSERT_TRUE(RunSuccess("(pop-front (1 2))", "(2)"));
+  ASSERT_TRUE(RunSuccess("(pop-front (1 2 3))", "(2 3)"));
+  ASSERT_TRUE(RunSuccess("(pop-front (()) )", "()"));
+  ASSERT_TRUE(RunSuccess("(pop-front (()) ())", "(())"));
+  ASSERT_TRUE(RunSuccess("(pop-front ((1)))", "()"));
+  ASSERT_TRUE(RunSuccess("(pop-front ((1 2)))", "()"));
+  ASSERT_TRUE(RunSuccess("(pop-front ((1) (2))", "((2))"));
+}
+
+TEST_F(StdLibListTest, TestPopBack) {
+  ASSERT_TRUE(RunFail("(pop-back)"));
+  ASSERT_TRUE(RunFail("(pop-back 1)"));
+  ASSERT_TRUE(RunSuccess("(pop-back ())", "()"));
+  ASSERT_TRUE(RunSuccess("(pop-back (1))", "()"));
+  ASSERT_TRUE(RunSuccess("(pop-back (1 2))", "(1)"));
+  ASSERT_TRUE(RunSuccess("(pop-back (1 2 3))", "(1 2)"));
+  ASSERT_TRUE(RunSuccess("(pop-back (()) )", "()"));
+  ASSERT_TRUE(RunSuccess("(pop-back (()) ())", "(())"));
+  ASSERT_TRUE(RunSuccess("(pop-back ((1)))", "()"));
+  ASSERT_TRUE(RunSuccess("(pop-back ((1 2)))", "()"));
+  ASSERT_TRUE(RunSuccess("(pop-back ((1) (2))", "((1))"));
+}
+
 TEST_F(StdLibListTest, TestEmpty) {
   ASSERT_TRUE(RunFail("(empty?)"));
   ASSERT_TRUE(RunFail("(empty? 3)"));
