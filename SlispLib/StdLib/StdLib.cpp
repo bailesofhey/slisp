@@ -1028,7 +1028,7 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction(
     "cons", 
     {"(cons item list) -> list"},
-    "add item to front of list",
+    "returns a new list with item at front ",
     {{"(cons 3 (4))", "(3 4)"}},
     StdLib::Push,
     FuncDef { FuncDef::Args({&Literal::TypeInstance, &Quote::TypeInstance}), FuncDef::OneArg(Quote::TypeInstance) }
@@ -1036,18 +1036,34 @@ void StdLib::Load(Interpreter &interpreter) {
   symbols.PutSymbolFunction(
     "push-front", 
     {"(push-front list item) -> list"},
-    "add item to front of list",
+    "returns a new list with item at front",
     {{"(push-front (4) 3)", "(3 4)"}},
     StdLib::Push,
     FuncDef { FuncDef::Args({&Quote::TypeInstance, &Literal::TypeInstance}), FuncDef::OneArg(Quote::TypeInstance) }
   );
   symbols.PutSymbolFunction(
+    "push-front!", 
+    {"(push-front! list item) -> nil"},
+    "add item to front of existing list (in place)",
+    {{"(set a '(4))", "(4)"}, {"(push-front! a 3)", "nil"}, {"a", "(3 4)"}},
+    StdLib::Push,
+    FuncDef { FuncDef::Args({&Symbol::TypeInstance, &Literal::TypeInstance}), FuncDef::OneArg(Quote::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
     "push-back", 
-    {"(push-front list item) -> list"},
-    "add item to back of list",
+    {"(push-back list item) -> list"},
+    "returns a new list with item at back",
     {{"(push-back (4) 3)", "(4 3)"}},
     StdLib::Push,
     FuncDef { FuncDef::Args({&Quote::TypeInstance, &Literal::TypeInstance}), FuncDef::OneArg(Quote::TypeInstance) }
+  );
+  symbols.PutSymbolFunction(
+    "push-back!", 
+    {"(push-back! list item) -> nil"},
+    "add item to back of existing list (in place)",
+    {{"(set a '(4))", "(4)"}, {"(push-back! a 3)", "nil"}, {"a", "(4 3)"}},
+    StdLib::Push,
+    FuncDef { FuncDef::Args({&Symbol::TypeInstance, &Literal::TypeInstance}), FuncDef::OneArg(Quote::TypeInstance) }
   );
   symbols.PutSymbolFunction(
     "pop-front", 
@@ -3090,6 +3106,54 @@ bool StdLib::Zip(EvaluationContext &ctx) {
   return true;
 }
 
+bool PushNewList(EvaluationContext &ctx, ExpressionPtr &listExpr, ExpressionPtr &itemExpr, const string &thisFnName) {
+  if (auto *list = ctx.GetRequiredListValue(listExpr)) {
+    if (thisFnName == "cons" || thisFnName == "push-front")
+      list->Args.push_front(move(itemExpr));
+    else if (thisFnName == "push-back")
+      list->Args.push_back(move(itemExpr));
+    else
+      return ctx.Error("Internal error: unknown function");
+    ctx.Expr = move(listExpr);
+    return true;
+  }
+  else
+    return false;
+}
+
+// const symbols!!
+
+bool PushInplace(EvaluationContext &ctx, ExpressionPtr &listExpr, ExpressionPtr &itemExpr, const string &thisFnName) {
+  if (auto *sym = ctx.GetRequiredValue<Symbol>(listExpr)) {
+    if (sym->Value != "nil") {
+      Expression *value = nullptr;
+      if (ctx.GetSymbol(sym->Value, value) && value) {
+        if (auto *quotedValue = dynamic_cast<Quote*>(value)) {
+          if (quotedValue->Value) {
+            if (auto *sexp = dynamic_cast<Sexp*>(quotedValue->Value.get())) {
+              if (thisFnName == "push-front!")
+                sexp->Args.push_front(move(itemExpr));
+              else if (thisFnName == "push-back!")
+                sexp->Args.push_back(move(itemExpr));
+              else
+                return ctx.Error("Internal error: unknown function");
+              ctx.Expr = List::GetNil();
+              return true;
+            }
+          }
+        }
+        return ctx.TypeError("list", listExpr);
+      }
+      else
+        return ctx.UnknownSymbolError(sym->Value);
+    }
+    else
+      return ctx.Error("can't modify a constant symbol");
+  }
+  else
+    return false;
+}
+
 bool StdLib::Push(EvaluationContext &ctx) {
   auto arg1 = move(ctx.Args.front());
   ctx.Args.pop_front();
@@ -3108,18 +3172,10 @@ bool StdLib::Push(EvaluationContext &ctx) {
     itemExpr = move(arg2);
   }
 
-  if (auto *list = ctx.GetRequiredListValue(listExpr)) {
-    if (thisFnName == "cons" || thisFnName == "push-front")
-      list->Args.push_front(move(itemExpr));
-    else if (thisFnName == "push-back")
-      list->Args.push_back(move(itemExpr));
-    else
-      return ctx.Error("Internal error: unknown function");
-    ctx.Expr = move(listExpr);
-    return true;
-  }
-  else
-    return false;
+  if (thisFnName.back() == '!')
+    return PushInplace(ctx, listExpr, itemExpr, thisFnName);
+  else 
+    return PushNewList(ctx, listExpr, itemExpr, thisFnName);
 }
 
 bool StdLib::Pop(EvaluationContext &ctx) {

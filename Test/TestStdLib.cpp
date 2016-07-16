@@ -1637,53 +1637,127 @@ TEST_F(StdLibListTest, TestPushFront) {
   ASSERT_TRUE(RunFail("(push-front)"));
   ASSERT_TRUE(RunFail("(push-front 1)"));
   ASSERT_TRUE(RunFail("(push-front (1))"));
-  ASSERT_TRUE(RunFail("(push-front 1 nil"));
-  ASSERT_TRUE(RunSuccess("(push-front nil 1", "(1)"));
-  ASSERT_TRUE(RunSuccess("(push-front () 1", "(1)"));
-  ASSERT_TRUE(RunSuccess("(push-front (2) 1", "(1 2)"));
-  ASSERT_TRUE(RunSuccess("(push-front (2) nil", "(() 2)"));
-  ASSERT_TRUE(RunSuccess("(push-front (2) (1)", "((1) 2)"));
+  ASSERT_TRUE(RunFail("(push-front 1 nil)"));
+  ASSERT_TRUE(RunSuccess("(push-front nil 1)", "(1)"));
+  ASSERT_TRUE(RunSuccess("(push-front () 1)", "(1)"));
+  ASSERT_TRUE(RunSuccess("(push-front (2) 1)", "(1 2)"));
+  ASSERT_TRUE(RunSuccess("(push-front (2) nil)", "(() 2)"));
+  ASSERT_TRUE(RunSuccess("(push-front (2) (1))", "((1) 2)"));
   ASSERT_TRUE(RunSuccess("(push-front nil nil)", "(())"));
+}
+
+TEST_F(StdLibListTest, TestPushFrontBang) {
+  ASSERT_TRUE(RunFail("(push-front!)"));
+  ASSERT_TRUE(RunFail("(push-front! 1)"));
+  ASSERT_TRUE(RunFail("(push-front! (1))"));
+  ASSERT_TRUE(RunFail("(push-front! 1 nil)"));
+  ASSERT_TRUE(RunFail("(push-front! nil 1)"));
+
+  ASSERT_TRUE(RunSuccess("(set a 42)", "42"));
+  ASSERT_TRUE(RunFail("(push-front! a 2)"));
+  ASSERT_TRUE(RunSuccess("(set a \"foo\")", "foo"));
+  ASSERT_TRUE(RunFail("(push-front! a 2)"));
+  ASSERT_TRUE(RunSuccess("(set a '42)", "42"));
+  ASSERT_TRUE(RunFail("(push-front! a 2)"));
+  ASSERT_TRUE(RunSuccess("(set a 'blah)", "blah"));
+  ASSERT_TRUE(RunFail("(push-front! a 2)"));
+  ASSERT_TRUE(RunFail("(push-front! '(1) 2)"));
+
+  ASSERT_TRUE(RunSuccess("(set a nil)", "()"));
+  ASSERT_TRUE(RunSuccess("(push-front! a 2)", "()"));
+  ASSERT_TRUE(RunSuccess("a", "(2)"));
+
+  ASSERT_TRUE(RunSuccess("(push-front! a 1)", "()"));
+  ASSERT_TRUE(RunSuccess("a", "(1 2)"));
+
+  ASSERT_TRUE(RunSuccess("(set a (2))", "(2)"));
+  ASSERT_TRUE(RunSuccess("(push-front! a nil)", "()"));
+  ASSERT_TRUE(RunSuccess("a", "(() 2)"));
+
+  ASSERT_TRUE(RunSuccess("(set a (2))", "(2)"));
+  ASSERT_TRUE(RunSuccess("(push-front! a (1))", "()"));
+  ASSERT_TRUE(RunSuccess("a", "((1) 2)"));
+
+  ASSERT_TRUE(RunSuccess("(set a nil)", "()"));
+  ASSERT_TRUE(RunSuccess("(push-front! a nil)", "()"));
+  ASSERT_TRUE(RunSuccess("a", "(())"));
 }
 
 TEST_F(StdLibListTest, TestPushBack) {
   ASSERT_TRUE(RunFail("(push-back)"));
   ASSERT_TRUE(RunFail("(push-back 1)"));
   ASSERT_TRUE(RunFail("(push-back (1))"));
-  ASSERT_TRUE(RunSuccess("(push-back nil 1", "(1)"));
-  ASSERT_TRUE(RunSuccess("(push-back () 1", "(1)"));
-  ASSERT_TRUE(RunSuccess("(push-back (2) 1", "(2 1)"));
-  ASSERT_TRUE(RunSuccess("(push-back (2) nil", "(2 ())"));
-  ASSERT_TRUE(RunSuccess("(push-back (2) (1)", "(2 (1))"));
+  ASSERT_TRUE(RunSuccess("(push-back nil 1)", "(1)"));
+  ASSERT_TRUE(RunSuccess("(push-back () 1)", "(1)"));
+  ASSERT_TRUE(RunSuccess("(push-back (2) 1)", "(2 1)"));
+  ASSERT_TRUE(RunSuccess("(push-back (2) nil)", "(2 ())"));
+  ASSERT_TRUE(RunSuccess("(push-back (2) (1))", "(2 (1))"));
   ASSERT_TRUE(RunSuccess("(push-back nil nil)", "(())"));
+}
+
+TEST_F(StdLibListTest, TestPushBackBang) {
+  ASSERT_TRUE(RunFail("(push-back!)"));
+  ASSERT_TRUE(RunFail("(push-back! 1)"));
+  ASSERT_TRUE(RunFail("(push-back! (1))"));
+  ASSERT_TRUE(RunFail("(push-back! 1 nil)"));
+  ASSERT_TRUE(RunFail("(push-back! nil 1)"));
+
+  ASSERT_TRUE(RunSuccess("(set a 42)", "42"));
+  ASSERT_TRUE(RunFail("(push-back! a 2)"));
+  ASSERT_TRUE(RunSuccess("(set a \"foo\")", "foo"));
+  ASSERT_TRUE(RunFail("(push-back! a 2)"));
+  ASSERT_TRUE(RunSuccess("(set a '42)", "42"));
+  ASSERT_TRUE(RunFail("(push-back! a 2)"));
+  ASSERT_TRUE(RunSuccess("(set a 'blah)", "blah"));
+  ASSERT_TRUE(RunFail("(push-back! a 2)"));
+  ASSERT_TRUE(RunFail("(push-back! '(1) 2)"));
+
+  ASSERT_TRUE(RunSuccess("(set a nil)", "()"));
+  ASSERT_TRUE(RunSuccess("(push-back! a 2)", "()"));
+  ASSERT_TRUE(RunSuccess("a", "(2)"));
+
+  ASSERT_TRUE(RunSuccess("(push-back! a 1)", "()"));
+  ASSERT_TRUE(RunSuccess("a", "(2 1)"));
+
+  ASSERT_TRUE(RunSuccess("(set a (2))", "(2)"));
+  ASSERT_TRUE(RunSuccess("(push-back! a nil)", "()"));
+  ASSERT_TRUE(RunSuccess("a", "(2 ())"));
+
+  ASSERT_TRUE(RunSuccess("(set a (2))", "(2)"));
+  ASSERT_TRUE(RunSuccess("(push-back! a (1))", "()"));
+  ASSERT_TRUE(RunSuccess("a", "(2 (1))"));
+
+  ASSERT_TRUE(RunSuccess("(set a nil)", "()"));
+  ASSERT_TRUE(RunSuccess("(push-back! a nil)", "()"));
+  ASSERT_TRUE(RunSuccess("a", "(())"));
 }
 
 TEST_F(StdLibListTest, TestPopFront) {
   ASSERT_TRUE(RunFail("(pop-front)"));
   ASSERT_TRUE(RunFail("(pop-front 1)"));
-  ASSERT_TRUE(RunSuccess("(pop-front ())", "()"));
-  ASSERT_TRUE(RunSuccess("(pop-front (1))", "()"));
-  ASSERT_TRUE(RunSuccess("(pop-front (1 2))", "(2)"));
-  ASSERT_TRUE(RunSuccess("(pop-front (1 2 3))", "(2 3)"));
-  ASSERT_TRUE(RunSuccess("(pop-front (()) )", "()"));
-  ASSERT_TRUE(RunSuccess("(pop-front (()) ())", "(())"));
-  ASSERT_TRUE(RunSuccess("(pop-front ((1)))", "()"));
-  ASSERT_TRUE(RunSuccess("(pop-front ((1 2)))", "()"));
-  ASSERT_TRUE(RunSuccess("(pop-front ((1) (2))", "((2))"));
+  ASSERT_TRUE(RunSuccess("(pop-front () )", "()"));
+  ASSERT_TRUE(RunSuccess("(pop-front (1) )", "()"));
+  ASSERT_TRUE(RunSuccess("(pop-front (1 2) )", "(2)"));
+  ASSERT_TRUE(RunSuccess("(pop-front (1 2 3) )", "(2 3)"));
+  ASSERT_TRUE(RunSuccess("(pop-front (nil) )", "()"));
+  ASSERT_TRUE(RunSuccess("(pop-front (nil nil) )", "(())"));
+  ASSERT_TRUE(RunSuccess("(pop-front ((1)) )", "()"));
+  ASSERT_TRUE(RunSuccess("(pop-front ((1 2)) )", "()"));
+  ASSERT_TRUE(RunSuccess("(pop-front ((1) (2)) )", "((2))"));
 }
 
 TEST_F(StdLibListTest, TestPopBack) {
   ASSERT_TRUE(RunFail("(pop-back)"));
   ASSERT_TRUE(RunFail("(pop-back 1)"));
-  ASSERT_TRUE(RunSuccess("(pop-back ())", "()"));
-  ASSERT_TRUE(RunSuccess("(pop-back (1))", "()"));
-  ASSERT_TRUE(RunSuccess("(pop-back (1 2))", "(1)"));
-  ASSERT_TRUE(RunSuccess("(pop-back (1 2 3))", "(1 2)"));
-  ASSERT_TRUE(RunSuccess("(pop-back (()) )", "()"));
-  ASSERT_TRUE(RunSuccess("(pop-back (()) ())", "(())"));
-  ASSERT_TRUE(RunSuccess("(pop-back ((1)))", "()"));
-  ASSERT_TRUE(RunSuccess("(pop-back ((1 2)))", "()"));
-  ASSERT_TRUE(RunSuccess("(pop-back ((1) (2))", "((1))"));
+  ASSERT_TRUE(RunSuccess("(pop-back () )", "()"));
+  ASSERT_TRUE(RunSuccess("(pop-back (1) )", "()"));
+  ASSERT_TRUE(RunSuccess("(pop-back (1 2) )", "(1)"));
+  ASSERT_TRUE(RunSuccess("(pop-back (1 2 3) )", "(1 2)"));
+  ASSERT_TRUE(RunSuccess("(pop-back (nil) )", "()"));
+  ASSERT_TRUE(RunSuccess("(pop-back (nil nil) )", "(())"));
+  ASSERT_TRUE(RunSuccess("(pop-back ((1)) )", "()"));
+  ASSERT_TRUE(RunSuccess("(pop-back ((1 2)) )", "()"));
+  ASSERT_TRUE(RunSuccess("(pop-back ((1) (2)) )", "((1))"));
 }
 
 TEST_F(StdLibListTest, TestEmpty) {
