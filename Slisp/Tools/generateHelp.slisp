@@ -16,25 +16,18 @@
          (examples (help.examples sym)))
     (if (not (empty? sigs))
       (begin
-        (+= lines ((format "<hr/><b><![CDATA[{sym}]]></b><p/>")))
+        (push-back! lines (format "<hr/><b><![CDATA[{sym}]]></b><p/>"))
         (for sig in sigs
-          (+= lines ((format "Usage: <![CDATA[{sig}]]><br/>"))))
-        (+= lines ("<p/>"))
+          (push-back! lines (format "Usage: <![CDATA[{sig}]]><br/>")))
+        (push-back! lines "<p/>")
         (if (not (empty? doc))
-          (+= lines ((format "<![CDATA[{doc}]]><br/>"))))
+          (push-back! lines (format "<![CDATA[{doc}]]><br/>")))
         (if (not (empty? examples))
           (begin
-            (+= lines ("<br/>Examples:<br/>"))
+            (push-back! lines "<br/>Examples:<br/>")
             (for example in examples
-              (+= lines ((format "<![CDATA[>>> {0}]]><br/>" (nth example 0))))
-              (+= lines ((format "<![CDATA[{0}]]><br/>" (nth example 1))))
-            )
-          )
-        )
-      )
-    )
-  )
-)
+              (push-back! lines (format "<![CDATA[>>> {0}]]><br/>" (nth example 0)))
+              (push-back! lines (format "<![CDATA[{0}]]><br/>" (nth example 1))))))))))
 
-(+= lines ("</body></html>"))
+(push-back! lines "</body></html>")
 (file.writelines outpath lines)
