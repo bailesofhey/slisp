@@ -1,6 +1,6 @@
 <html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en' lang='en' >
-<head><title>Slisp 0.1.0.1 API Documentation</title></head>
-<body><h1>Slisp 0.1.0.1 API Documentation</h1>
+<head><title>Slisp 0.2.0.1 API Documentation</title></head>
+<body><h1>Slisp 0.2.0.1 API Documentation</h1>
 <hr/><b><![CDATA[!]]></b><p/>
 Usage: <![CDATA[(! expression) -> bool]]><br/>
 <p/>
@@ -373,7 +373,7 @@ Usage: <![CDATA[(cond ((expr1 branch1) .. (exprN branchN) (true defaultBranch)))
 <hr/><b><![CDATA[cons]]></b><p/>
 Usage: <![CDATA[(cons item list) -> list]]><br/>
 <p/>
-<![CDATA[add item into front of list]]><br/>
+<![CDATA[returns a new list with item at front ]]><br/>
 <br/>Examples:<br/>
 <![CDATA[>>> (cons 3 (4))]]><br/>
 <![CDATA[(3 4)]]><br/>
@@ -552,7 +552,8 @@ Usage: <![CDATA[(fn? value) -> bool]]><br/>
 <![CDATA[false]]><br/>
 <hr/><b><![CDATA[for]]></b><p/>
 Usage: <![CDATA[(for item iterable .. expressions) -> value]]><br/>
-Usage: <![CDATA[(for item in iterable .. expressions) -> value(for item : iterable .. expressions) -> value]]><br/>
+Usage: <![CDATA[(for item in iterable .. expressions) -> value]]><br/>
+Usage: <![CDATA[(for item : iterable .. expressions) -> value]]><br/>
 Usage: <![CDATA[(for iterable fn) -> value]]><br/>
 <p/>
 <![CDATA[alias for (foreach)]]><br/>
@@ -775,6 +776,42 @@ Usage: <![CDATA[(or .. expressions) -> bool]]><br/>
 <br/>Examples:<br/>
 <![CDATA[>>> (or true false)]]><br/>
 <![CDATA[true]]><br/>
+<hr/><b><![CDATA[pop-back]]></b><p/>
+Usage: <![CDATA[(pop-back list) -> list]]><br/>
+<p/>
+<![CDATA[remove item from back of list]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (pop-back (3 4))]]><br/>
+<![CDATA[(3)]]><br/>
+<hr/><b><![CDATA[pop-back!]]></b><p/>
+Usage: <![CDATA[(pop-back! list) -> nil]]><br/>
+<p/>
+<![CDATA[remove item from back of existing list (in place)]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (set a '(3 4))]]><br/>
+<![CDATA[]]><br/>
+<![CDATA[>>> (pop-back! a)]]><br/>
+<![CDATA[()]]><br/>
+<![CDATA[>>> a]]><br/>
+<![CDATA[(3)]]><br/>
+<hr/><b><![CDATA[pop-front]]></b><p/>
+Usage: <![CDATA[(pop-front list) -> list]]><br/>
+<p/>
+<![CDATA[remove item from front of list]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (pop-front (3 4))]]><br/>
+<![CDATA[(4)]]><br/>
+<hr/><b><![CDATA[pop-front!]]></b><p/>
+Usage: <![CDATA[(pop-front! list) -> nil]]><br/>
+<p/>
+<![CDATA[remove item from front of existing list (in place)]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (set a '(3 4))]]><br/>
+<![CDATA[]]><br/>
+<![CDATA[>>> (pop-front! a)]]><br/>
+<![CDATA[()]]><br/>
+<![CDATA[>>> a]]><br/>
+<![CDATA[(4)]]><br/>
 <hr/><b><![CDATA[pow]]></b><p/>
 Usage: <![CDATA[(pow base exponent) -> num]]><br/>
 <p/>
@@ -797,6 +834,42 @@ Usage: <![CDATA[(prompt prefix) -> str]]><br/>
 <![CDATA[>>> (prompt "name: ")]]><br/>
 <![CDATA[name: John
 "John"]]><br/>
+<hr/><b><![CDATA[push-back]]></b><p/>
+Usage: <![CDATA[(push-back list item) -> list]]><br/>
+<p/>
+<![CDATA[returns a new list with item at back]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (push-back (4) 3)]]><br/>
+<![CDATA[(4 3)]]><br/>
+<hr/><b><![CDATA[push-back!]]></b><p/>
+Usage: <![CDATA[(push-back! list item) -> nil]]><br/>
+<p/>
+<![CDATA[add item to back of existing list (in place)]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (set a '(4))]]><br/>
+<![CDATA[(4)]]><br/>
+<![CDATA[>>> (push-back! a 3)]]><br/>
+<![CDATA[nil]]><br/>
+<![CDATA[>>> a]]><br/>
+<![CDATA[(4 3)]]><br/>
+<hr/><b><![CDATA[push-front]]></b><p/>
+Usage: <![CDATA[(push-front list item) -> list]]><br/>
+<p/>
+<![CDATA[returns a new list with item at front]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (push-front (4) 3)]]><br/>
+<![CDATA[(3 4)]]><br/>
+<hr/><b><![CDATA[push-front!]]></b><p/>
+Usage: <![CDATA[(push-front! list item) -> nil]]><br/>
+<p/>
+<![CDATA[add item to front of existing list (in place)]]><br/>
+<br/>Examples:<br/>
+<![CDATA[>>> (set a '(4))]]><br/>
+<![CDATA[(4)]]><br/>
+<![CDATA[>>> (push-front! a 3)]]><br/>
+<![CDATA[nil]]><br/>
+<![CDATA[>>> a]]><br/>
+<![CDATA[(3 4)]]><br/>
 <hr/><b><![CDATA[quit]]></b><p/>
 Usage: <![CDATA[(quit) -> nil]]><br/>
 <p/>
