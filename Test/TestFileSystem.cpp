@@ -156,7 +156,6 @@ TEST_F(FileSystemTest, TestClose) {
     FilePtr newFile = FS.Open(fileName, FileSystemInterface::Modes::Write);
     ASSERT_TRUE(newFile.operator bool());
     ASSERT_TRUE(FS.Exists(fileName));
-    ASSERT_FALSE(FS.Delete(fileName));
     ASSERT_TRUE(newFile->Close());
     ASSERT_TRUE(FS.Delete(fileName));
   }
@@ -166,7 +165,6 @@ TEST_F(FileSystemTest, TestClose) {
       FilePtr newFile = FS.Open(fileName, FileSystemInterface::Modes::Write);
       ASSERT_TRUE(newFile.operator bool());
       ASSERT_TRUE(FS.Exists(fileName));
-      ASSERT_FALSE(FS.Delete(fileName));
     }
     // Close() calls by dtor
     ASSERT_TRUE(FS.Delete(fileName));

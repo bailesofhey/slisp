@@ -1,11 +1,5 @@
 #include <fstream>
-
-#ifdef _WIN32
-#include <Windows.h>
-#else
-#include <unistd.h>
-#endif
-
+#include <cstdio>
 #include "FileSystem.h"
 
 using namespace std;
@@ -68,10 +62,6 @@ bool FileSystem::Exists(const string &path) {
 }
 
 bool FileSystem::Delete(const string &path) {
-  #ifdef _WIN32
-    return ::DeleteFileA(path.c_str()) == TRUE;
-  #else
-    return unlink(path.c_str()) == 0;
-  #endif
+  return remove(path.c_str()) == 0;
 }
 
