@@ -1,11 +1,11 @@
-#include "gtest\gtest.h"
+#include "gtest/gtest.h"
 
 #include "Expression.h"
 
 using namespace std;
 
 template <class E>
-void RunExpressionTest(E &defaultValue, E &emptyValue, E &otherValue) {
+void RunExpressionTest(E &&defaultValue, E &&emptyValue, E &&otherValue) {
   ASSERT_EQ(defaultValue, emptyValue);
   ASSERT_NE(defaultValue, otherValue);
   ASSERT_NE(emptyValue, otherValue);

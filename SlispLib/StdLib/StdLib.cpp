@@ -2489,8 +2489,8 @@ bool StdLib::Trim(EvaluationContext &ctx) {
 }
 
 
-template<class F>
-bool CharTransform(EvaluationContext &ctx, F fn) {
+template<typename F>
+static bool CharTransform(EvaluationContext &ctx, F fn) {
   if (auto str = ctx.GetRequiredValue<Str>(ctx.Args.front())) {
     for_each(str->Value.begin(), str->Value.end(), [&fn](char &ch) { ch = fn(ch); });
     ctx.Expr = str->Clone();
@@ -2500,12 +2500,15 @@ bool CharTransform(EvaluationContext &ctx, F fn) {
     return false;
 }
 
+char CharToUpper(const char &ch) { return toupper(ch); }
+char CharToLower(const char &ch) { return tolower(ch); }
+
 bool StdLib::Upper(EvaluationContext &ctx) {
-  return CharTransform(ctx, toupper);
+  return CharTransform(ctx, CharToUpper);
 }
 
 bool StdLib::Lower(EvaluationContext &ctx) {
-  return CharTransform(ctx, tolower);
+  return CharTransform(ctx, CharToLower);
 }
 
 bool StdLib::SubStr(EvaluationContext &ctx) {

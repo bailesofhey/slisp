@@ -258,7 +258,7 @@ void Controller::REPL() {
 void Controller::RunSingle() {
   stringstream ss;
   if (Parser_.Parse()) {
-    auto &exprTree = Parser_.ExpressionTree();
+    auto exprTree = Parser_.ExpressionTree();
     if (exprTree) {
       ExpressionPtr root { exprTree.release() };
       if (!Interpreter_.Evaluate(root)) {

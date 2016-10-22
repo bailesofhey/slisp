@@ -16,10 +16,13 @@ class Interpreter;
 
 class StackFrame {
   public:
+    explicit StackFrame(Interpreter &interp, Function &&func);
     explicit StackFrame(Interpreter &interp, Function &func);
     ~StackFrame();
+    void PutLocalSymbol(const std::string &symbolName, ExpressionPtr &&value);
     void PutLocalSymbol(const std::string &symbolName, ExpressionPtr &value);
     void PutDynamicSymbol(const std::string &symbolName, ExpressionPtr &value);
+    void PutDynamicSymbol(const std::string &symbolName, ExpressionPtr &&value);
     bool GetSymbol(const std::string &symbolName, ExpressionPtr &valueCopy);
     bool GetSymbol(const std::string &symbolName, Expression *&value);
     void DeleteSymbol(const std::string &symbolName);
@@ -90,6 +93,7 @@ class Interpreter {
 
     explicit Interpreter(CommandInterface &commandInterface);
     
+    bool Evaluate(ExpressionPtr &&expr);
     bool Evaluate(ExpressionPtr &expr);
     bool EvaluatePartial(ExpressionPtr &expr);
 

@@ -89,7 +89,7 @@ struct Bool: public Literal {
   bool operator>=(const Bool &rhs) const;
   Bool& operator=(Bool rhs);
   void Swap(Bool &rhs);
-  static ExpressionPtr New();
+  static ExpressionPtr NewInstance();
 };
 
 struct Int: public Literal {
@@ -108,7 +108,7 @@ struct Int: public Literal {
   bool operator>=(const Int &rhs) const;
   Int& operator=(Int rhs);
   void Swap(Int &rhs);
-  static ExpressionPtr New();
+  static ExpressionPtr NewInstance();
 };
 
 struct Float: public Literal {
@@ -127,7 +127,7 @@ struct Float: public Literal {
   bool operator>=(const Float &rhs) const;
   Float& operator=(Float rhs);
   void Swap(Float &rhs);
-  static ExpressionPtr New();
+  static ExpressionPtr NewInstance();
 };
 
 struct Str: public Literal, IIterable {
@@ -148,7 +148,7 @@ struct Str: public Literal, IIterable {
   bool operator>=(const Str &rhs) const;
   Str& operator=(Str rhs);
   void Swap(Str &rhs);
-  static ExpressionPtr New();
+  static ExpressionPtr NewInstance();
 };
 
 class StrIterator: public IIterator {
@@ -175,7 +175,7 @@ struct Quote: public Literal, IIterable {
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Quote &rhs) const;
   bool operator!=(const Quote &rhs) const;
-  static ExpressionPtr New();
+  static ExpressionPtr NewInstance();
 };
 
 struct Symbol: public Expression {
@@ -193,7 +193,7 @@ struct Symbol: public Expression {
   bool operator>=(const Symbol &rhs) const;
   Symbol& operator=(Symbol rhs);
   void Swap(Symbol &rhs);
-  static ExpressionPtr New();
+  static ExpressionPtr NewInstance();
 };
 
 using ArgList = std::list<ExpressionPtr>;
@@ -218,7 +218,7 @@ struct Sexp: public Expression, IIterable {
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Sexp &rhs) const;
   bool operator!=(const Sexp &rhs) const;
-  static ExpressionPtr New();
+  static ExpressionPtr NewInstance();
 };
 
 class SexpIterator: public IIterator {

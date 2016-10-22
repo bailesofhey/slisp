@@ -48,7 +48,7 @@ class FuncDef {
 
     std::string Name;
 
-    explicit FuncDef(ArgDefPtr &in, ArgDefPtr &out);
+    explicit FuncDef(ArgDefPtr in, ArgDefPtr out);
     FuncDef(const FuncDef &val);
     FuncDef(FuncDef &&rval);
     FuncDef Clone() const;
@@ -145,6 +145,7 @@ struct Function: public Literal {
   explicit Function();
   explicit Function(FuncDef &&func);
   explicit Function(FuncDef &&func, ExpressionPtr &sym);
+  explicit Function(FuncDef &&func, ExpressionPtr &&sym);
   explicit Function(const Function &rhs);
   virtual void Display(std::ostream &out) const override;
   bool operator==(const Function &rhs) const;
@@ -195,23 +196,6 @@ public:
     return SimpleIsA<T>(type);
   }
 
-  template<>
-  static bool IsA<Literal>(const TypeInfo &type) {
-    return IsAtom(type)
-        || SimpleIsA<Literal>(type)
-        || SimpleIsA<Quote>(type)
-        || SimpleIsA<Ref>(type)
-        ; 
-  }
-
-  template<>
-  static bool IsA<Function>(const TypeInfo &type) {
-    return SimpleIsA<Function>(type)
-        || SimpleIsA<CompiledFunction>(type)
-        || SimpleIsA<InterpretedFunction>(type)
-        ;
-  }
-
   template<class T>
   static bool IsA(const ExpressionPtr &expr) {
     if (SimpleIsA<T>(expr))
@@ -222,16 +206,6 @@ public:
       return SimpleIsA<T>(ref->Value);
     else
       return false;
-  }
-
-  template<>
-  static bool IsA<Literal>(const ExpressionPtr &expr) {
-    return IsA<Literal>(expr->Type());
-  }
-
-  template<>
-  static bool IsA<Function>(const ExpressionPtr &expr) {
-    return IsA<Function>(expr->Type());
   }
 
   template<class T> 
@@ -284,3 +258,31 @@ public:
   }
 
 };
+
+template<>
+inline bool TypeHelper::IsA<Literal>(const TypeInfo &type) {
+  return IsAtom(type)
+      || SimpleIsA<Literal>(type)
+      || SimpleIsA<Quote>(type)
+      || SimpleIsA<Ref>(type)
+      ; 
+}
+
+template<>
+inline bool TypeHelper::IsA<Function>(const TypeInfo &type) {
+  return SimpleIsA<Function>(type)
+      || SimpleIsA<CompiledFunction>(type)
+      || SimpleIsA<InterpretedFunction>(type)
+      ;
+}
+
+template<>
+inline bool TypeHelper::IsA<Literal>(const ExpressionPtr &expr) {
+  return IsA<Literal>(expr->Type());
+}
+
+template<>
+inline bool TypeHelper::IsA<Function>(const ExpressionPtr &expr) {
+  return IsA<Function>(expr->Type());
+}
+

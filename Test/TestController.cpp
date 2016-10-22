@@ -2,7 +2,7 @@
 #include <fstream>
 #include <string>
 #include <initializer_list>
-#include "gtest\gtest.h"
+#include "gtest/gtest.h"
 
 #include "Controller.h"
 
@@ -90,10 +90,12 @@ TEST_F(ControllerTest, TestRunFile) {
   stringstream out;
   Controller controller;
   controller.SetOutput(out);
-  ASSERT_TRUE(controller.RunFile("..\\..\\Test\\Files\\TestRunFile1.slisp"));
+
+  ASSERT_TRUE(controller.RunFile("Test/TestRunFile1.slisp"));
+  
   ASSERT_NE(out.str().find("5"), string::npos);
 
-  ASSERT_TRUE(controller.RunFile("..\\..\\Test\\Files\\TestRunFile2.slisp"));
+  ASSERT_TRUE(controller.RunFile("Test/TestRunFile2.slisp"));
   ASSERT_NE(out.str().find("10"), string::npos);
 
   ASSERT_FALSE(controller.RunFile("ThisFileDoesNotExist.slisp"));
@@ -131,7 +133,7 @@ TEST_F(ControllerTest, TestRunArgs_Error) {
 
 TEST_F(ControllerTest, TestRunArgs_Code) {
   {
-    vector<const char*> args { "slisp.exe", "(+ 2 3)"};
+    vector<const char*> args { "slisp", "(+ 2 3)"};
     stringstream out;
     Controller controller(static_cast<int>(args.size()), args.data());
     controller.SetOutput(out);
@@ -139,7 +141,7 @@ TEST_F(ControllerTest, TestRunArgs_Code) {
     ASSERT_NE(out.str().find("5"), string::npos);
   }
   {
-    vector<const char*> args { "slisp.exe", "(length sys.args)", "2", "3", "4"};
+    vector<const char*> args { "slisp", "(length sys.args)", "2", "3", "4"};
     stringstream out;
     Controller controller(static_cast<int>(args.size()), args.data());
     controller.SetOutput(out);
@@ -150,7 +152,7 @@ TEST_F(ControllerTest, TestRunArgs_Code) {
 
 TEST_F(ControllerTest, TestRunArgs_File) {
   {
-    vector<const char*> args { "slisp.exe", "..\\..\\Test\\Files\\TestRunFile1.slisp"};
+    vector<const char*> args { "slisp", "Test/TestRunFile1.slisp"};
     stringstream out;
     Controller controller(static_cast<int>(args.size()), args.data());
     controller.SetOutput(out);
@@ -158,7 +160,7 @@ TEST_F(ControllerTest, TestRunArgs_File) {
     ASSERT_NE(out.str().find("5"), string::npos);
   }
   {
-    vector<const char*> args { "slisp.exe", "..\\..\\Test\\Files\\TestRunArgs.slisp", "2", "3", "4"};
+    vector<const char*> args { "slisp", "Test/TestRunArgs.slisp", "2", "3", "4"};
     stringstream out;
     Controller controller(static_cast<int>(args.size()), args.data());
     controller.SetOutput(out);
@@ -166,7 +168,7 @@ TEST_F(ControllerTest, TestRunArgs_File) {
     ASSERT_NE(out.str().find("3"), string::npos);
   }
   {
-    vector<const char*> args { "slisp.exe", "ThisFileDoesNotExist.slisp"};
+    vector<const char*> args { "slisp", "ThisFileDoesNotExist.slisp"};
     stringstream out;
     Controller controller(static_cast<int>(args.size()), args.data());
     controller.SetOutput(out);

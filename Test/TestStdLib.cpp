@@ -1,6 +1,6 @@
 #include <sstream>
 #include <string>
-#include "gtest\gtest.h"
+#include "gtest/gtest.h"
 
 #include "Controller.h"
 

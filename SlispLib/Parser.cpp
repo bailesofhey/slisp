@@ -61,7 +61,7 @@ bool HasInfixArgCount(InterpreterSettings &settings, Sexp &sexp, ArgList::iterat
 }
 
 using InfixOp = pair<string, int>;
-bool PopulateInfixOperators(InterpreterSettings &settings, ArgList::const_iterator &firstPosArg, ArgList::const_iterator &endArg, vector<InfixOp> &infixOperators) {
+bool PopulateInfixOperators(InterpreterSettings &settings, ArgList::const_iterator firstPosArg, ArgList::const_iterator endArg, vector<InfixOp> &infixOperators) {
   auto currArg = firstPosArg;
   if (auto firstArgSym = dynamic_cast<Symbol*>((*currArg).get())) {
     if (settings.IsSymbolFunction(firstArgSym->Value))
@@ -321,7 +321,7 @@ begin:
       }
     }
     else
-      throw exception("Logic bug: NONE should only be reached with Depth > 0");
+      throw logic_error("Logic bug: NONE should only be reached with Depth > 0");
   }
 }
 

@@ -13,8 +13,12 @@ using namespace std;
 using namespace std::placeholders;
 
 //=============================================================================
-
 StackFrame::StackFrame(Interpreter &interp, Function &func):
+  StackFrame(interp, move(func))
+{
+}
+
+StackFrame::StackFrame(Interpreter &interp, Function &&func):
   Interp { interp },
   Func { func },
   Locals {},
@@ -28,12 +32,20 @@ StackFrame::~StackFrame() {
   Interp.PopStackFrame();
 }
 
-void StackFrame::PutLocalSymbol(const string &symbolName, ExpressionPtr &value) {
+void StackFrame::PutLocalSymbol(const string &symbolName, ExpressionPtr &&value) {
   Locals.PutSymbol(symbolName, value);
 }
 
-void StackFrame::PutDynamicSymbol(const string &symbolName, ExpressionPtr &value) {
+void StackFrame::PutLocalSymbol(const string &symbolName, ExpressionPtr &value) {
+  PutLocalSymbol(symbolName, move(value));
+}
+
+void StackFrame::PutDynamicSymbol(const string &symbolName, ExpressionPtr &&value) {
   DynamicScope.PutSymbol(symbolName, value);
+}
+
+void StackFrame::PutDynamicSymbol(const string &symbolName, ExpressionPtr &value) {
+  PutDynamicSymbol(symbolName, move(value));
 }
 
 bool StackFrame::GetSymbol(const string &symbolName, ExpressionPtr &valueCopy) {
@@ -233,10 +245,14 @@ bool Interpreter::EvaluatePartial(ExpressionPtr &expr) {
   if (search != TypeReducers.end())
     return search->second(expr);
   else
-    throw exception("unknown type: ");
+    throw runtime_error("unknown type: ");
 }
 
 bool Interpreter::Evaluate(ExpressionPtr &expr) {
+  return Evaluate(move(expr));
+}
+
+bool Interpreter::Evaluate(ExpressionPtr &&expr) {
   ClearErrors();
   return EvaluatePartial(expr);
 }
@@ -307,7 +323,7 @@ bool Interpreter::ReduceSymbol(ExpressionPtr &expr) {
           return true;
         }
         else
-          throw exception("Clone() didn't return an Expression");
+          throw runtime_error("Clone() didn't return an Expression");
       }
       else
         return PushError(EvalError { ErrorWhere, "Copying symbol value failed: " + value->ToString() });
@@ -372,7 +388,8 @@ bool Interpreter::ReduceSexpFunction(ExpressionPtr &expr, Function &function) {
 bool Interpreter::ReduceSexpCompiledFunction(ExpressionPtr &expr, CompiledFunction &function, ArgList &args) {
   if (function.Symbol) {
     if (auto fnSym = TypeHelper::GetValue<Symbol>(function.Symbol)) {
-      return function.Fn(EvaluationContext { *this, *fnSym, expr, args });
+      EvaluationContext ctx(*this, *fnSym, expr, args);
+      return function.Fn(ctx);
     }
   } 
   return PushError(EvalError { ErrorWhere, "No current function" });

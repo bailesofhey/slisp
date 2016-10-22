@@ -37,7 +37,7 @@ Token::operator string() const {
   else if (Type == TokenTypes::UNKNOWN)
     str += "UNKNOWN";
   else
-    throw exception("invalid token type");
+    throw runtime_error("invalid token type");
 
   str += ", Value: ";
   if (Type == TokenTypes::STRING)

@@ -1,4 +1,4 @@
-#include "gtest\gtest.h"
+#include "gtest/gtest.h"
 #include "FunctionDef.h"
 
 using namespace std;
@@ -16,7 +16,7 @@ bool TestEvaluator(ExpressionPtr &) {
 }
 
 bool TestSlispFn(EvaluationContext &ctx) {
-  throw exception("This should not be called");
+  throw runtime_error("This should not be called");
 }
 
 void AssertValidate(FuncDef &funcDef, ExpressionPtr &&expr, bool expectSuccess) {

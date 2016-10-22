@@ -19,6 +19,7 @@ struct EvalError {
 class SymbolTable {
   public:
     void PutSymbol(const std::string &symbolName, ExpressionPtr &value);
+    void PutSymbol(const std::string &symbolName, ExpressionPtr &&value);
     void PutSymbolBool(const std::string &symbolName, bool value);
     void PutSymbolInt(const std::string &symbolName, int64_t value);
     void PutSymbolFloat(const std::string &symbolName, double value);
@@ -41,6 +42,7 @@ class Scope {
     explicit Scope(SymbolTable &symbols);
     ~Scope();
     void PutSymbol(const std::string &symbolName, ExpressionPtr &value);
+    void PutSymbol(const std::string &symbolName, ExpressionPtr &&value);
     bool IsScopedSymbol(const std::string &symbolName) const;
 
   private:

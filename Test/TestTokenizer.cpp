@@ -1,7 +1,7 @@
 #include <string>
 #include <list>
 #include <initializer_list>
-#include "gtest\gtest.h"
+#include "gtest/gtest.h"
 
 #include "Tokenizer.h"
 #include "Token.h"

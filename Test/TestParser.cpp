@@ -1,6 +1,6 @@
 #include <initializer_list>
 #include <limits>
-#include "gtest\gtest.h"
+#include "gtest/gtest.h"
 
 #include "Parser.h"
 #include "CommandInterface.h"
@@ -18,7 +18,7 @@ class ParserTest: public ::testing::Test {
       Settings(DummySymbols),
       CommandInterface(),
       Tokenizer(),
-      Parser(CommandInterface, Tokenizer, Settings)
+      _Parser(CommandInterface, Tokenizer, Settings)
     {
       DummySymbols.PutSymbolFunction(
         "+", 
@@ -41,13 +41,13 @@ class ParserTest: public ::testing::Test {
     InterpreterSettings Settings;
     TestCommandInterface CommandInterface;
     TestTokenizer Tokenizer;
-    Parser Parser;
+    Parser _Parser;
 
     void TestParse(initializer_list<Token> &&tokens, bool expectSuccess, initializer_list<Expression*> &&expectedArgs) {
       Tokenizer.Tokens = tokens;
-      ASSERT_EQ(expectSuccess, Parser.Parse());
-      ASSERT_EQ(expectSuccess, Parser.Error().empty());
-      auto exprTree = Parser.ExpressionTree();
+      ASSERT_EQ(expectSuccess, _Parser.Parse());
+      ASSERT_EQ(expectSuccess, _Parser.Error().empty());
+      auto exprTree = _Parser.ExpressionTree();
       ASSERT_EQ(1 + expectedArgs.size(), exprTree->Args.size());
       auto sym = dynamic_cast<Symbol*>(exprTree->Args.front().get());
       ASSERT_TRUE(sym != nullptr);

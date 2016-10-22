@@ -28,16 +28,16 @@ bool ArgDef::Validate(ExpressionEvaluator evaluator, ExpressionPtr &expr, string
           return result;
         }
         else
-          throw exception("first argument in sexp must be a function");
+          throw invalid_argument("first argument in sexp must be a function");
       }
       else
-        throw exception("sexp requires at least one argument");
+        throw invalid_argument("sexp requires at least one argument");
     }
     else
       error = "Expected: Sexp. Actual: " + expr->Type().Name();
   }
   else
-    throw exception("ExpressionPtr is empty");
+    throw invalid_argument("ExpressionPtr is empty");
 
   return error.empty();
 }
@@ -250,7 +250,7 @@ ArgDefPtr FuncDef::Args(initializer_list<const TypeInfo*> &&args) {
   return ArgDefPtr { new ListArgDef { move(args) } };
 }
 
-FuncDef::FuncDef(ArgDefPtr &in, ArgDefPtr &out):
+FuncDef::FuncDef(ArgDefPtr in, ArgDefPtr out):
   In { move(in) },
   Out { move(out) }
 {
@@ -275,7 +275,7 @@ FuncDef FuncDef::Clone() const {
     in = In->Clone();
   if (Out)
     out = Out->Clone();
-  return FuncDef { in, out };
+  return FuncDef { move(in), move(out) };
 }
 
 bool FuncDef::operator==(const FuncDef &rhs) const {
@@ -332,12 +332,17 @@ Function::Function(FuncDef &&def):
 {
 }
 
-Function::Function(FuncDef &&def, ExpressionPtr &sym):
+Function::Function(FuncDef &&def, ExpressionPtr &&sym):
   Literal { TypeInstance },
   Def { move(def) },
   Symbol { move(sym) }
 {
   Def.Name = SymbolName();
+}
+
+Function::Function(FuncDef &&def, ExpressionPtr &sym):
+  Function(move(def), move(sym))
+{
 }
 
 Function::Function(const Function &rhs):

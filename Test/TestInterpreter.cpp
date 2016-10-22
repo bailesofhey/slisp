@@ -1,6 +1,6 @@
 #include <functional>
 
-#include "gtest\gtest.h"
+#include "gtest/gtest.h"
 #include "Interpreter.h"
 
 #include "Common.h"
@@ -119,7 +119,7 @@ TEST(SymbolTable, TestPutSymbol) {
   ASSERT_TRUE(table.GetSymbol("i", i));
   ASSERT_TRUE(table.GetSymbol("f", f));
   ASSERT_TRUE(table.GetSymbol("s", s));
-  ASSERT_EQ(false, dynamic_cast<Bool&>(*b).Value);
+  ASSERT_FALSE(dynamic_cast<Bool&>(*b).Value);
   ASSERT_EQ(123, dynamic_cast<Int&>(*i).Value);
   ASSERT_EQ(1.23, dynamic_cast<Float&>(*f).Value);
   ASSERT_EQ("hello, world!", dynamic_cast<Str&>(*s).Value);

@@ -17,6 +17,10 @@ EvalError::EvalError(const string &where, const string &what):
 //=============================================================================
 
 void SymbolTable::PutSymbol(const string &symbolName, ExpressionPtr &value) {
+  PutSymbol(symbolName, move(value));
+}
+
+void SymbolTable::PutSymbol(const string &symbolName, ExpressionPtr &&value) {
   auto search = Symbols.find(symbolName);
   if (search != Symbols.end()) {
     if (auto *ref = dynamic_cast<Ref*>(search->second.get())) {
@@ -128,7 +132,7 @@ Scope::~Scope() {
   });
 }
 
-void Scope::PutSymbol(const string &symbolName, ExpressionPtr &value) {
+void Scope::PutSymbol(const string &symbolName, ExpressionPtr &&value) {
   ExpressionPtr oldValue;
   bool isScoped = IsScopedSymbol(symbolName);
   if (!isScoped) {
@@ -137,6 +141,10 @@ void Scope::PutSymbol(const string &symbolName, ExpressionPtr &value) {
     ScopedSymbols.push_back(symbolName);
   }
   Symbols.PutSymbol(symbolName, move(value));
+}
+
+void Scope::PutSymbol(const string &symbolName, ExpressionPtr &value) {
+  PutSymbol(symbolName, move(value));
 }
 
 bool Scope::IsScopedSymbol(const string &symbolName) const {
@@ -214,7 +222,7 @@ bool InterpreterSettings::GetSpecialFunction(const string &name, FunctionPtr &fu
       return true;
     }
     else
-      throw exception("Special function not a function");
+      throw runtime_error("Special function not a function");
   }
   else
     return false;

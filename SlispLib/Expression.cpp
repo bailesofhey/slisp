@@ -93,7 +93,7 @@ Literal::Literal(const TypeInfo& typeInfo):
 
 //=============================================================================
 
-const TypeInfo Bool::TypeInstance("bool", Bool::New);
+const TypeInfo Bool::TypeInstance("bool", Bool::NewInstance);
 
 Bool::Bool():
   Bool { false }
@@ -147,13 +147,13 @@ void Bool::Display(ostream &out) const {
     out << "false";
 }
 
-ExpressionPtr Bool::New() {
+ExpressionPtr Bool::NewInstance() {
   return ExpressionPtr { new Bool() };
 }
 
 //=============================================================================
 
-const TypeInfo Int::TypeInstance("int", Int::New);
+const TypeInfo Int::TypeInstance("int", Int::NewInstance);
 
 Int::Int():
   Int { 0 }
@@ -204,13 +204,13 @@ void Int::Display(ostream &out) const {
   out << Value;
 }
 
-ExpressionPtr Int::New() {
+ExpressionPtr Int::NewInstance() {
   return ExpressionPtr { new Int() };
 }
 
 //=============================================================================
 
-const TypeInfo Float::TypeInstance("float", Float::New);
+const TypeInfo Float::TypeInstance("float", Float::NewInstance);
 
 Float::Float():
   Float { 0 }
@@ -261,14 +261,14 @@ void Float::Display(ostream &out) const {
   out << setprecision(17) << Value;
 }
 
-ExpressionPtr Float::New() {
+ExpressionPtr Float::NewInstance() {
   return ExpressionPtr { new Float() };
 }
 
 
 //=============================================================================
 
-const TypeInfo Str::TypeInstance("str", Str::New);
+const TypeInfo Str::TypeInstance("str", Str::NewInstance);
 
 Str::Str():
   Str { "" }
@@ -327,7 +327,7 @@ void Str::Print(ostream &out) const {
   out << Value;
 }
 
-ExpressionPtr Str::New() {
+ExpressionPtr Str::NewInstance() {
   return ExpressionPtr { new Str() };
 }
 
@@ -356,7 +356,7 @@ int64_t StrIterator::GetLength() {
 
 //=============================================================================
 
-const TypeInfo Quote::TypeInstance("quote", Quote::New);
+const TypeInfo Quote::TypeInstance("quote", Quote::NewInstance);
 
 Quote::Quote(ExpressionPtr &&expr):
   Literal { TypeInstance },
@@ -397,7 +397,7 @@ void Quote::Print(ostream &out) const {
   Value->Print(out);
 }
 
-ExpressionPtr Quote::New() {
+ExpressionPtr Quote::NewInstance() {
   return ExpressionPtr { new Quote(ExpressionPtr {}) };
 }
 
@@ -477,7 +477,7 @@ void ArgListHelper::CopyTo(const ArgList &src, ArgList &dst) {
 
 //=============================================================================
 
-const TypeInfo Sexp::TypeInstance("sexp", Sexp::New);
+const TypeInfo Sexp::TypeInstance("sexp", Sexp::NewInstance);
 
 Sexp::Sexp():
   Expression { TypeInstance }
@@ -540,7 +540,7 @@ void Sexp::Display(ostream &out) const {
   out << ")";
 }
 
-ExpressionPtr Sexp::New() {
+ExpressionPtr Sexp::NewInstance() {
   return ExpressionPtr { new Sexp() };
 }
 

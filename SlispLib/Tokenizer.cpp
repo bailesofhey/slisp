@@ -1,6 +1,7 @@
 #include <string>
 #include <iostream>
 #include <cctype>
+#include <functional>
 
 #include "Token.h"
 #include "NumConverter.h"
@@ -62,16 +63,24 @@ void Tokenizer::SkipWhitespace(char &currChar) {
   while (!Stream.eof() && isspace(currChar));
 }
 
-int IsBinaryDigit(int c) {
+bool IsBinaryDigit(char c) {
   return c == '0' || c == '1';
 }
 
-int IsFloatDigit(int c) {
+bool IsFloatDigit(char c) {
   return isdigit(c) || c == '.' || c == 'e' || c == '-';
 }
 
-bool IsNumber(int c) {
+bool IsNumber(char c) {
   return isxdigit(c) || c == 'x' || c == 'b' || c == 'e' || c == '.' || c == '-';
+}
+
+bool IsDigit(char c) {
+  return isdigit(c);
+}
+
+bool IsHexDigit(char c) {
+  return isxdigit(c);
 }
 
 void Tokenizer::TokenizeNumber(char &currChar) {
@@ -79,10 +88,10 @@ void Tokenizer::TokenizeNumber(char &currChar) {
   int base = NumConverter::GetNumberBase(CurrToken.Value);
   auto curr = std::begin(CurrToken.Value);
   auto end = std::end(CurrToken.Value);
-  auto pred = isdigit;
+  function<bool(int)> pred = IsDigit; 
   if (base != 10) {
     curr += 2;
-    pred = base == 16 ? isxdigit : IsBinaryDigit;
+    pred = base == 16 ? IsHexDigit : IsBinaryDigit;
   }
   else if (NumConverter::IsBase10NumberFloat(CurrToken.Value)) {
     pred = IsFloatDigit; 

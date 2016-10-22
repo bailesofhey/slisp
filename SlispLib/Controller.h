@@ -8,7 +8,8 @@
 #include "ConsoleInterface.h"
 #include "Tokenizer.h"
 #include "Parser.h"
-#include "StdLib\StdLib.h"
+#include "FunctionDef.h"
+#include "StdLib/StdLib.h"
 
 class ControllerArgs {
 public:

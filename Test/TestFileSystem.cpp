@@ -1,6 +1,6 @@
 #include <string>
 #include <initializer_list>
-#include "gtest\gtest.h"
+#include "gtest/gtest.h"
 
 #include "FileSystem.h"
 
@@ -43,7 +43,7 @@ void FileSystemTest::CreateFile(const string &path, initializer_list<string> &&l
 }
 
 void FileSystemTest::BasicExistsDeleteTest() {
-  const string fileName = RegisterFile("TestExistsDelete.txt");
+  const string fileName = RegisterFile("Test/TestExistsDelete.txt");
   ASSERT_FALSE(FS.Exists(fileName));
   FilePtr newFile = FS.Open(fileName, FileSystemInterface::Write);
   ASSERT_TRUE(newFile.operator bool());
@@ -60,7 +60,7 @@ TEST_F(FileSystemTest, TestExists) {
 }
 
 void FileSystemTest::BasicReadWriteTest() {
-  const string fileName = RegisterFile("BasicReadWriteTest.txt");
+  const string fileName = RegisterFile("Test/BasicReadWriteTest.txt");
   {
     ASSERT_FALSE(FS.Exists(fileName));
     FilePtr newFile = FS.Open(fileName, FileSystemInterface::Write);
@@ -85,7 +85,7 @@ void FileSystemTest::BasicReadWriteTest() {
 }
 
 void FileSystemTest::OverwriteTest() {
-  const string fileName = RegisterFile("OverwriteFile.txt");
+  const string fileName = RegisterFile("Test/OverwriteFile.txt");
   {
     ASSERT_NO_FATAL_FAILURE(CreateFile(fileName, {"old first line", "old second line"}));
     FilePtr overwrittenFile = FS.Open(fileName, FileSystemInterface::Write);
@@ -103,7 +103,7 @@ void FileSystemTest::OverwriteTest() {
 }
 
 void FileSystemTest::InvalidWriteTest() {
-  const string fileName = RegisterFile("InvalidWriteTest.txt");
+  const string fileName = RegisterFile("Test/InvalidWriteTest.txt");
   ASSERT_NO_FATAL_FAILURE(CreateFile(fileName, {"foobar"}));
   {
     FilePtr readFile = FS.Open(fileName, FileSystemInterface::Read);
@@ -126,7 +126,7 @@ TEST_F(FileSystemTest, TestOpenWrite) {
 TEST_F(FileSystemTest, TestOpenRead) {
   ASSERT_NO_FATAL_FAILURE(BasicReadWriteTest());
   {
-    const string fileName = RegisterFile("EmptyFile.txt");
+    const string fileName = RegisterFile("Test/EmptyFile.txt");
     string currLine;
     ASSERT_NO_FATAL_FAILURE(CreateFile(fileName, {}));
     FilePtr file = FS.Open(fileName, FileSystemInterface::Read);
@@ -135,7 +135,7 @@ TEST_F(FileSystemTest, TestOpenRead) {
     ASSERT_TRUE(currLine.empty());
   }
   {
-    const string fileName = RegisterFile("SingleBlankLine.txt");
+    const string fileName = RegisterFile("Test/SingleBlankLine.txt");
     string currLine;
     ASSERT_NO_FATAL_FAILURE(CreateFile(fileName, {""}));
     FilePtr file = FS.Open(fileName, FileSystemInterface::Read);
@@ -152,7 +152,7 @@ TEST_F(FileSystemTest, TestDelete) {
 
 TEST_F(FileSystemTest, TestClose) {
   {
-    const string fileName = RegisterFile("TestExplicitClose.txt");
+    const string fileName = RegisterFile("Test/TestExplicitClose.txt");
     FilePtr newFile = FS.Open(fileName, FileSystemInterface::Modes::Write);
     ASSERT_TRUE(newFile.operator bool());
     ASSERT_TRUE(FS.Exists(fileName));
@@ -161,7 +161,7 @@ TEST_F(FileSystemTest, TestClose) {
     ASSERT_TRUE(FS.Delete(fileName));
   }
   {
-    const string fileName = RegisterFile("TestImplicitClose.txt");
+    const string fileName = RegisterFile("Test/TestImplicitClose.txt");
     {
       FilePtr newFile = FS.Open(fileName, FileSystemInterface::Modes::Write);
       ASSERT_TRUE(newFile.operator bool());
@@ -174,7 +174,7 @@ TEST_F(FileSystemTest, TestClose) {
 }
 
 TEST_F(FileSystemTest, TestReset) {
-  const string fileName = RegisterFile("TestReset.txt");
+  const string fileName = RegisterFile("Test/TestReset.txt");
   string currLine;
   ASSERT_NO_FATAL_FAILURE(CreateFile(fileName, {"hello, world!", "second line"}));
   FilePtr file = FS.Open(fileName, FileSystemInterface::Modes::Read);
