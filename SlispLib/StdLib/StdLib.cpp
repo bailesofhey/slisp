@@ -2571,7 +2571,8 @@ bool FindFunction(EvaluationContext &ctx, bool reverse) {
       else
         return false;
     }
-    ctx.Expr.reset(new Int(reverse ? haystack.rfind(needle, start) : haystack.find(needle, start)));
+    size_t idx = reverse ? haystack.rfind(needle, start) : haystack.find(needle, start);
+    ctx.Expr.reset(new Int((idx == string::npos) ? -1LL : idx));
     return true;
   });
 }

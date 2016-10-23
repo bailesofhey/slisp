@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 2.6)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11")
+if(MSVC)
+  # Multithreaded Debug DLL - not the default for gtest
+  # TODO: Release vs Debug configurations
+  add_definitions("/MDd")
+else()
+  add_definitions("--std=c++11")
+endif()
 
 add_subdirectory(SlispLib)
 add_subdirectory(Slisp)
