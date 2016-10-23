@@ -49,5 +49,8 @@ A good REPL can be a huge time saver. I'm interested in expanded the capabilitie
 
 ## Back to Reality
 * Slisp is in its infancy - it's got a long way to go before it becomes "stable", or even achieves any of its design goals.
-* While Slisp is written in cross platform C++, it currently only compiles under Windows. Linux support is coming in 0.2.
+* While Slisp is written in cross platform C++, it currently only compiles under Windows and Linux.
 * Lots of major features are missing - macros, oo, varargs, etc. Each of these and a lot more are maintained by the issue tracker.
+
+## Getting Started
+Check out the wiki for how to get started
