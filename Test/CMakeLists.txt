@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 2.6)
 
-
-
 project(Test)
 
 file(GLOB_RECURSE CPP_FILES *.cpp gtest_main.cc)
@@ -15,3 +13,5 @@ target_link_libraries(${PROJECT_NAME} SlispLib gtest)
 file(GLOB TEST_FILES "Files/*")
 file(COPY ${TEST_FILES} DESTINATION ${PROJECT_BINARY_DIR})
 
+file(GLOB SLISP_TESTS "Slisp/*")
+file(COPY ${SLISP_TESTS} DESTINATION ${Slisp_BINARY_DIR}/tests)

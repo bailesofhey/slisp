@@ -1,7 +1,5 @@
 # basic unit tests
 
-(import lib/unittest)
-
 # tests
 (def test-add ()
   (and 

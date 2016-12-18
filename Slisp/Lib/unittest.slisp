@@ -1,20 +1,5 @@
-# basic unit tests
+# trivial unittest library
 
-# tests
-(def test-add ()
-  (and 
-    (== 1 (+ 1))
-    (== 5 (+ 5))
-    (== 2 (+ 1 1))
-    (== 3 (+ 1 1 1))))
-    
-(def test-mult ()
-  (and
-    (== 1 (* 1))
-    (== 5 (* 5))
-    (== 7 (* 2 3))))
-    
-# test runner
 (def runtests ()
   (let ((npass 0)
         (nfail 0))
@@ -36,5 +21,4 @@
       (print (format "passed: {npass}"))
       (print (format "failed: {nfail}"))
       (print (format "total:  {}" (+ npass nfail))))))
-
-(runtests)
+      

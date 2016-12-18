@@ -14,5 +14,7 @@ add_subdirectory(Vendor/googletest-release-1.7.0)
 add_subdirectory(Test)
 
 enable_testing()
-add_test(unittests Test/Test)
-
+add_test(TestSlispLib Test/Test)
+add_test(NAME TestSlisp
+         COMMAND Slisp tests/RunTests.slisp
+         WORKING_DIRECTORY ${Slisp_BINARY_DIR})
