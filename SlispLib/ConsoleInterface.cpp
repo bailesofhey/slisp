@@ -53,6 +53,14 @@ bool ConsoleInterface::WriteError(const string &error) {
   return true;
 }
 
+std::istream& ConsoleInterface::GetInput() {
+  return *In;
+}
+
+std::ostream& ConsoleInterface::GetOutput() {
+  return *Out;
+}
+
 void ConsoleInterface::SetInput() {
   SetInput(cin);
 }

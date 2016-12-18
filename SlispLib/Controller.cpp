@@ -175,21 +175,23 @@ void Controller::Run(istream &in) {
 
 void Controller::Run(const string &code) {
   OutputSettingsScope scope(OutManager, OutputManager::ShowResults);
+  istream& oldIn = CmdInterface.GetInput();
   stringstream in;
   in << code;
   CmdInterface.SetInput(in);
   REPL();
-  CmdInterface.SetInput();
+  CmdInterface.SetInput(oldIn);
 }
 
 bool Controller::RunFile(const string &inPath) {
   OutputSettingsScope scope(OutManager, 0);
+  std::istream& oldIn = CmdInterface.GetInput();
   fstream in;
   in.open(inPath, ios_base::in);
   if (in.is_open()) {
     CmdInterface.SetInput(in);
     REPL();
-    CmdInterface.SetInput();
+    CmdInterface.SetInput(oldIn);
     return true;
   }
   return false;

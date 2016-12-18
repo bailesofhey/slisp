@@ -1,0 +1,4 @@
+(import lib/unittest)
+
+(import tests/TestNumerics)
+(runtests)

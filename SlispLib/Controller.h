@@ -56,6 +56,7 @@ public:
   ~OutputSettingsScope();
 private:
   OutputManager &OutManager;
+
   uint8_t OldFlags;
 };
 

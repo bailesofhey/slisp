@@ -101,6 +101,17 @@ TEST_F(ControllerTest, TestRunFile) {
   ASSERT_FALSE(controller.RunFile("ThisFileDoesNotExist.slisp"));
 }
 
+TEST_F(ControllerTest, TestNestedIncludes) {
+  stringstream out;
+  Controller controller;
+  controller.SetOutput(out);
+  ASSERT_TRUE(controller.RunFile("Test/TestIncludeB.slisp"));
+  controller.Run("(sixfn)");
+  ASSERT_NE(out.str().find("6"), string::npos);
+  controller.Run("(fivefn)");
+  ASSERT_NE(out.str().find("5"), string::npos);
+}
+
 TEST_F(ControllerTest, TestOutputStream) {
   stringstream out1,
                     out2;

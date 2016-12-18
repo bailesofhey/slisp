@@ -1,0 +1,3 @@
+(import Test/TestIncludeA)
+
+(def sixfn () 6)

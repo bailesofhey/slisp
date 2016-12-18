@@ -22,6 +22,9 @@ class ConsoleInterface: public CommandInterface {
     virtual void SetInteractiveMode(bool enabled) override;
     virtual void GetInteractiveMode(bool &enabled) override;
 
+    std::istream& GetInput();
+    std::ostream& GetOutput();
+
     void SetInput();
     void SetInput(std::istream &in);
     void SetOutput();
