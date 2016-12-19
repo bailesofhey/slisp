@@ -3965,6 +3965,7 @@ bool StdLib::Try(EvaluationContext &ctx) {
     auto &errors = ctx.Interp.GetErrors();
     Scope scope(ctx.Interp.GetCurrentStackFrame().GetLocalSymbols());
     scope.PutSymbol("$error", ExpressionPtr { new Str(errors.empty() ? "<unknown>" : errors.front().What) });
+    ctx.Interp.ClearErrors();
     if (ctx.Evaluate(catchExpr, "catch")) {
       ctx.Expr = move(catchExpr);
       return true;

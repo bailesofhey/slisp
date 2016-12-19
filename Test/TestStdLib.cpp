@@ -2565,6 +2565,15 @@ TEST_F(StdLibBranchTest, TestTry) {
   ASSERT_TRUE(RunSuccess("(try (begin (/ 1 0) true) false)", "false"));
   ASSERT_TRUE(RunSuccess("(try (/ 1 0) $error)", "Divide"));
   ASSERT_TRUE(RunSuccess("(try (error (reverse \"blah\")) $error)", "halb"));
+
+  string code = R"(
+    (try
+      (begin
+        (try (/ 1 0) true)
+        foo)
+      $error)
+  )";
+  ASSERT_TRUE(RunSuccess(code, "Unknown"));
 }
 
 class StdLibOperatorsTest: public StdLibTest {

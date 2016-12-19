@@ -2,23 +2,47 @@
 
 (def runtests ()
   (let ((npass 0)
-        (nfail 0))
+        (nfail 0)
+        (nerror 0))
     (begin
+      (unittest.-print-header)
       (foreach symName in (symbols)
         (let ((sym (symbol symName)))
           (if (and (fn? sym) (startswith symName "test-"))
-            (let ((result ((unquote sym))))
+            (let ((result false))
               (begin
-                (if result
+                (try
                   (begin
-                    (++ npass)
-                    (set result "pass"))
+                    (set result ((unquote sym)))           
+                    (if result
+                      (begin
+                        (++ npass)
+                        (set result "pass"))
+                      (begin
+                        (++ nfail)
+                        (set result "fail"))))
                   (begin
-                    (++ nfail)
-                    (set result "fail")))
+                    (++ nerror)
+                    (set result (format "error: {}" $error))))
                 (print (format "{symName}: {result}")))))))
-      (print (format "==============="))
-      (print (format "passed: {npass}"))
-      (print (format "failed: {nfail}"))
-      (print (format "total:  {}" (+ npass nfail)))
-      (if (> nfail 0) false true))))
+      (unittest.-print-footer npass nfail nerror)
+      (if (or (> nfail 0) (> nerror 0)) false true))))
+      
+(def unittest.-print-divider ()
+  (print (format "=================")))
+      
+(def unittest.-print-header ()
+  (begin
+    (unittest.-print-divider)
+    (print "Unit Test Results")
+    (unittest.-print-divider)))
+      
+(def unittest.-print-footer (npass nfail nerror)
+  (begin
+    (unittest.-print-divider)
+    (print (format "passed: {npass}"))
+    (print (format "failed: {nfail}"))
+    (print (format "errors: {nerror}"))
+    (unittest.-print-divider)
+    (print (format "total:  {}" (+ npass nfail nerror)))
+    (unittest.-print-divider)))
