@@ -74,6 +74,9 @@ SymbolTable& StackFrame::GetLocalSymbols() {
   return Locals;
 }
 
+Function& StackFrame::GetFunction() {
+  return Func;
+}
 //=============================================================================
 
 EvaluationContext::EvaluationContext(Interpreter &interpreter, Symbol &currentFunction, ExpressionPtr &expr, ArgList &args):

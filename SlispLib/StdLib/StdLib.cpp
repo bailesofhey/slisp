@@ -6,6 +6,7 @@
 #include <cctype>
 #include <cstdio>
 #include <cstdarg>
+#include <csignal>
 
 #include "StdLib.h"
 #include "../Interpreter.h"
@@ -1335,6 +1336,14 @@ void StdLib::Load(Interpreter &interpreter) {
     StdLib::Apply, 
     FuncDef { FuncDef::Args({ &Function::TypeInstance, &Sexp::TypeInstance }), FuncDef::OneArg(Literal::TypeInstance) }
   );
+  symbols.PutSymbolFunction(
+    "error", 
+    {"(error msg) -> value"},
+    "raise an error with msg",
+    {{"(error \"boom!\")", ""}},
+    StdLib::Error, 
+    FuncDef { FuncDef::OneArg(Str::TypeInstance), FuncDef::NoArgs() }
+  );
 
   // Conversion operators
 
@@ -1451,6 +1460,16 @@ void StdLib::Load(Interpreter &interpreter) {
     {{"(symbol \"foo\")", "foo"}},
     StdLib::SymbolFunc, 
     FuncDef { FuncDef::OneArg(Str::TypeInstance), FuncDef::OneArg(Symbol::TypeInstance) }
+  );
+
+  // Debug
+  symbols.PutSymbolFunction(
+    "breakpoint",
+    {"(breakpoint) -> nil"},
+    "Native breakpoint",
+    {{"(breakpoint)", "nil"}},
+    StdLib::Breakpoint,
+    FuncDef { FuncDef::NoArgs(), FuncDef::NoArgs() }
   );
 
   // Register infix operators by precedence (using C++ rules, where appropriate)
@@ -3909,6 +3928,26 @@ bool StdLib::Apply(EvaluationContext &ctx) {
     return false; 
 }
 
+bool StdLib::Error(EvaluationContext &ctx) {
+  ExpressionPtr msgExpr { move(ctx.Args.front()) };
+  if (auto *msgVal = ctx.GetRequiredValue<Str>(msgExpr)) {
+    string currUserFunc;
+    auto& frame = ctx.Interp.GetCurrentStackFrame();
+    auto& fn = frame.GetFunction();
+    currUserFunc = fn.SymbolName();
+    if (currUserFunc.empty())
+      currUserFunc = "<module>";
+    ctx.Interp.PushError(EvalError { currUserFunc, msgVal->Value });
+    return false;
+  }
+  else
+    return false;
+}
+
+bool StdLib::Try(EvaluationContext &ctx) {
+  return false;
+}
+
 // Conversion operators
 
 bool StdLib::BoolFunc(EvaluationContext &ctx) {
@@ -4022,6 +4061,16 @@ bool StdLib::SymbolFunc(EvaluationContext &ctx) {
     }
   }
   return false;
+}
+
+bool StdLib::Breakpoint(EvaluationContext &ctx) {
+#ifdef WIN32
+  __debugbreak();
+#else
+  std::raise(SIGABRT);
+#endif
+  ctx.Expr = List::GetNil();
+  return true;
 }
 
 bool StdLib::TypeFunc(EvaluationContext &ctx) {

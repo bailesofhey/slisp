@@ -178,6 +178,8 @@ class StdLib: public Library {
     static bool Lambda(EvaluationContext &ctx);
     static bool Def(EvaluationContext &ctx);
     static bool Apply(EvaluationContext &ctx);
+    static bool Error(EvaluationContext &ctx);
+    static bool Try(EvaluationContext &ctx);
 
     // Conversion operators
     static bool TypeFunc(EvaluationContext &ctx);
@@ -187,6 +189,9 @@ class StdLib: public Library {
     static bool FloatFunc(EvaluationContext &ctx);
     static bool StrFunc(EvaluationContext &ctx);
     static bool SymbolFunc(EvaluationContext &ctx);
+
+    // Debug
+    static bool Breakpoint(EvaluationContext &ctx);
 
     // Helpers
     static bool TakeSkip(EvaluationContext &ctx, bool isTake);

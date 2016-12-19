@@ -27,6 +27,7 @@ class StackFrame {
     bool GetSymbol(const std::string &symbolName, Expression *&value);
     void DeleteSymbol(const std::string &symbolName);
     SymbolTable& GetLocalSymbols();
+    Function& GetFunction();
 
   private:
     Interpreter &Interp;

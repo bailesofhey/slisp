@@ -2551,6 +2551,14 @@ TEST_F(StdLibBranchTest, TestApply) {
   ASSERT_TRUE(RunFail("(apply (fn (a b) (+ a b)) (1 2 3))"));
 }
 
+TEST_F(StdLibBranchTest, TestError) {
+  ASSERT_TRUE(RunFail("(error \"boom!\")"));
+  ASSERT_NE(Out.str().find("boom!"), string::npos);
+
+  ASSERT_TRUE(RunFail("(error (reverse \"boom!\"))"));
+  ASSERT_NE(Out.str().find("!moob"), string::npos);
+}
+
 class StdLibOperatorsTest: public StdLibTest {
 };
 
