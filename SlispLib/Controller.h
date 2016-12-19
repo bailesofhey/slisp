@@ -73,6 +73,7 @@ class Controller {
     void SetOutput(std::ostream &out);
     bool SetOutputFile(const std::string &outPath);
 
+    int ExitCode() const;
   private:
     static const std::string HelpText;
     ConsoleInterface CmdInterface;

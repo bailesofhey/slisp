@@ -20,5 +20,5 @@
       (print (format "==============="))
       (print (format "passed: {npass}"))
       (print (format "failed: {nfail}"))
-      (print (format "total:  {}" (+ npass nfail))))))
-      
+      (print (format "total:  {}" (+ npass nfail)))
+      (if (> nfail 0) false true))))

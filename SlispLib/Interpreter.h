@@ -106,6 +106,9 @@ class Interpreter {
     void Stop();
     bool StopRequested() const;
 
+    int GetExitCode() const;
+    void SetExitCode(int exitCode);
+
     SymbolTable& GetDynamicSymbols();
 
     StackFrame& GetCurrentStackFrame();
@@ -131,6 +134,7 @@ class Interpreter {
     std::string             ErrorWhere;
     Sexp                    *Current;
     bool                    StopRequested_;
+    int                     ExitCode;
     Environment             Environment_;
 
     template<class T>          bool InterpretLiteral(T *expr, char *wrapper = nullptr);

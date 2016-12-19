@@ -188,7 +188,24 @@ TEST_F(StdLibDefaultFunctionTest, TestInfix_InsideBegin) {
 }
 
 class StdLibInterpreterTest: public StdLibTest {
+protected:
+  void TestQuit(const string &fnName);
 };
+
+void StdLibInterpreterTest::TestQuit(const string &fnName) {
+  Controller controller;
+  stringstream in;
+  stringstream out;
+  in << "(+ 2 3)" << endl
+     << "(+ 4 6)" << endl
+     << "(" << fnName << ")" << endl
+     << "(+ 8 12)" << endl;
+  controller.SetOutput(out);
+  controller.Run(in);
+  ASSERT_NE(out.str().find("5"), string::npos);
+  ASSERT_NE(out.str().find("10"), string::npos);
+  ASSERT_EQ(out.str().find("20"), string::npos);
+}
 
 TEST_F(StdLibInterpreterTest, TestPrint) {
   ASSERT_TRUE(RunSuccess("(print)", ""));
@@ -234,15 +251,26 @@ TEST_F(StdLibInterpreterTest, TestDisplay) {
 }
 
 TEST_F(StdLibInterpreterTest, TestQuit) {
-  stringstream in;
-  in << "(+ 2 3)" << endl
-     << "(+ 4 6)" << endl
-     << "(quit)" << endl
-     << "(+ 8 12)" << endl;
-  Controller_.Run(in);
-  ASSERT_NE(Out.str().find("5"), string::npos);
-  ASSERT_NE(Out.str().find("10"), string::npos);
-  ASSERT_EQ(Out.str().find("20"), string::npos);
+  TestQuit("quit");
+}
+
+TEST_F(StdLibInterpreterTest, TestExit) {
+  {
+    Controller controller;
+    controller.Run("23");
+    ASSERT_EQ(0, controller.ExitCode());
+  }
+  {
+    Controller controller;
+    controller.Run("(exit 0)");
+    ASSERT_EQ(0, controller.ExitCode());
+  }
+  {
+    Controller controller;
+    controller.Run("(exit 2)");
+    ASSERT_EQ(2, controller.ExitCode());
+  }
+  TestQuit("exit 0");
 }
 
 TEST_F(StdLibInterpreterTest, TestSymbols) {

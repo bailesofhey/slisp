@@ -193,6 +193,7 @@ Interpreter::Interpreter(CommandInterface &cmdInterface):
   Errors { },
   ErrorWhere { "Interpreter" },
   StopRequested_ { false },
+  ExitCode { 0 },
   Environment_ { }
 {
   RegisterReducers();
@@ -221,6 +222,14 @@ void Interpreter::Stop() {
 
 bool Interpreter::StopRequested() const {
   return StopRequested_ || !CmdInterface.HasMore();
+}
+
+int Interpreter::GetExitCode() const {
+  return ExitCode;
+}
+
+void Interpreter::SetExitCode(int exitCode) {
+  ExitCode = exitCode;
 }
 
 SymbolTable& Interpreter::GetDynamicSymbols() {

@@ -217,6 +217,10 @@ bool Controller::SetOutputFile(const string &outPath) {
   return false;
 }
 
+int Controller::ExitCode() const {
+  return Interpreter_.GetExitCode();
+}
+
 void Controller::SetupEnvironment() {
   auto &env = Interpreter_.GetEnvironment();
   env.Program = Args.ProgramName;

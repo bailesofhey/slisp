@@ -50,7 +50,7 @@ void ParseTest(const ArgTest &test) {
 }
 
 TEST(ControllerArgs, TestParse) {
-  for (int i = 0; i < ArgTests.size(); ++i)
+  for (size_t i = 0; i < ArgTests.size(); ++i)
     EXPECT_NO_FATAL_FAILURE(ParseTest(ArgTests[i])) << "Test #" << i;
 }
 

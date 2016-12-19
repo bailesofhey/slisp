@@ -64,6 +64,14 @@ void StdLib::Load(Interpreter &interpreter) {
     FuncDef { FuncDef::NoArgs(), FuncDef::NoArgs() }
   );
   symbols.PutSymbolFunction(
+    "exit",
+    {"(exit exitCode) -> nil"},
+    "exit the REPL with exitCode",
+    {},
+    StdLib::Exit,
+    FuncDef { FuncDef::OneArg(Int::TypeInstance), FuncDef::NoArgs() }
+  );
+  symbols.PutSymbolFunction(
     "symbols",
     {"(symbols) -> list"},
     "get list of all symbols", 
@@ -1538,7 +1546,7 @@ void StdLib::LoadEnvironment(SymbolTable &symbols, const Environment &env) {
   symbols.PutSymbolInt("sys.versionNumber.subMinor", version.SubMinor);
   symbols.PutSymbolInt("sys.versionNumber.build", version.Build);
   symbols.PutSymbolStr("sys.program", env.Program); 
-  symbols.PutSymbolStr("sys.script", env.Script); 
+  symbols.PutSymbolStr("sys.script", env.Script);
   AddCommandLineArgs(symbols, "sys.args", env.Args);
 }
 
@@ -1626,6 +1634,17 @@ bool StdLib::Quit(EvaluationContext &ctx) {
   ctx.Interp.Stop();
   ctx.Expr = List::GetNil();
   return true;
+}
+
+bool StdLib::Exit(EvaluationContext &ctx) {
+  ExpressionPtr exitCodeValue { move(ctx.Args.front()) };
+  ctx.Args.pop_front();
+  if (auto *value = ctx.GetRequiredValue<Int>(exitCodeValue)) {
+    ctx.Interp.SetExitCode(static_cast<int>(value->Value));
+    return Quit(ctx);
+  }
+  else
+    return false;
 }
 
 bool StdLib::Symbols(EvaluationContext &ctx) {
@@ -1976,7 +1995,7 @@ bool StdLib::At(EvaluationContext &ctx) {
       if (idx < 0)
         idx += str->Value.length();
       try {
-        ctx.Expr.reset(new Str(string(1, str->Value.at(idx))));
+        ctx.Expr.reset(new Str(string(1, str->Value.at(static_cast<size_t>(idx)))));
         return true;
       }
       catch (out_of_range) {
@@ -2523,13 +2542,13 @@ bool StdLib::SubStr(EvaluationContext &ctx) {
         auto countArg = move(ctx.Args.front());
         ctx.Args.pop_front();
         if (auto countValue = ctx.GetRequiredValue<Int>(countArg))
-          count = countValue->Value;
+          count = static_cast<size_t>(countValue->Value);
         else
           return false;
       }
 
       try {
-        ctx.Expr.reset(new Str(str->Value.substr(startIdx->Value, count)));
+        ctx.Expr.reset(new Str(str->Value.substr(static_cast<size_t>(startIdx->Value), count)));
         return true;
       }
       catch (out_of_range) {
@@ -2567,7 +2586,7 @@ bool FindFunction(EvaluationContext &ctx, bool reverse) {
       auto startArg = move(ctx.Args.front());
       ctx.Args.pop_front();
       if (auto startValue = ctx.GetRequiredValue<Int>(startArg))
-        start = startValue->Value;
+        start = static_cast<size_t>(startValue->Value);
       else
         return false;
     }

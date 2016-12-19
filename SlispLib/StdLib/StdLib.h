@@ -20,6 +20,7 @@ class StdLib: public Library {
     static bool Print(EvaluationContext &ctx);
     static bool Prompt(EvaluationContext &ctx);
     static bool Quit(EvaluationContext &ctx);
+    static bool Exit(EvaluationContext &ctx);
     static bool Symbols(EvaluationContext &ctx);
     static bool Help(EvaluationContext &ctx);
     static bool HelpSignatures(EvaluationContext &ctx);
