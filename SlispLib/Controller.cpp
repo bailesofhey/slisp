@@ -271,6 +271,9 @@ void Controller::RunSingle() {
         auto errors = Interpreter_.GetErrors();
         for (auto &error : errors) {
           ss << error.Where << ": " << error.What << endl;
+          for (auto &errFrame : Interpreter_.GetErrorStackTrace())
+            ss << errFrame << endl;
+          break;
         }
       }
     }

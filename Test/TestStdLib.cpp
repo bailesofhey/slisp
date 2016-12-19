@@ -2559,6 +2559,18 @@ TEST_F(StdLibBranchTest, TestError) {
   ASSERT_NE(Out.str().find("!moob"), string::npos);
 }
 
+TEST_F(StdLibBranchTest, TestError_StackTrace) {
+  ASSERT_TRUE(RunSuccess("(def aFn () (bFn))", ""));
+  ASSERT_TRUE(RunSuccess("(def bFn () (cFn))", ""));
+  ASSERT_TRUE(RunSuccess("(def cFn () (dFn))", ""));
+  ASSERT_TRUE(RunSuccess("(def dFn () (error \"boom!\"))", ""));
+  ASSERT_TRUE(RunFail("(aFn)"));
+  ASSERT_NE(Out.str().find("aFn"), string::npos);
+  ASSERT_NE(Out.str().find("bFn"), string::npos);
+  ASSERT_NE(Out.str().find("cFn"), string::npos);
+  ASSERT_NE(Out.str().find("dFn"), string::npos);
+}
+
 TEST_F(StdLibBranchTest, TestTry) {
   ASSERT_TRUE(RunFail("(/ 1 0)"));
   ASSERT_TRUE(RunSuccess("(try (begin (/ 1 1) true) false)", "true"));

@@ -3941,11 +3941,7 @@ bool StdLib::Error(EvaluationContext &ctx) {
   if (auto *msgVal = ctx.GetRequiredValue<Str>(msgExpr)) {
     string currUserFunc;
     auto& frame = ctx.Interp.GetCurrentStackFrame();
-    auto& fn = frame.GetFunction();
-    currUserFunc = fn.SymbolName();
-    if (currUserFunc.empty())
-      currUserFunc = "<module>";
-    ctx.Interp.PushError(EvalError { currUserFunc, msgVal->Value });
+    ctx.Interp.PushError(EvalError { frame.GetFunction().SymbolName(), msgVal->Value });
     return false;
   }
   else

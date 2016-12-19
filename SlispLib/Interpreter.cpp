@@ -4,6 +4,7 @@
 #include <functional>
 #include <memory>
 #include <algorithm>
+#include <iterator>
 
 #include "Interpreter.h"
 #include "Expression.h"
@@ -195,10 +196,12 @@ Interpreter::Interpreter(CommandInterface &cmdInterface):
   TypeReducers { },
   Errors { },
   ErrorWhere { "Interpreter" },
+  ErrorStackTrace { },
   StopRequested_ { false },
   ExitCode { 0 },
   Environment_ { }
 {
+  MainFunc.Symbol.reset(new Symbol("__main__"));
   RegisterReducers();
 }
 
@@ -210,13 +213,26 @@ list<EvalError> Interpreter::GetErrors() const {
   return Errors;
 }
 
+vector<string> Interpreter::GetErrorStackTrace() const {
+  vector<string> errStackTrace;
+  copy(begin(ErrorStackTrace), end(ErrorStackTrace), back_inserter(errStackTrace));
+  return errStackTrace;
+}
+
 bool Interpreter::PushError(const EvalError &error) {
-  Errors.push_back(error);
+  if (Errors.empty()) {
+    Errors.push_back(error);
+
+    ErrorStackTrace.clear();
+    for (auto curr = crbegin(StackFrames); curr != crend(StackFrames); ++curr)
+      ErrorStackTrace.push_back((*curr)->GetFunction().SymbolName());
+  }
   return false;
 }
 
 void Interpreter::ClearErrors() {
   Errors.clear();
+  ErrorStackTrace.clear();
 }
 
 void Interpreter::Stop() {
@@ -240,15 +256,15 @@ SymbolTable& Interpreter::GetDynamicSymbols() {
 }
 
 StackFrame& Interpreter::GetCurrentStackFrame() {
-  return *(StackFrames.top());
+  return *(StackFrames.back());
 }
 
 void Interpreter::PushStackFrame(StackFrame &stackFrame) {
-  StackFrames.push(&stackFrame);
+  StackFrames.push_back(&stackFrame);
 }
 
 void Interpreter::PopStackFrame() {
-  StackFrames.pop();
+  StackFrames.pop_back();
 }
 
 bool Interpreter::EvaluatePartial(ExpressionPtr &expr) {

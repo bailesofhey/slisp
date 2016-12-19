@@ -103,6 +103,7 @@ class Interpreter {
     bool PushError(const EvalError &error);
     std::list<EvalError> GetErrors() const;
     void ClearErrors();
+    std::vector<std::string> GetErrorStackTrace() const;
 
     void Stop();
     bool StopRequested() const;
@@ -124,19 +125,20 @@ class Interpreter {
     using TypeReducer      = std::function<bool(ExpressionPtr &expr)>;
     using TypeReducersType = std::map<const TypeInfo*, TypeReducer>;
     
-    CommandInterface        &CmdInterface;
-    SymbolTable             DynamicSymbols;
-    InterpreterSettings     Settings;
-    std::stack<StackFrame*> StackFrames;
-    CompiledFunction        MainFunc;
-    StackFrame              MainFrame;
-    TypeReducersType        TypeReducers;
-    std::list<EvalError>    Errors;
-    std::string             ErrorWhere;
-    Sexp                    *Current;
-    bool                    StopRequested_;
-    int                     ExitCode;
-    Environment             Environment_;
+    CommandInterface         &CmdInterface;
+    SymbolTable              DynamicSymbols;
+    InterpreterSettings      Settings;
+    std::vector<StackFrame*> StackFrames;
+    CompiledFunction         MainFunc;
+    StackFrame               MainFrame;
+    TypeReducersType         TypeReducers;
+    std::list<EvalError>     Errors;
+    std::string              ErrorWhere;
+    std::vector<std::string> ErrorStackTrace;
+    Sexp                     *Current;
+    bool                     StopRequested_;
+    int                      ExitCode;
+    Environment              Environment_;
 
     template<class T>          bool InterpretLiteral(T *expr, char *wrapper = nullptr);
     template<class S, class V> bool GetLiteral(const std::string &symbolName, V &value);
