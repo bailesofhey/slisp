@@ -3,12 +3,18 @@
 
 using namespace std;
 
-ExpressionPtr PrimitiveExpressions[] {
+/*
+ExpressionPtr AllPrimitiveExpressions[] {
   ExpressionPtr { new Bool() },
   ExpressionPtr { new Int() },
   ExpressionPtr { new Float() },
   ExpressionPtr { new Str() },
   ExpressionPtr { new Symbol("+") },
+};
+*/
+
+ExpressionPtr PrimitiveExpressions[] {
+  ExpressionPtr { new Bool() },
 };
 
 bool TestEvaluator(ExpressionPtr &) {
