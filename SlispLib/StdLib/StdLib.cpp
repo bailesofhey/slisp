@@ -1344,6 +1344,14 @@ void StdLib::Load(Interpreter &interpreter) {
     StdLib::Error, 
     FuncDef { FuncDef::OneArg(Str::TypeInstance), FuncDef::NoArgs() }
   );
+  symbols.PutSymbolFunction(
+    "try", 
+    {"(try expr catchExpr) -> value"},
+    "try expr, invoke catchExpr on error",
+    {{"(try (/ 1 0) (error \"boom!\"))", ""}},
+    StdLib::Try, 
+    FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 2), FuncDef::NoArgs() }
+  );
 
   // Conversion operators
 
@@ -3945,7 +3953,22 @@ bool StdLib::Error(EvaluationContext &ctx) {
 }
 
 bool StdLib::Try(EvaluationContext &ctx) {
-  return false;
+  ExpressionPtr expr { move(ctx.Args.front()) };
+  ctx.Args.pop_front();
+  ExpressionPtr catchExpr { move(ctx.Args.front()) };
+  ctx.Args.pop_front();
+  if (ctx.EvaluateNoError(expr)) {
+    ctx.Expr = move(expr);
+    return true;
+  }
+  else {
+    if (ctx.Evaluate(catchExpr, "catch")) {
+      ctx.Expr = move(catchExpr);
+      return true;
+    }
+    else
+      return false;
+  }
 }
 
 // Conversion operators

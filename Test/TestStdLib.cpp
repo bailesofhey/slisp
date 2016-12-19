@@ -2559,6 +2559,12 @@ TEST_F(StdLibBranchTest, TestError) {
   ASSERT_NE(Out.str().find("!moob"), string::npos);
 }
 
+TEST_F(StdLibBranchTest, TestTry) {
+  ASSERT_TRUE(RunFail("(/ 1 0)"));
+  ASSERT_TRUE(RunSuccess("(try (begin (/ 1 1) true) false)", "true"));
+  ASSERT_TRUE(RunSuccess("(try (begin (/ 1 0) true) false)", "false"));
+}
+
 class StdLibOperatorsTest: public StdLibTest {
 };
 
