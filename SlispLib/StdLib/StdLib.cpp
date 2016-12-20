@@ -3960,7 +3960,14 @@ bool StdLib::Try(EvaluationContext &ctx) {
   else {
     auto &errors = ctx.Interp.GetErrors();
     Scope scope(ctx.Interp.GetCurrentStackFrame().GetLocalSymbols());
-    scope.PutSymbol("$error", ExpressionPtr { new Str(errors.empty() ? "<unknown>" : errors.front().What) });
+    scope.PutSymbol("$error.msg", ExpressionPtr { new Str(errors.empty() ? "<unknown>" : errors.front().What) });
+
+    ExpressionPtr stackSexpExpr { new Sexp() };
+    Sexp& stackSexp = static_cast<Sexp&>(*stackSexpExpr);
+    for (auto &frame : ctx.Interp.GetErrorStackTrace())
+      stackSexp.Args.emplace_back(new Str(frame));
+    scope.PutSymbol("$error.stack", ExpressionPtr { new Quote(move(stackSexpExpr)) });
+
     ctx.Interp.ClearErrors();
     if (ctx.Evaluate(catchExpr, "catch")) {
       ctx.Expr = move(catchExpr);

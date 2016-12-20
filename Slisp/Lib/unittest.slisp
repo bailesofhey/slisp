@@ -23,7 +23,7 @@
                         (set result "fail"))))
                   (begin
                     (++ nerror)
-                    (set result (format "error: {}" $error))))
+                    (set result (format "error: {}" $error.msg))))
                 (print (format "{symName}: {result}")))))))
       (unittest.-print-footer npass nfail nerror)
       (if (or (> nfail 0) (> nerror 0)) false true))))

@@ -2569,21 +2569,24 @@ TEST_F(StdLibBranchTest, TestError_StackTrace) {
   ASSERT_NE(Out.str().find("bFn"), string::npos);
   ASSERT_NE(Out.str().find("cFn"), string::npos);
   ASSERT_NE(Out.str().find("dFn"), string::npos);
+
+  ASSERT_TRUE(RunSuccess("(try (aFn) $error.msg)", "boom!"));
+  ASSERT_TRUE(RunSuccess("(try (aFn) $error.stack)", "(\"dFn\" \"cFn\" \"bFn\" \"aFn\" \"__main__\")"));
 }
 
 TEST_F(StdLibBranchTest, TestTry) {
   ASSERT_TRUE(RunFail("(/ 1 0)"));
   ASSERT_TRUE(RunSuccess("(try (begin (/ 1 1) true) false)", "true"));
   ASSERT_TRUE(RunSuccess("(try (begin (/ 1 0) true) false)", "false"));
-  ASSERT_TRUE(RunSuccess("(try (/ 1 0) $error)", "Divide"));
-  ASSERT_TRUE(RunSuccess("(try (error (reverse \"blah\")) $error)", "halb"));
+  ASSERT_TRUE(RunSuccess("(try (/ 1 0) $error.msg)", "Divide"));
+  ASSERT_TRUE(RunSuccess("(try (error (reverse \"blah\")) $error.msg)", "halb"));
 
   string code = R"(
     (try
       (begin
         (try (/ 1 0) true)
         foo)
-      $error)
+      $error.msg)
   )";
   ASSERT_TRUE(RunSuccess(code, "Unknown"));
 }
