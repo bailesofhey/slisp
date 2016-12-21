@@ -4,12 +4,17 @@
 #include "Interpreter.h"
 
 #include "Common.h"
+#include "BaseTest.h"
 
 using namespace std;
 
+class SymbolTableTest: public BaseTest {
+};
+
 using PutFn = function<void(SymbolTable&, const string &name, ExpressionPtr &)>;
 void TestPutSymbolFn(PutFn fn, ExpressionPtr &&val1, ExpressionPtr &&val2) {
-  SymbolTable table;
+  SymbolTableType store;
+  SymbolTable table(store, NullSourceContext);
   ExpressionPtr val1Expected = move(val1),
                 val1Actual,
                 val2Expected = move(val2),
@@ -28,48 +33,49 @@ void TestPutSymbolFn(PutFn fn, ExpressionPtr &&val1, ExpressionPtr &&val2) {
   ASSERT_EQ(*val1Actual, *val2Actual);
 }
 
-TEST(SymbolTable, TestPutSymbolBool) {
+TEST_F(SymbolTableTest, TestPutSymbolBool) {
   TestPutSymbolFn([](SymbolTable &table, const string &name, ExpressionPtr &val) {
     table.PutSymbolBool(name, dynamic_cast<Bool&>(*val).Value);
-  }, ExpressionPtr { new Bool(true) }, ExpressionPtr { new Bool(false) });
+  }, ExpressionPtr { Factory.Alloc<Bool>(true) }, ExpressionPtr { Factory.Alloc<Bool>(false) });
 }
 
-TEST(SymbolTable, TestPutSymbolInt) {
+TEST_F(SymbolTableTest, TestPutSymbolInt) {
   TestPutSymbolFn([](SymbolTable &table, const string &name, ExpressionPtr &val) {
     table.PutSymbolInt(name, dynamic_cast<Int&>(*val).Value);
-  }, ExpressionPtr { new Int(2) }, ExpressionPtr { new Int(6) });
+  }, ExpressionPtr { Factory.Alloc<Int>(2) }, ExpressionPtr { Factory.Alloc<Int>(6) });
 }
 
-TEST(SymbolTable, TestPutSymbolFloat) {
+TEST_F(SymbolTableTest, TestPutSymbolFloat) {
   TestPutSymbolFn([](SymbolTable &table, const string &name, ExpressionPtr &val) {
     table.PutSymbolFloat(name, dynamic_cast<Float&>(*val).Value);
-  }, ExpressionPtr { new Float(3.14) }, ExpressionPtr { new Float(1.5) });
+  }, ExpressionPtr { Factory.Alloc<Float>(3.14) }, ExpressionPtr { Factory.Alloc<Float>(1.5) });
 }
 
-TEST(SymbolTable, TestPutSymbolStr) {
+TEST_F(SymbolTableTest, TestPutSymbolStr) {
   TestPutSymbolFn([](SymbolTable &table, const string &name, ExpressionPtr &val) {
     table.PutSymbolStr(name, dynamic_cast<Str&>(*val).Value);
-  }, ExpressionPtr { new Str("foo") }, ExpressionPtr { new Str("bar") });
+  }, ExpressionPtr { Factory.Alloc<Str>("foo") }, ExpressionPtr { Factory.Alloc<Str>("bar") });
 }
 
-TEST(SymbolTable, TestPutSymbolQuote) {
+TEST_F(SymbolTableTest, TestPutSymbolQuote) {
   TestPutSymbolFn([](SymbolTable &table, const string &name, ExpressionPtr &val) {
     table.PutSymbolQuote(name, dynamic_cast<Quote&>(*val).Value->Clone());
   },
-  ExpressionPtr { new Quote(ExpressionPtr { new Str("foo") }) },
-  ExpressionPtr { new Quote(ExpressionPtr { new Int(123) }) }
+  ExpressionPtr { Factory.Alloc<Quote>(ExpressionPtr { Factory.Alloc<Str>("foo") }) },
+  ExpressionPtr { Factory.Alloc<Quote>(ExpressionPtr { Factory.Alloc<Int>(123) }) }
   );
 }
 
-TEST(SymbolTable, TestPutSymbolFunction) {
-  SymbolTable table;
+TEST_F(SymbolTableTest, TestPutSymbolFunction) {
+  SymbolTableType store;
+  SymbolTable table(store, NullSourceContext);
   auto slispFn1 = [](EvaluationContext&) { return false; };
   auto slispFn2 = [](EvaluationContext&) { return true; };
   FuncDef def1  { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() };
   FuncDef def2  { FuncDef::OneArg(Str::TypeInstance), FuncDef::NoArgs() };
   ExpressionPtr temp;
-  ExpressionPtr f1 { new CompiledFunction(move(def1), slispFn1) };
-  ExpressionPtr f2 { new CompiledFunction(move(def2), slispFn2) };
+  ExpressionPtr f1 { Factory.Alloc<CompiledFunction>(move(def1), slispFn1) };
+  ExpressionPtr f2 { Factory.Alloc<CompiledFunction>(move(def2), slispFn2) };
   table.PutSymbolFunction("f1", move(dynamic_cast<CompiledFunction&>(*f1->Clone())));
   table.PutSymbolFunction("f2", move(dynamic_cast<CompiledFunction&>(*f2->Clone())));
   table.PutSymbolFunction(
@@ -85,21 +91,23 @@ TEST(SymbolTable, TestPutSymbolFunction) {
   ASSERT_TRUE(table.GetSymbol("f3", temp));
 }
 
-TEST(SymbolTable, TestPutSymbol_Empty) {
-  SymbolTable table;
+TEST_F(SymbolTableTest, TestPutSymbol_Empty) {
+  SymbolTableType store;
+  SymbolTable table(store, NullSourceContext);
   ExpressionPtr empty;
   table.PutSymbol("empty", ExpressionPtr {});
   ASSERT_TRUE(table.GetSymbol("empty", empty));
   ASSERT_FALSE(empty);
 }
 
-TEST(SymbolTable, TestPutSymbol) {
-  SymbolTable table;
+TEST_F(SymbolTableTest, TestPutSymbol) {
+  SymbolTableType store;
+  SymbolTable table(store, NullSourceContext);
   ExpressionPtr b, i, f, s;
-  table.PutSymbol("b", ExpressionPtr { new Bool(true) });
-  table.PutSymbol("i", ExpressionPtr { new Int(42) });
-  table.PutSymbol("f", ExpressionPtr { new Float(3.14) });
-  table.PutSymbol("s", ExpressionPtr { new Str("foo") });
+  table.PutSymbol("b", ExpressionPtr { Factory.Alloc<Bool>(true) });
+  table.PutSymbol("i", ExpressionPtr { Factory.Alloc<Int>(42) });
+  table.PutSymbol("f", ExpressionPtr { Factory.Alloc<Float>(3.14) });
+  table.PutSymbol("s", ExpressionPtr { Factory.Alloc<Str>("foo") });
   ASSERT_TRUE(table.GetSymbol("b", b));
   ASSERT_TRUE(table.GetSymbol("i", i));
   ASSERT_TRUE(table.GetSymbol("f", f));
@@ -111,10 +119,10 @@ TEST(SymbolTable, TestPutSymbol) {
   ASSERT_EQ(4, table.GetCount());
   
   //Overwrite tests
-  table.PutSymbol("b", ExpressionPtr { new Bool(false) });
-  table.PutSymbol("i", ExpressionPtr { new Int(123) });
-  table.PutSymbol("f", ExpressionPtr { new Float(1.23) });
-  table.PutSymbol("s", ExpressionPtr { new Str("hello, world!") });
+  table.PutSymbol("b", ExpressionPtr { Factory.Alloc<Bool>(false) });
+  table.PutSymbol("i", ExpressionPtr { Factory.Alloc<Int>(123) });
+  table.PutSymbol("f", ExpressionPtr { Factory.Alloc<Float>(1.23) });
+  table.PutSymbol("s", ExpressionPtr { Factory.Alloc<Str>("hello, world!") });
   ASSERT_TRUE(table.GetSymbol("b", b));
   ASSERT_TRUE(table.GetSymbol("i", i));
   ASSERT_TRUE(table.GetSymbol("f", f));
@@ -141,10 +149,10 @@ TEST(SymbolTable, TestPutSymbol) {
   ASSERT_EQ(4, table.GetCount());
 
   //Overwrite to original
-  table.PutSymbol("b", ExpressionPtr { new Bool(true) });
-  table.PutSymbol("i", ExpressionPtr { new Int(42) });
-  table.PutSymbol("f", ExpressionPtr { new Float(3.14) });
-  table.PutSymbol("s", ExpressionPtr { new Str("foo") });
+  table.PutSymbol("b", ExpressionPtr { Factory.Alloc<Bool>(true) });
+  table.PutSymbol("i", ExpressionPtr { Factory.Alloc<Int>(42) });
+  table.PutSymbol("f", ExpressionPtr { Factory.Alloc<Float>(3.14) });
+  table.PutSymbol("s", ExpressionPtr { Factory.Alloc<Str>("foo") });
   ASSERT_TRUE(table.GetSymbol("b", b));
   ASSERT_TRUE(table.GetSymbol("i", i));
   ASSERT_TRUE(table.GetSymbol("f", f));
@@ -156,8 +164,9 @@ TEST(SymbolTable, TestPutSymbol) {
   ASSERT_EQ(4, table.GetCount());
 }
 
-TEST(SymbolTable, TestDeleteSymbol) {
-  SymbolTable table;
+TEST_F(SymbolTableTest, TestDeleteSymbol) {
+  SymbolTableType store;
+  SymbolTable table(store, NullSourceContext);
   ExpressionPtr val;
   ASSERT_FALSE(table.GetSymbol("val", val));
   table.DeleteSymbol("val");
@@ -181,8 +190,9 @@ struct ForEachData {
   }
 };
 
-TEST(SymbolTable, TestForEach) {
-  SymbolTable table;
+TEST_F(SymbolTableTest, TestForEach) {
+  SymbolTableType store;
+  SymbolTable table(store, NullSourceContext);
   ForEachData data;
   auto fn = [&data](const string &name, ExpressionPtr &val) {
     data.LastName = name;
@@ -202,7 +212,7 @@ TEST(SymbolTable, TestForEach) {
   table.ForEach(fn);
   ASSERT_EQ(1, data.Count);
   ASSERT_EQ("num", data.LastName);
-  ExpressionPtr fortyTwo { new Int(42) };
+  ExpressionPtr fortyTwo { Factory.Alloc<Int>(42) };
   ASSERT_EQ(*fortyTwo, *data.LastValue);
 
   table.DeleteSymbol("num");
@@ -237,15 +247,19 @@ TEST(SymbolTable, TestForEach) {
   ASSERT_FALSE(data.LastValue);
 }
 
-TEST(Scope, TestPutSymbol_Simple) {
-  SymbolTable table;
+class ScopeTest: public BaseTest {
+};
+
+TEST_F(ScopeTest, TestPutSymbol_Simple) {
+  SymbolTableType store;
+  SymbolTable table(store, NullSourceContext);
   ExpressionPtr temp;
   table.PutSymbolInt("a", 1);
   {
-    Scope outer(table);
+    Scope outer(table, NullSourceContext);
     table.PutSymbolInt("b", 2);
-    outer.PutSymbol("c", ExpressionPtr { new Int(3) });
-    outer.PutSymbol("c", ExpressionPtr { new Int(2) }); // #20
+    outer.PutSymbol("c", ExpressionPtr { Factory.Alloc<Int>(3) });
+    outer.PutSymbol("c", ExpressionPtr { Factory.Alloc<Int>(2) }); // #20
     
     ASSERT_FALSE(outer.IsScopedSymbol("a"));
     ASSERT_FALSE(outer.IsScopedSymbol("b"));
@@ -255,9 +269,9 @@ TEST(Scope, TestPutSymbol_Simple) {
     ASSERT_TRUE(table.GetSymbol("b", temp));
     ASSERT_TRUE(table.GetSymbol("c", temp));
     {
-      Scope inner(table);
+      Scope inner(table, NullSourceContext);
       table.PutSymbolInt("d", 4);
-      inner.PutSymbol("e", ExpressionPtr { new Int(5) });
+      inner.PutSymbol("e", ExpressionPtr { Factory.Alloc<Int>(5) });
 
       ASSERT_FALSE(inner.IsScopedSymbol("a"));
       ASSERT_FALSE(inner.IsScopedSymbol("b"));
@@ -284,20 +298,21 @@ TEST(Scope, TestPutSymbol_Simple) {
   ASSERT_FALSE(table.GetSymbol("e", temp));
 }
 
-TEST(Scope, TestPutSymbol_ShadowingSameType) {
-  SymbolTable table;
-  ExpressionPtr one { new Int(1) };
+TEST_F(ScopeTest, TestPutSymbol_ShadowingSameType) {
+  SymbolTableType store;
+  SymbolTable table(store, NullSourceContext);
+  ExpressionPtr one { Factory.Alloc<Int>(1) };
   ExpressionPtr temp;
   table.PutSymbol("a", one->Clone());
   {
-    Scope outer(table);
-    ExpressionPtr two { new Int(2) };
+    Scope outer(table, NullSourceContext);
+    ExpressionPtr two { Factory.Alloc<Int>(2) };
     outer.PutSymbol("a", two->Clone());
     ASSERT_TRUE(table.GetSymbol("a", temp));
     ASSERT_EQ(*two, *temp);
     {
-      Scope inner(table);
-      ExpressionPtr three { new Int(3) };
+      Scope inner(table, NullSourceContext);
+      ExpressionPtr three { Factory.Alloc<Int>(3) };
       inner.PutSymbol("a", three->Clone());
       ASSERT_TRUE(table.GetSymbol("a", temp));
       ASSERT_EQ(*three, *temp);
@@ -309,20 +324,21 @@ TEST(Scope, TestPutSymbol_ShadowingSameType) {
   ASSERT_EQ(*one, *temp);
 }
 
-TEST(Scope, TestPutSymbol_ShadowingDifferentType) {
-  SymbolTable table;
-  ExpressionPtr one { new Int(1) };
+TEST_F(ScopeTest, TestPutSymbol_ShadowingDifferentType) {
+  SymbolTableType store;
+  SymbolTable table(store, NullSourceContext);
+  ExpressionPtr one { Factory.Alloc<Int>(1) };
   ExpressionPtr temp;
   table.PutSymbol("a", one->Clone());
   {
-    Scope outer(table);
-    ExpressionPtr tru { new Bool(true) };
+    Scope outer(table, NullSourceContext);
+    ExpressionPtr tru { Factory.Alloc<Bool>(true) };
     outer.PutSymbol("a", tru->Clone());
     ASSERT_TRUE(table.GetSymbol("a", temp));
     ASSERT_EQ(*tru, *temp);
     {
-      Scope inner(table);
-      ExpressionPtr hello { new Str("hello") };
+      Scope inner(table, NullSourceContext);
+      ExpressionPtr hello { Factory.Alloc<Str>("hello") };
       inner.PutSymbol("a", hello->Clone());
       ASSERT_TRUE(table.GetSymbol("a", temp));
       ASSERT_EQ(*hello, *temp);
@@ -334,7 +350,7 @@ TEST(Scope, TestPutSymbol_ShadowingDifferentType) {
   ASSERT_EQ(*one, *temp);
 }
 
-class InterpreterTest: public ::testing::Test {
+class InterpreterTest: public BaseTest {
   public:
     InterpreterTest():
       CommandInterface(),
@@ -353,18 +369,18 @@ class StackFrameTest: public InterpreterTest {
 TEST_F(StackFrameTest, TestSimple) {
   ExpressionPtr temp;
   {
-    CompiledFunction outerFunc;
+    CompiledFunction outerFunc(NullSourceContext);
     StackFrame outer(Interpreter_, outerFunc);
-    outer.PutDynamicSymbol("dynamic", ExpressionPtr { new Int(1) });
-    outer.PutLocalSymbol("outer", ExpressionPtr { new Int(2) });
+    outer.PutDynamicSymbol("dynamic", ExpressionPtr { Factory.Alloc<Int>(1) });
+    outer.PutLocalSymbol("outer", ExpressionPtr { Factory.Alloc<Int>(2) });
     ASSERT_TRUE(outer.GetSymbol("dynamic", temp));
     ASSERT_TRUE(outer.GetSymbol("outer", temp));
     ASSERT_EQ(1, outer.GetLocalSymbols().GetCount());
     {
-      CompiledFunction innerFun;
+      CompiledFunction innerFun(NullSourceContext);
       StackFrame inner(Interpreter_, innerFun);
-      inner.PutDynamicSymbol("dynamic2", ExpressionPtr { new Int(3) });
-      inner.PutLocalSymbol("inner", ExpressionPtr { new Int(4) });
+      inner.PutDynamicSymbol("dynamic2", ExpressionPtr { Factory.Alloc<Int>(3) });
+      inner.PutLocalSymbol("inner", ExpressionPtr { Factory.Alloc<Int>(4) });
       ASSERT_TRUE(inner.GetSymbol("dynamic", temp));
       ASSERT_FALSE(inner.GetSymbol("outer", temp));
       ASSERT_TRUE(inner.GetSymbol("dynamic2", temp));
@@ -382,10 +398,10 @@ TEST_F(StackFrameTest, TestSimple) {
 TEST_F(StackFrameTest, TestShadowing) {
   ExpressionPtr temp;
   {
-    CompiledFunction outerFunc;
+    CompiledFunction outerFunc(NullSourceContext);
     StackFrame outer(Interpreter_, outerFunc);
-    ExpressionPtr one { new Int(1) };
-    ExpressionPtr two { new Int(2) };
+    ExpressionPtr one { Factory.Alloc<Int>(1) };
+    ExpressionPtr two { Factory.Alloc<Int>(2) };
     outer.PutDynamicSymbol("dynamic", one->Clone());
     outer.PutLocalSymbol("local", two->Clone());
     ASSERT_TRUE(outer.GetSymbol("dynamic", temp));
@@ -394,10 +410,10 @@ TEST_F(StackFrameTest, TestShadowing) {
     ASSERT_EQ(*two, *temp);
     ASSERT_EQ(1, outer.GetLocalSymbols().GetCount());
     {
-      CompiledFunction innerFun;
+      CompiledFunction innerFun(NullSourceContext);
       StackFrame inner(Interpreter_, innerFun);
-      ExpressionPtr foo { new Str("foo") };
-      ExpressionPtr bar { new Str("bar") };
+      ExpressionPtr foo { Factory.Alloc<Str>("foo") };
+      ExpressionPtr bar { Factory.Alloc<Str>("bar") };
       inner.PutDynamicSymbol("dynamic", foo->Clone());
       inner.PutLocalSymbol("local", bar->Clone());
       ASSERT_TRUE(inner.GetSymbol("dynamic", temp));
@@ -423,7 +439,7 @@ TEST_F(InterpreterTest, TestDefaultFunction) {
   auto slispFn = [](EvaluationContext&) { return true; };
   FuncDef def { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() };
   ExpressionPtr temp;
-  ExpressionPtr func { new CompiledFunction(move(def), slispFn) };
+  ExpressionPtr func { Factory.Alloc<CompiledFunction>(move(def), slispFn) };
   FunctionPtr defaultFn;
   auto &settings = Interpreter_.GetSettings();
   ASSERT_FALSE(settings.GetDefaultFunction(defaultFn));
@@ -471,7 +487,7 @@ TEST_F(InterpreterTest, TestStackFrames) {
   size_t initialDynCount = 0,
          initialLocalCount   = 0;
   auto getCurrDynCount = [this, &initialDynCount]() {
-    return initialDynCount + Interpreter_.GetDynamicSymbols().GetCount();
+    return initialDynCount + Interpreter_.GetDynamicSymbols(NullSourceContext).GetCount();
   };
   auto getCurrLocalCount = [this, &initialLocalCount]() {
     return initialLocalCount + Interpreter_.GetCurrentStackFrame().GetLocalSymbols().GetCount();
@@ -479,15 +495,15 @@ TEST_F(InterpreterTest, TestStackFrames) {
   initialDynCount = getCurrDynCount();
   initialLocalCount = getCurrLocalCount();
   {
-    StackFrame outer(Interpreter_, CompiledFunction());
-    outer.PutDynamicSymbol("d1", ExpressionPtr { new Int(1) });
-    outer.PutLocalSymbol("outer1", ExpressionPtr { new Int(2) });
+    StackFrame outer(Interpreter_, CompiledFunction(NullSourceContext));
+    outer.PutDynamicSymbol("d1", ExpressionPtr { Factory.Alloc<Int>(1) });
+    outer.PutLocalSymbol("outer1", ExpressionPtr { Factory.Alloc<Int>(2) });
     ASSERT_EQ(initialDynCount + 1, getCurrDynCount());
     ASSERT_EQ(initialLocalCount + 1, getCurrLocalCount());
     {
-      StackFrame inner(Interpreter_, CompiledFunction());
-      inner.PutDynamicSymbol("d2", ExpressionPtr { new Int(3) });
-      inner.PutLocalSymbol("inner1", ExpressionPtr { new Int(4) });
+      StackFrame inner(Interpreter_, CompiledFunction(NullSourceContext));
+      inner.PutDynamicSymbol("d2", ExpressionPtr { Factory.Alloc<Int>(3) });
+      inner.PutLocalSymbol("inner1", ExpressionPtr { Factory.Alloc<Int>(4) });
       ASSERT_EQ(initialDynCount + 2, getCurrDynCount());
       ASSERT_EQ(initialLocalCount + 1, getCurrLocalCount());
     }
@@ -517,25 +533,28 @@ class EvaluationTest: public InterpreterTest {
       auto &settings = Interpreter_.GetSettings();
 
       settings.PutDefaultFunction(CompiledFunction {
+        NullSourceContext,
         FuncDef { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() },
         &DefaultFunction
       }); 
 
-      Interpreter_.GetDynamicSymbols().PutSymbolFunction("myCompiledFunc", CompiledFunction {
+      Interpreter_.GetDynamicSymbols(NullSourceContext).PutSymbolFunction("myCompiledFunc", CompiledFunction {
+        NullSourceContext,
         FuncDef { FuncDef::OneArg(Bool::TypeInstance), FuncDef::NoArgs() },
         &MyCompiledFunc
       });
 
-      ExpressionPtr trueValue { new Bool(true) };
+      ExpressionPtr trueValue { Factory.Alloc<Bool>(true) };
       ExpressionPtr code {
-        new Sexp({
-          ExpressionPtr { new Symbol("myCompiledFunc") },
-          ExpressionPtr { new Symbol("x") }
+        new Sexp(NullSourceContext, {
+          ExpressionPtr { Factory.Alloc<Symbol>("myCompiledFunc") },
+          ExpressionPtr { Factory.Alloc<Symbol>("x") }
         })
       };
       ArgList args;
-      args.push_back(ExpressionPtr { new Symbol("x") });
-      Interpreter_.GetDynamicSymbols().PutSymbolFunction("myInterpretedFunc", InterpretedFunction {
+      args.emplace_back(Factory.Alloc<Symbol>("x"));
+      Interpreter_.GetDynamicSymbols(NullSourceContext).PutSymbolFunction("myInterpretedFunc", InterpretedFunction {
+        NullSourceContext,
         FuncDef { FuncDef::OneArg(Bool::TypeInstance), FuncDef::NoArgs() },
         move(code),
         move(args)
@@ -543,10 +562,11 @@ class EvaluationTest: public InterpreterTest {
 
 
       ExpressionPtr badFnCode {
-        new Symbol("undefinedSymbol")
+        Factory.Alloc<Symbol>("undefinedSymbol")
       };
       ArgList badFnArgs;
-      Interpreter_.GetDynamicSymbols().PutSymbolFunction("myInterpretedBadFunc", InterpretedFunction {
+      Interpreter_.GetDynamicSymbols(NullSourceContext).PutSymbolFunction("myInterpretedBadFunc", InterpretedFunction {
+        NullSourceContext,
         FuncDef { FuncDef::NoArgs(), FuncDef::NoArgs() },
         move(badFnCode),
         move(badFnArgs)
@@ -561,7 +581,7 @@ class EvaluationTest: public InterpreterTest {
     void TestTooManyArgs(const string &funcName);
     
     static bool DefaultFunction(EvaluationContext &ctx) {
-      LastResult = move(ctx.Expr);
+      LastResult = move(ctx.Expr_);
       LastArgs.clear();
       ArgListHelper::CopyTo(ctx.Args, LastArgs);
       ctx.Interp.GetCommandInterface().WriteOutputLine(LastArgs.front()->ToString());
@@ -590,21 +610,21 @@ bool EvaluationTest::MyListFuncCalled;
 int EvaluationTest::MyListLastArgCount;
 
 TEST_F(EvaluationTest, TestLiteral) {
-  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Bool(true) }));
-  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Int(42) }));
-  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Float(3.14) }));
-  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Str("hello, world!") }));
-  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Quote(ExpressionPtr { new Bool(true) })}));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { Factory.Alloc<Bool>(true) }));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { Factory.Alloc<Int>(42) }));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { Factory.Alloc<Float>(3.14) }));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { Factory.Alloc<Str>("hello, world!") }));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { Factory.Alloc<Quote>(ExpressionPtr { Factory.Alloc<Bool>(true) })}));
 
   FunctionPtr defaultFn;
   ASSERT_TRUE(Interpreter_.GetSettings().GetDefaultFunction(defaultFn));
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { defaultFn.release() }));
 
-  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new CompiledFunction() }));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { Factory.Alloc<CompiledFunction>() }));
   
   ExpressionPtr code {};
   ArgList args {};
-  ExpressionPtr e { new InterpretedFunction(
+  ExpressionPtr e { Factory.Alloc<InterpretedFunction>(
     FuncDef { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() },
     move(code),
     move(args)
@@ -614,39 +634,39 @@ TEST_F(EvaluationTest, TestLiteral) {
 }
 
 TEST_F(EvaluationTest, TestSymbol) {
-  ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { new Symbol("b") }));
+  ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { Factory.Alloc<Symbol>("b") }));
   ASSERT_GT(Interpreter_.GetErrors().size(), 0U);
 
   auto &currStackFrame = Interpreter_.GetCurrentStackFrame();
-  currStackFrame.PutLocalSymbol("b", ExpressionPtr { new Bool(true) });
-  currStackFrame.PutLocalSymbol("i", ExpressionPtr { new Int(42) });
-  currStackFrame.PutLocalSymbol("f", ExpressionPtr { new Float(3.14) });
-  currStackFrame.PutLocalSymbol("s", ExpressionPtr { new Str("foo") });
-  currStackFrame.PutLocalSymbol("fn", ExpressionPtr { new CompiledFunction() });
-  currStackFrame.PutLocalSymbol("q", ExpressionPtr { new Quote(ExpressionPtr { new Bool(true) })});
+  currStackFrame.PutLocalSymbol("b", ExpressionPtr { Factory.Alloc<Bool>(true) });
+  currStackFrame.PutLocalSymbol("i", ExpressionPtr { Factory.Alloc<Int>(42) });
+  currStackFrame.PutLocalSymbol("f", ExpressionPtr { Factory.Alloc<Float>(3.14) });
+  currStackFrame.PutLocalSymbol("s", ExpressionPtr { Factory.Alloc<Str>("foo") });
+  currStackFrame.PutLocalSymbol("fn", ExpressionPtr { Factory.Alloc<CompiledFunction>() });
+  currStackFrame.PutLocalSymbol("q", ExpressionPtr { Factory.Alloc<Quote>(ExpressionPtr { Factory.Alloc<Bool>(true) })});
 
-  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Symbol("b") }));
-  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Symbol("i") }));
-  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Symbol("f") }));
-  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Symbol("s") }));
-  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Symbol("fn") }));
-  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Symbol("q") }));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { Factory.Alloc<Symbol>("b") }));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { Factory.Alloc<Symbol>("i") }));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { Factory.Alloc<Symbol>("f") }));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { Factory.Alloc<Symbol>("s") }));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { Factory.Alloc<Symbol>("fn") }));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { Factory.Alloc<Symbol>("q") }));
   ASSERT_EQ(Interpreter_.GetErrors().size(), 0);
 }
 
 TEST_F(EvaluationTest, TestSexpDefaultFunction) {
-  ExpressionPtr trueValue { new Bool(true) },
-                falseValue { new Bool(false) };
+  ExpressionPtr trueValue { Factory.Alloc<Bool>(true) },
+                falseValue { Factory.Alloc<Bool>(false) };
   auto &settings = Interpreter_.GetSettings();
-  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
-    ExpressionPtr { new Symbol(settings.GetDefaultSexp()) },
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp(NullSourceContext, {
+    ExpressionPtr { Factory.Alloc<Symbol>(settings.GetDefaultSexp()) },
     falseValue->Clone()
   })}));
   ASSERT_TRUE(CommandInterface.Output.find("false") != string::npos);
   ASSERT_EQ(*falseValue, *EvaluationTest::LastArgs.front());
 
-  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
-    ExpressionPtr { new Symbol(settings.GetDefaultSexp()) },
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp(NullSourceContext, {
+    ExpressionPtr { Factory.Alloc<Symbol>(settings.GetDefaultSexp()) },
     trueValue->Clone()
   })}));
   ASSERT_TRUE(CommandInterface.Output.find("true") != string::npos);
@@ -654,10 +674,10 @@ TEST_F(EvaluationTest, TestSexpDefaultFunction) {
 }
 
 void EvaluationTest::TestBasicArg(const string &funcName) {
-  ExpressionPtr trueValue { new Bool(true) };
+  ExpressionPtr trueValue { Factory.Alloc<Bool>(true) };
  
-  ExpressionPtr sym { new Symbol(funcName) };
-  ExpressionPtr sexp { new Sexp({move(sym), move(trueValue)}) };
+  ExpressionPtr sym { Factory.Alloc<Symbol>(funcName) };
+  ExpressionPtr sexp { new Sexp(NullSourceContext, { move(sym), move(trueValue) }) };
 
   EvaluationTest::MyFuncCalled = false;
   ASSERT_TRUE(Interpreter_.Evaluate(sexp));
@@ -665,18 +685,18 @@ void EvaluationTest::TestBasicArg(const string &funcName) {
 }
 
 void EvaluationTest::TestSymbolArg(const string &funcName) {
-  ExpressionPtr sym { new Symbol("sym") };
+  ExpressionPtr sym { Factory.Alloc<Symbol>("sym") };
   EvaluationTest::MyFuncCalled = false;
-  ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
-    ExpressionPtr { new Symbol(funcName) },
+  ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { new Sexp(NullSourceContext, {
+    ExpressionPtr { Factory.Alloc<Symbol>(funcName) },
     sym->Clone()
   })}));
   ASSERT_FALSE(EvaluationTest::MyFuncCalled);
 
-  Interpreter_.GetCurrentStackFrame().PutLocalSymbol("sym", ExpressionPtr { new Bool(false) });
+  Interpreter_.GetCurrentStackFrame().PutLocalSymbol("sym", ExpressionPtr { Factory.Alloc<Bool>(false) });
   EvaluationTest::MyFuncCalled = false;
-  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
-    ExpressionPtr { new Symbol(funcName) },
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp(NullSourceContext, {
+    ExpressionPtr { Factory.Alloc<Symbol>(funcName) },
     sym->Clone()
   })}));
   ASSERT_TRUE(EvaluationTest::MyFuncCalled);
@@ -684,18 +704,18 @@ void EvaluationTest::TestSymbolArg(const string &funcName) {
 
 void EvaluationTest::TestNotEnoughArgs(const string &funcName) {
   EvaluationTest::MyFuncCalled = false;
-  ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
-    ExpressionPtr { new Symbol(funcName) },
+  ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { new Sexp(NullSourceContext, {
+    ExpressionPtr { Factory.Alloc<Symbol>(funcName) }
   })}));
   ASSERT_FALSE(EvaluationTest::MyFuncCalled);
 }
 
 void EvaluationTest::TestTooManyArgs(const string &funcName) {
-  ExpressionPtr trueValue { new Bool(true) };
+  ExpressionPtr trueValue { Factory.Alloc<Bool>(true) };
  
   EvaluationTest::MyFuncCalled = false;
-  ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
-    ExpressionPtr { new Symbol(funcName) },
+  ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { new Sexp(NullSourceContext, {
+    ExpressionPtr { Factory.Alloc<Symbol>(funcName) },
     trueValue->Clone(),
     trueValue->Clone()
   })}));
@@ -703,10 +723,10 @@ void EvaluationTest::TestTooManyArgs(const string &funcName) {
 }
 
 void EvaluationTest::TestWrongTypeArg(const string &funcName) {
-  ExpressionPtr str { new Str("foo") };
+  ExpressionPtr str { Factory.Alloc<Str>("foo") };
   EvaluationTest::MyFuncCalled = false;
-  ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
-    ExpressionPtr { new Symbol(funcName) },
+  ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { new Sexp(NullSourceContext, {
+    ExpressionPtr { Factory.Alloc<Symbol>(funcName) },
     str->Clone()
   })}));
   ASSERT_FALSE(EvaluationTest::MyFuncCalled);
@@ -727,29 +747,30 @@ TEST_F(EvaluationTest, TestSexpCompiledFunction) {
 TEST_F(EvaluationTest, TestSexpInterpretedFunction) {
   ASSERT_NO_FATAL_FAILURE(TestSexpFunction("myInterpretedFunc"));
 
-  ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
-    ExpressionPtr { new Symbol("myInterpretedBadFunc") },
+  ASSERT_FALSE(Interpreter_.Evaluate(ExpressionPtr { new Sexp(NullSourceContext, {
+    ExpressionPtr { Factory.Alloc<Symbol>("myInterpretedBadFunc") }
   })}));
 }
 
 TEST_F(EvaluationTest, TestSexpList) {
   auto &settings = Interpreter_.GetSettings();
   settings.PutListFunction(CompiledFunction {
+    NullSourceContext,
     FuncDef { FuncDef::AnyArgs(), FuncDef::OneArg(Quote::TypeInstance) },
     &MyListFunc
   });
 
-  ExpressionPtr listSym { new Symbol(settings.GetListSexp()) };
-  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({ listSym->Clone() }) }));
+  ExpressionPtr listSym { Factory.Alloc<Symbol>(settings.GetListSexp()) };
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp(NullSourceContext, { listSym->Clone()} ) }));
   ASSERT_TRUE(EvaluationTest::MyListFuncCalled);
   ASSERT_EQ(0, MyListLastArgCount);
 
-  ExpressionPtr boolValue { new Bool(true) },
-                intValue { new Int(42) },
-                floatValue { new Float(3.14) },
-                strValue { new Str("foo") },
-                symValue { new Symbol("myCompiledFunc") };
-  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp({
+  ExpressionPtr boolValue  { Factory.Alloc<Bool>(true) },
+                intValue   { Factory.Alloc<Int>(42) },
+                floatValue { Factory.Alloc<Float>(3.14) },
+                strValue   { Factory.Alloc<Str>("foo") },
+                symValue   { Factory.Alloc<Symbol>("myCompiledFunc") };
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { new Sexp(NullSourceContext, {
     listSym->Clone(),
     boolValue->Clone(),
     intValue->Clone(),

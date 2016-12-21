@@ -13,8 +13,8 @@ ExpressionPtr AllPrimitiveExpressions[] {
 };
 */
 
-ExpressionPtr PrimitiveExpressions[] {
-  ExpressionPtr { new Bool() },
+ExpressionPtr PrimitiveExpressions[] = {
+  ExpressionPtr { new Bool(NullSourceContext) },
 };
 
 bool TestEvaluator(ExpressionPtr &) {
@@ -42,9 +42,9 @@ void TestBadExpressions(FuncDef &funcDef) {
   ASSERT_NO_FATAL_FAILURE(AssertValidateThrow(funcDef, ExpressionPtr {}));
   for (const auto &expr : PrimitiveExpressions) {
     ASSERT_NO_FATAL_FAILURE(AssertValidate(funcDef, expr->Clone(), false));
-    ASSERT_NO_FATAL_FAILURE(AssertValidate(funcDef, ExpressionPtr { new Quote(expr->Clone()) }, false)) << "Quote";
+    ASSERT_NO_FATAL_FAILURE(AssertValidate(funcDef, ExpressionPtr { new Quote(NullSourceContext, expr->Clone()) }, false)) << "Quote";
     
-    Sexp s;
+    Sexp s(NullSourceContext);
     s.Args.push_back(expr->Clone());
     ASSERT_NO_FATAL_FAILURE(AssertValidateThrow(funcDef, s.Clone()));
   }
@@ -69,15 +69,15 @@ void TestArgRecursive(FuncDef &funcDef, Sexp &s, int maxArgs, int argNum, functi
 }
 
 void TestArgs(FuncDef &funcDef, int maxArgs, function<bool(const Sexp &)> argSuccessFn) {
-  Sexp s;
-  s.Args.push_back(ExpressionPtr { new CompiledFunction(FuncDef(funcDef), TestSlispFn) });
+  Sexp s(NullSourceContext);
+  s.Args.push_back(ExpressionPtr { new CompiledFunction(NullSourceContext, FuncDef(funcDef), TestSlispFn) });
   ASSERT_NO_FATAL_FAILURE(TestBadExpressions(funcDef)) << "TestBadExpressions";
   ASSERT_NO_FATAL_FAILURE(TestArgRecursive(funcDef, s, maxArgs, 0, argSuccessFn));
 }
 
 static const int ANY_NARGS = -1;
 
-bool HomogeneousArgSuccessFn(int expectedMinArgs, int expectedMaxArgs, const ExpressionPtr &expr, const Sexp &sexp) {
+bool HomogeneousArgSuccessFn(size_t expectedMinArgs, size_t expectedMaxArgs, const ExpressionPtr &expr, const Sexp &sexp) {
   auto actualArgs = sexp.Args.size();
   if ((expectedMinArgs == ANY_NARGS || actualArgs >= (expectedMinArgs + 1)) &&
       (expectedMaxArgs == ANY_NARGS || actualArgs <= (expectedMaxArgs + 1))) { // (func arg[1] ... arg[expectedNArgs])

@@ -142,10 +142,10 @@ struct Function: public Literal {
   std::string Doc;
   std::vector<ExampleDef> Examples;
 
-  explicit Function();
-  explicit Function(FuncDef &&func);
-  explicit Function(FuncDef &&func, ExpressionPtr &sym);
-  explicit Function(FuncDef &&func, ExpressionPtr &&sym);
+  explicit Function(const SourceContext &sourceContext);
+  explicit Function(const SourceContext &sourceContext, FuncDef &&func);
+  explicit Function(const SourceContext &sourceContext, FuncDef &&func, ExpressionPtr &sym);
+  explicit Function(const SourceContext &sourceContext, FuncDef &&func, ExpressionPtr &&sym);
   explicit Function(const Function &rhs);
   virtual void Display(std::ostream &out) const override;
   bool operator==(const Function &rhs) const;
@@ -155,12 +155,13 @@ using FunctionPtr = std::unique_ptr<Function>;
 
 struct CompiledFunction: public Function {
   static const TypeInfo TypeInstance;
+  static const CompiledFunction Null;
 
   SlipFunction Fn;
 
-  explicit CompiledFunction();
+  explicit CompiledFunction(const SourceContext &sourceContext);
   explicit CompiledFunction(const CompiledFunction &rhs);
-  explicit CompiledFunction(FuncDef &&def, SlipFunction fn);
+  explicit CompiledFunction(const SourceContext &sourceContext, FuncDef &&def, SlipFunction fn);
   virtual ExpressionPtr Clone() const override;
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const CompiledFunction &rhs) const;
@@ -171,17 +172,20 @@ struct CompiledFunction: public Function {
 
 struct InterpretedFunction: public Function {
   static const TypeInfo TypeInstance;
+  static const InterpretedFunction Null;
 
   Quote           Code;
   ArgList         Args;
   SymbolTableType Closure;
 
-  explicit InterpretedFunction(FuncDef &&def, ExpressionPtr &&code, ArgList &&args);
+  explicit InterpretedFunction(const SourceContext &sourceContext, FuncDef &&def, ExpressionPtr &&code, ArgList &&args);
   explicit InterpretedFunction(const InterpretedFunction &rhs);
   virtual ExpressionPtr Clone() const override;
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const InterpretedFunction &rhs) const;
   bool operator!=(const InterpretedFunction &rhs) const;
+private:
+  explicit InterpretedFunction(const SourceContext &sourceContext);
 };
 
 class TypeHelper {

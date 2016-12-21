@@ -8,11 +8,29 @@
 
 //TODO: need global type list
 
+struct ModuleInfo {
+  std::string Name;
+  std::string FilePath;
+};
+
+struct SourceContext {
+  ModuleInfo* Module;
+  size_t LineNum;
+
+  explicit SourceContext();
+  explicit SourceContext(ModuleInfo* module, size_t lineNum);
+  explicit SourceContext(const SourceContext &rhs);
+};
+
+static const SourceContext NullSourceContext;
+
 struct Expression;
 
 using ExpressionPtr = std::unique_ptr<Expression>;
 using SymbolTableType = std::map<std::string, ExpressionPtr>;
-typedef ExpressionPtr (*ExpressionNewFn)();
+typedef ExpressionPtr (*ExpressionNewFn)(const SourceContext &);
+
+static ExpressionPtr NullExprPtr {};
 
 class TypeInfo {
 public:
@@ -22,8 +40,8 @@ public:
   TypeInfo(TypeInfo&&) = delete;
   TypeInfo& operator=(TypeInfo) = delete;
   const std::string& Name() const;
-  ExpressionPtr New() const;
-  static ExpressionPtr NewUndefined();
+  ExpressionPtr New(const SourceContext &sourceContext) const;
+  static ExpressionPtr NewUndefined(const SourceContext &sourceContext);
 private:
   const std::string TypeName;
   const ExpressionNewFn NewFn;
@@ -32,19 +50,24 @@ private:
 struct Expression {
   const TypeInfo& Type_;
 
-  explicit Expression(const TypeInfo& typeInfo);
+  explicit Expression(const SourceContext &sourceContext, const TypeInfo& typeInfo);
   virtual ~Expression();
   virtual ExpressionPtr Clone() const = 0;
-  virtual ExpressionPtr New() const;
+  virtual ExpressionPtr New(const SourceContext &sourceContext) const;
   virtual void Display(std::ostream& out) const = 0;
   virtual void Print(std::ostream& out) const;
   const std::string ToString() const;
   virtual bool operator==(const Expression &rhs) const = 0;
   bool operator!=(const Expression &rhs) const;
   const TypeInfo& Type() const;
+  void SetSourceContext(const SourceContext &newSourceContext);
+  void SetSourceContext(const Expression &fromExpr);
+  const SourceContext& GetSourceContext() const;
 
   friend std::ostream& operator<<(std::ostream &out, const Expression &expr);
   static bool AreEqual(const ExpressionPtr &lhs, const ExpressionPtr &rhs);
+private:
+  SourceContext SourceContext_;
 };
 
 class IIterator {
@@ -70,16 +93,17 @@ struct Void: public Expression {
 struct Literal: public Expression {
   static const TypeInfo TypeInstance;
 
-  explicit Literal(const TypeInfo& typeInfo);
+  explicit Literal(const SourceContext &sourceContext, const TypeInfo& typeInfo);
 };
 
 struct Bool: public Literal {
   static const TypeInfo TypeInstance;
+  static const Bool Null;
 
   bool Value;
 
-  explicit Bool();
-  explicit Bool(bool value);
+  explicit Bool(const SourceContext &sourceContext);
+  explicit Bool(const SourceContext &sourceContext, bool value);
   virtual ExpressionPtr Clone() const override;
   virtual void Display(std::ostream& out) const override;
   virtual bool operator==(const Expression &rhs) const override;
@@ -89,16 +113,17 @@ struct Bool: public Literal {
   bool operator>=(const Bool &rhs) const;
   Bool& operator=(Bool rhs);
   void Swap(Bool &rhs);
-  static ExpressionPtr NewInstance();
+  static ExpressionPtr NewInstance(const SourceContext &sourceContext);
 };
 
 struct Int: public Literal {
   static const TypeInfo TypeInstance; 
+  static const Int Null;
   
   int64_t Value;
 
-  explicit Int();
-  explicit Int(int64_t value);
+  explicit Int(const SourceContext &sourceContext);
+  explicit Int(const SourceContext &sourceContext, int64_t value);
   virtual ExpressionPtr Clone() const override;
   virtual void Display(std::ostream& out) const override;
   virtual bool operator==(const Expression &rhs) const override;
@@ -108,16 +133,17 @@ struct Int: public Literal {
   bool operator>=(const Int &rhs) const;
   Int& operator=(Int rhs);
   void Swap(Int &rhs);
-  static ExpressionPtr NewInstance();
+  static ExpressionPtr NewInstance(const SourceContext &sourceContext);
 };
 
 struct Float: public Literal {
   static const TypeInfo TypeInstance;
+  static const Float Null;
 
   double Value; 
 
-  explicit Float();
-  explicit Float(double value);
+  explicit Float(const SourceContext &sourceContext);
+  explicit Float(const SourceContext &sourceContext, double value);
   virtual ExpressionPtr Clone() const override;
   virtual void Display(std::ostream& out) const override;
   virtual bool operator==(const Expression &rhs) const override;
@@ -127,16 +153,17 @@ struct Float: public Literal {
   bool operator>=(const Float &rhs) const;
   Float& operator=(Float rhs);
   void Swap(Float &rhs);
-  static ExpressionPtr NewInstance();
+  static ExpressionPtr NewInstance(const SourceContext &sourceContext);
 };
 
 struct Str: public Literal, IIterable {
   static const TypeInfo TypeInstance;
+  static const Str Null;
   
   std::string Value;
 
-  explicit Str();
-  explicit Str(const std::string& value);
+  explicit Str(const SourceContext &sourceContext);
+  explicit Str(const SourceContext &sourceContext, const std::string& value);
   virtual ExpressionPtr Clone() const override;
   virtual void Display(std::ostream& out) const override;
   virtual void Print(std::ostream& out) const override;
@@ -148,7 +175,7 @@ struct Str: public Literal, IIterable {
   bool operator>=(const Str &rhs) const;
   Str& operator=(Str rhs);
   void Swap(Str &rhs);
-  static ExpressionPtr NewInstance();
+  static ExpressionPtr NewInstance(const SourceContext &sourceContext);
 };
 
 class StrIterator: public IIterator {
@@ -159,15 +186,16 @@ public:
 private:
   ExpressionPtr Curr;
   Str &Value;
-  int Index;
+  size_t Index;
 };
 
 struct Quote: public Literal, IIterable {
   static const TypeInfo TypeInstance;
+  static const Quote Null;
 
   ExpressionPtr Value;
 
-  explicit Quote(ExpressionPtr &&expr);
+  explicit Quote(const SourceContext &sourceContext, ExpressionPtr &&expr);
   virtual ExpressionPtr Clone() const override;
   virtual void Display(std::ostream& out) const override;
   virtual void Print(std::ostream& out) const override;
@@ -175,15 +203,16 @@ struct Quote: public Literal, IIterable {
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Quote &rhs) const;
   bool operator!=(const Quote &rhs) const;
-  static ExpressionPtr NewInstance();
+  static ExpressionPtr NewInstance(const SourceContext &sourceContext);
 };
 
 struct Symbol: public Expression {
   static const TypeInfo TypeInstance;
+  static const Symbol Null;
 
   std::string Value;
 
-  explicit Symbol(const std::string& value);
+  explicit Symbol(const SourceContext &sourceContext, const std::string& value);
   virtual ExpressionPtr Clone() const override;
   virtual void Display(std::ostream& out) const override;
   virtual bool operator==(const Expression &rhs) const override;
@@ -193,7 +222,7 @@ struct Symbol: public Expression {
   bool operator>=(const Symbol &rhs) const;
   Symbol& operator=(Symbol rhs);
   void Swap(Symbol &rhs);
-  static ExpressionPtr NewInstance();
+  static ExpressionPtr NewInstance(const SourceContext &sourceContext);
 };
 
 using ArgList = std::list<ExpressionPtr>;
@@ -206,19 +235,20 @@ class ArgListHelper {
 
 struct Sexp: public Expression, IIterable {
   static const TypeInfo TypeInstance;
+  static const Sexp Null;
 
   ArgList Args;
 
-  explicit Sexp();
-  explicit Sexp(ArgList &&args);
-  explicit Sexp(std::initializer_list<ExpressionPtr> &&args);
+  explicit Sexp(const SourceContext &sourceContext);
+  explicit Sexp(const SourceContext &sourceContext, ArgList &&args);
+  explicit Sexp(const SourceContext &sourceContext, std::initializer_list<ExpressionPtr> &&args);
   virtual void Display(std::ostream& out) const override;
   virtual ExpressionPtr Clone() const override;
   virtual IteratorPtr GetIterator();
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Sexp &rhs) const;
   bool operator!=(const Sexp &rhs) const;
-  static ExpressionPtr NewInstance();
+  static ExpressionPtr NewInstance(const SourceContext &sourceContext);
 };
 
 class SexpIterator: public IIterator {
@@ -234,10 +264,11 @@ private:
 
 struct Ref: public Expression, IIterable {
   static const TypeInfo TypeInstance;
+  static const Ref Null;
 
   ExpressionPtr &Value;
 
-  explicit Ref(ExpressionPtr &value);
+  explicit Ref(const SourceContext &sourceContext, ExpressionPtr &value);
   virtual ExpressionPtr Clone() const override;
   ExpressionPtr NewRef() const;
   virtual void Display(std::ostream& out) const override;
@@ -248,5 +279,5 @@ struct Ref: public Expression, IIterable {
 };
 
 namespace List {
-  ExpressionPtr GetNil();
+  ExpressionPtr GetNil(const SourceContext &sourceContext);
 }

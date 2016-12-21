@@ -7,11 +7,12 @@
 
 class StdLib: public Library {
   public:
-    virtual void Load(Interpreter &interpreter) override;
+    virtual bool Load(Interpreter &interpreter) override;
     virtual void UnLoad(Interpreter &interpreter) override;
     virtual void SetInteractiveMode(Interpreter &interpreter, bool enabled) override;
 
   private:
+    SourceContext SourceContext_;
     void LoadEnvironment(SymbolTable &symbols, const Environment &env);
 
     // Interpreter

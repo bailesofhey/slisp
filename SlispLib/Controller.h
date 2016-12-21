@@ -85,6 +85,8 @@ class Controller {
     ControllerArgs Args;
     OutputManager OutManager;
     std::unique_ptr<std::fstream> OutFile;
+    std::string CurrFilePath;
+    size_t CurrLineNum;
 
     void SetupEnvironment();
     void SetupModules();

@@ -11,6 +11,7 @@
 #include "FunctionDef.h"
 #include "CommandInterface.h"
 #include "InterpreterUtils.h"
+#include "ExpressionFactory.h"
 
 class Interpreter;
 
@@ -30,24 +31,82 @@ class StackFrame {
     Function& GetFunction();
 
   private:
-    Interpreter &Interp;
-    Function    &Func;
-    SymbolTable &Dynamics;
-    SymbolTable Locals;
-    Scope       DynamicScope;
+    Interpreter     &Interp;
+    Function        &Func;
+    SymbolTable     Dynamics;
+    SymbolTableType LocalStore;
+    SymbolTable     Locals;
+    Scope           DynamicScope;
 };
 
 class EvaluationContext {
   public:
-    Interpreter   &Interp;
-    Symbol        CurrentFunction;
-    ExpressionPtr &Expr;
-    ArgList       &Args;
+    Interpreter       &Interp;
+    Symbol            CurrentFunction;
+    ExpressionPtr     &Expr_;
+    ArgList           &Args;
+    SourceContext     SourceContext_;
+    ExpressionFactory Factory;
 
-    explicit EvaluationContext(Interpreter &interpreter, Symbol &currentFunction, ExpressionPtr &expr, ArgList &args);
+    explicit EvaluationContext(Interpreter &interpreter, CompiledFunction &compiledFunction, Symbol &currentFunction, ExpressionPtr &expr, ArgList &args);
+
+    const SourceContext& GetSourceContext() const;
+
     bool Evaluate(ExpressionPtr &expr, int argNum);
     bool Evaluate(ExpressionPtr &expr, const std::string &argName);
     bool EvaluateNoError(ExpressionPtr &expr);
+
+    template<typename T, typename... Args>
+    T* Alloc(Args&&... args) {
+      return Factory.Alloc<T>(std::forward<Args>(args)...);
+    }
+
+    template<typename T, typename... Args>
+    ExpressionContainer<T> New(Args&&... args) {
+      if (auto expr = Factory.New<T>(std::forward<Args>(args)...))
+        return expr;
+      else {
+        AllocationError();
+        return expr;
+      }
+    }
+
+    template<typename T, typename... Args>
+    bool ReturnNew(Args&&... args) {
+      Expr_.reset(Alloc<T>(std::forward<Args>(args)...));
+      if (Expr_)
+        return true;
+      else {
+        AllocationError();
+        return false;
+      }
+    }
+
+    bool Return(ExpressionPtr &expr) {
+      Expr_.swap(expr);
+      if (Expr_)
+        return true;
+      else
+        return false;
+    }
+
+    bool Return(Expression *expr) {
+      Expr_.reset(expr);
+      if (Expr_)
+        return true;
+      else
+        return false;
+    }
+
+    bool ReturnNil() {
+      ExpressionPtr nil = List::GetNil(SourceContext_);
+      if (nil)
+        return Return(nil);
+      else {
+        AllocationError();
+        return false;
+      }
+    }
 
     template<class T>
     T* GetRequiredValue(ExpressionPtr &expr) {
@@ -86,6 +145,7 @@ class EvaluationContext {
     bool TypeError(const TypeInfo &expected, const ExpressionPtr &actual);
     bool TypeError(const std::string &expectedName, const ExpressionPtr &actual);
     bool ArgumentExpectedError();
+    bool AllocationError();
 };
 
 class Interpreter {
@@ -93,6 +153,7 @@ class Interpreter {
     using SymbolFunctor = std::function<void(const std::string&, ExpressionPtr&)>;
 
     explicit Interpreter(CommandInterface &commandInterface);
+    ~Interpreter();
     
     bool Evaluate(ExpressionPtr &&expr);
     bool Evaluate(ExpressionPtr &expr);
@@ -111,7 +172,7 @@ class Interpreter {
     int GetExitCode() const;
     void SetExitCode(int exitCode);
 
-    SymbolTable& GetDynamicSymbols();
+    SymbolTable GetDynamicSymbols(const SourceContext &sourceContext);
 
     StackFrame& GetCurrentStackFrame();
     void PushStackFrame(StackFrame &stackFrame);
@@ -121,11 +182,16 @@ class Interpreter {
 
     Environment& GetEnvironment();
 
+    ModuleInfo* CreateModule(const std::string &moduleName, const std::string &filePath);
+
   private:
     using TypeReducer      = std::function<bool(ExpressionPtr &expr)>;
     using TypeReducersType = std::map<const TypeInfo*, TypeReducer>;
     
     CommandInterface         &CmdInterface;
+    std::vector<ModuleInfo*> Modules;  
+    SourceContext            SourceContext_;
+    SymbolTableType          DynamicSymbolStore;
     SymbolTable              DynamicSymbols;
     InterpreterSettings      Settings;
     std::vector<StackFrame*> StackFrames;

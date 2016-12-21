@@ -11,6 +11,28 @@ using namespace std;
 
 //=============================================================================
 
+
+//=============================================================================
+
+SourceContext::SourceContext():
+  Module(nullptr),
+  LineNum(0)
+{
+}
+
+SourceContext::SourceContext(ModuleInfo* module, size_t lineNum):
+  Module(module),
+  LineNum(lineNum)
+{
+}
+
+SourceContext::SourceContext(const SourceContext &rhs):
+  Module(rhs.Module),
+  LineNum(rhs.LineNum)
+{
+}
+//=============================================================================
+
 TypeInfo::TypeInfo(const string &typeName, const ExpressionNewFn newFn):
   TypeName { typeName },
   NewFn { newFn }
@@ -21,18 +43,19 @@ const string& TypeInfo::Name() const {
   return TypeName;
 }
 
-ExpressionPtr TypeInfo::New() const {
-  return (*NewFn)();
+ExpressionPtr TypeInfo::New(const SourceContext &sourceContext) const {
+  return (*NewFn)(sourceContext);
 }
 
-ExpressionPtr TypeInfo::NewUndefined() {
+ExpressionPtr TypeInfo::NewUndefined(const SourceContext &sourceContext) {
   return ExpressionPtr { };
 }
 
 //=============================================================================
 
-Expression::Expression(const TypeInfo& typeInfo):
-  Type_ { typeInfo }
+Expression::Expression(const SourceContext &sourceContext, const TypeInfo& typeInfo):
+  Type_ { typeInfo },
+  SourceContext_ { sourceContext }
 { 
 }
 
@@ -43,8 +66,8 @@ const TypeInfo& Expression::Type() const {
   return Type_;
 }
 
-ExpressionPtr Expression::New() const {
-  return Type().New();
+ExpressionPtr Expression::New(const SourceContext &sourceContext) const {
+  return Type().New(sourceContext);
 }
 
 bool Expression::operator!=(const Expression &rhs) const {
@@ -73,6 +96,18 @@ ostream& operator<<(ostream &out, const Expression &expr) {
   return out;
 };
 
+void Expression::SetSourceContext(const SourceContext &newSourceContext) {
+  SourceContext_ = newSourceContext;
+}
+
+void Expression::SetSourceContext(const Expression &fromExpr) {
+  SetSourceContext(fromExpr.SourceContext_);
+}
+
+const SourceContext& Expression::GetSourceContext() const {
+  return SourceContext_;
+}
+
 //=============================================================================
 
 IIterator::~IIterator() {
@@ -86,22 +121,23 @@ const TypeInfo Void::TypeInstance { "void", TypeInfo::NewUndefined };
 
 const TypeInfo Literal::TypeInstance { "literal", TypeInfo::NewUndefined };
 
-Literal::Literal(const TypeInfo& typeInfo):
-  Expression { typeInfo }
+Literal::Literal(const SourceContext &sourceContext, const TypeInfo& typeInfo):
+  Expression { sourceContext, typeInfo }
 {
 }
 
 //=============================================================================
 
 const TypeInfo Bool::TypeInstance("bool", Bool::NewInstance);
+const Bool Bool::Null(NullSourceContext, false);
 
-Bool::Bool():
-  Bool { false }
+Bool::Bool(const SourceContext &sourceContext):
+  Bool { sourceContext, false }
 {
 }
 
-Bool::Bool(bool value):
-  Literal { TypeInstance },
+Bool::Bool(const SourceContext &sourceContext, bool value):
+  Literal { sourceContext, TypeInstance },
   Value { value }
 {
 }
@@ -147,21 +183,22 @@ void Bool::Display(ostream &out) const {
     out << "false";
 }
 
-ExpressionPtr Bool::NewInstance() {
-  return ExpressionPtr { new Bool() };
+ExpressionPtr Bool::NewInstance(const SourceContext &sourceContext) {
+  return ExpressionPtr { new Bool(sourceContext) };
 }
 
 //=============================================================================
 
 const TypeInfo Int::TypeInstance("int", Int::NewInstance);
+const Int Int::Null(NullSourceContext, 0);
 
-Int::Int():
-  Int { 0 }
+Int::Int(const SourceContext &sourceContext):
+  Int { sourceContext, 0 }
 {
 }
 
-Int::Int(int64_t value):
-  Literal { TypeInstance },
+Int::Int(const SourceContext &sourceContext, int64_t value):
+  Literal { sourceContext, TypeInstance },
   Value { value }
 {
 }
@@ -204,21 +241,21 @@ void Int::Display(ostream &out) const {
   out << Value;
 }
 
-ExpressionPtr Int::NewInstance() {
-  return ExpressionPtr { new Int() };
+ExpressionPtr Int::NewInstance(const SourceContext &sourceContext) {
+  return ExpressionPtr { new Int(sourceContext) };
 }
 
 //=============================================================================
 
 const TypeInfo Float::TypeInstance("float", Float::NewInstance);
 
-Float::Float():
-  Float { 0 }
+Float::Float(const SourceContext &sourceContext):
+  Float { sourceContext, 0 }
 {
 }
 
-Float::Float(double value):
-  Literal { TypeInstance },
+Float::Float(const SourceContext &sourceContext, double value):
+  Literal { sourceContext, TypeInstance },
   Value { value }
 {
 }
@@ -261,22 +298,23 @@ void Float::Display(ostream &out) const {
   out << setprecision(17) << Value;
 }
 
-ExpressionPtr Float::NewInstance() {
-  return ExpressionPtr { new Float() };
+ExpressionPtr Float::NewInstance(const SourceContext &sourceContext) {
+  return ExpressionPtr { new Float(sourceContext) };
 }
 
 
 //=============================================================================
 
 const TypeInfo Str::TypeInstance("str", Str::NewInstance);
+const Str Str::Null(NullSourceContext, "");
 
-Str::Str():
-  Str { "" }
+Str::Str(const SourceContext &sourceContext):
+  Str { sourceContext, "" }
 { 
 }
 
-Str::Str(const string &value):
-  Literal { TypeInstance },
+Str::Str(const SourceContext &sourceContext, const string &value):
+  Literal { sourceContext, TypeInstance },
   Value { value }
 {
 }
@@ -327,10 +365,9 @@ void Str::Print(ostream &out) const {
   out << Value;
 }
 
-ExpressionPtr Str::NewInstance() {
-  return ExpressionPtr { new Str() };
+ExpressionPtr Str::NewInstance(const SourceContext &sourceContext) {
+  return ExpressionPtr { new Str(sourceContext) };
 }
-
 
 //=============================================================================
 
@@ -343,7 +380,7 @@ StrIterator::StrIterator(Str &str):
 // TODO: really should be returning a CharRef (see #98)
 ExpressionPtr& StrIterator::Next() {
   if (Index < Value.Value.length()) {
-    Curr = ExpressionPtr { new Str(string(1, Value.Value[Index++]))};
+    Curr = ExpressionPtr { new Str(Value.GetSourceContext(), string(1, Value.Value[Index++]))};
     return Curr;
   }
   else
@@ -357,15 +394,16 @@ int64_t StrIterator::GetLength() {
 //=============================================================================
 
 const TypeInfo Quote::TypeInstance("quote", Quote::NewInstance);
+const Quote Quote::Null(NullSourceContext, ExpressionPtr {});
 
-Quote::Quote(ExpressionPtr &&expr):
-  Literal { TypeInstance },
+Quote::Quote(const SourceContext &sourceContext, ExpressionPtr &&expr):
+  Literal { sourceContext, TypeInstance },
   Value { move(expr) }
 {
 }
 
 ExpressionPtr Quote::Clone() const {
-  return ExpressionPtr { new Quote(move(Value->Clone())) };
+  return ExpressionPtr { new Quote(GetSourceContext(), move(Value->Clone())) };
 }
 
 IteratorPtr Quote::GetIterator() {
@@ -397,16 +435,17 @@ void Quote::Print(ostream &out) const {
   Value->Print(out);
 }
 
-ExpressionPtr Quote::NewInstance() {
-  return ExpressionPtr { new Quote(ExpressionPtr {}) };
+ExpressionPtr Quote::NewInstance(const SourceContext &sourceContext) {
+  return ExpressionPtr { new Quote(sourceContext, ExpressionPtr {}) };
 }
 
 //=============================================================================
 
 const TypeInfo Symbol::TypeInstance("symbol", TypeInfo::NewUndefined);
+const Symbol Symbol::Null(NullSourceContext, "");
 
-Symbol::Symbol(const string &value):
-  Expression { TypeInstance },
+Symbol::Symbol(const SourceContext &sourceContext, const string &value):
+  Expression { sourceContext, TypeInstance },
   Value { value }
 {
 }
@@ -478,20 +517,21 @@ void ArgListHelper::CopyTo(const ArgList &src, ArgList &dst) {
 //=============================================================================
 
 const TypeInfo Sexp::TypeInstance("sexp", Sexp::NewInstance);
+const Sexp Sexp::Null(NullSourceContext);
 
-Sexp::Sexp():
-  Expression { TypeInstance }
+Sexp::Sexp(const SourceContext &sourceContext):
+  Expression { sourceContext, TypeInstance }
 {
 }
 
-Sexp::Sexp(ArgList &&args):
-  Sexp()
+Sexp::Sexp(const SourceContext &sourceContext, ArgList &&args):
+  Sexp(sourceContext)
 {
   Args = move(args);
 }
 
-Sexp::Sexp(initializer_list<ExpressionPtr> &&args):
-  Sexp()
+Sexp::Sexp(const SourceContext &sourceContext, initializer_list<ExpressionPtr> &&args):
+  Sexp(sourceContext)
 {
   if (args.size()) {
     for (auto &arg : args) {
@@ -502,7 +542,7 @@ Sexp::Sexp(initializer_list<ExpressionPtr> &&args):
 }
 
 ExpressionPtr Sexp::Clone() const {
-  ExpressionPtr copy { new Sexp };
+  ExpressionPtr copy { new Sexp(GetSourceContext()) };
   Sexp *sexpCopy = static_cast<Sexp*>(copy.get());
   for (auto &arg : Args)
     sexpCopy->Args.push_back(arg->Clone());
@@ -540,8 +580,8 @@ void Sexp::Display(ostream &out) const {
   out << ")";
 }
 
-ExpressionPtr Sexp::NewInstance() {
-  return ExpressionPtr { new Sexp() };
+ExpressionPtr Sexp::NewInstance(const SourceContext &sourceContext) {
+  return ExpressionPtr { new Sexp(sourceContext) };
 }
 
 //=============================================================================
@@ -567,9 +607,10 @@ int64_t SexpIterator::GetLength() {
 //=============================================================================
 
 const TypeInfo Ref::TypeInstance { "ref", TypeInfo::NewUndefined };
+const Ref Ref::Null(NullSourceContext, const_cast<ExpressionPtr&>(NullExprPtr));
 
-Ref::Ref(ExpressionPtr &value):
-  Expression(TypeInstance),
+Ref::Ref(const SourceContext &sourceContext, ExpressionPtr &value):
+  Expression(sourceContext, TypeInstance),
   Value(value)
 {
 }
@@ -579,7 +620,7 @@ ExpressionPtr Ref::Clone() const {
 }
 
 ExpressionPtr Ref::NewRef() const {
-  return ExpressionPtr { new Ref(Value) }; 
+  return ExpressionPtr { new Ref(GetSourceContext(), Value) }; 
 }
 
 void Ref::Display(ostream& out) const {
@@ -607,6 +648,15 @@ bool Ref::operator!=(const Ref &rhs) const {
 
 //=============================================================================
 
-ExpressionPtr List::GetNil() {
-  return ExpressionPtr { new Quote { ExpressionPtr { new Sexp {} } } };
+ExpressionPtr List::GetNil(const SourceContext &sourceContext) {
+  return ExpressionPtr {
+    new Quote { 
+      sourceContext, 
+      ExpressionPtr { 
+        new Sexp { 
+          sourceContext 
+        } 
+      } 
+    }
+  };
 }

@@ -7,6 +7,8 @@
 
 using namespace std;
 
+//=============================================================================
+
 ControllerArgs::ControllerArgs(int argc, const char * const *argv):
   ScriptArgs(),
   Flags(0)
@@ -106,10 +108,8 @@ struct ImportModuleFunctor {
     if (auto *sym = ctx.GetRequiredValue<Symbol>(firstArg)) {
       string fileName = sym->Value + ".slisp";
       bool result = Controller_.RunFile(fileName);
-      if (result) {
-        ctx.Expr = List::GetNil();
-        return true;
-      }
+      if (result)
+        return ctx.ReturnNil();
       else
         return ctx.Error("Failed to import: " + fileName);
     }
@@ -185,13 +185,21 @@ void Controller::Run(const string &code) {
 
 bool Controller::RunFile(const string &inPath) {
   OutputSettingsScope scope(OutManager, 0);
-  std::istream& oldIn = CmdInterface.GetInput();
+  istream& oldIn = CmdInterface.GetInput();
+  string oldFilePath = CurrFilePath;
+  size_t oldLineNum = CurrLineNum;
   fstream in;
   in.open(inPath, ios_base::in);
   if (in.is_open()) {
     CmdInterface.SetInput(in);
+    CurrFilePath = inPath;
+    CurrLineNum = 0;
+    Parser_.LineNum = 0;
     REPL();
     CmdInterface.SetInput(oldIn);
+    Parser_.LineNum = oldLineNum;
+    CurrFilePath = oldFilePath;
+    CurrLineNum = oldLineNum;
     return true;
   }
   return false;
@@ -230,10 +238,15 @@ void Controller::SetupEnvironment() {
 }
 
 void Controller::SetupModules() {
-  Lib.Load(Interpreter_);
-  OutManager.SetFlags(OutputManager::ShowPrompt | OutputManager::ShowResults);
+  if (!Lib.Load(Interpreter_))
+    throw runtime_error("Failed to load StdLib module");
 
-  auto &symbols = Interpreter_.GetDynamicSymbols();
+  auto *thisMod = Interpreter_.CreateModule("Controller", "");
+  if (!thisMod)
+    throw runtime_error("Failed to load Controller module");
+  
+  SourceContext sourceContext { thisMod, 0 };
+  auto &symbols = Interpreter_.GetDynamicSymbols(sourceContext);
   symbols.PutSymbolFunction(
     "import", 
     {"(import file) -> nil"},
@@ -242,6 +255,8 @@ void Controller::SetupModules() {
     ImportModuleFunctor(*this), 
     FuncDef { FuncDef::OneArg(Symbol::TypeInstance), FuncDef::OneArg(Bool::TypeInstance) }
   );
+
+  OutManager.SetFlags(OutputManager::ShowPrompt | OutputManager::ShowResults);
 }
 
 void Controller::DisplayHelp() {
@@ -263,6 +278,8 @@ void Controller::REPL() {
 
 void Controller::RunSingle() {
   stringstream ss;
+  ++CurrLineNum;
+  Parser_.FilePath = CurrFilePath;
   if (Parser_.Parse()) {
     auto exprTree = Parser_.ExpressionTree();
     if (exprTree) {

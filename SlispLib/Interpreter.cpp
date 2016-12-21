@@ -22,9 +22,10 @@ StackFrame::StackFrame(Interpreter &interp, Function &func):
 StackFrame::StackFrame(Interpreter &interp, Function &&func):
   Interp { interp },
   Func { func },
-  Locals {},
-  Dynamics { interp.GetDynamicSymbols() },
-  DynamicScope { Dynamics }
+  LocalStore { },
+  Locals { LocalStore, func.GetSourceContext() },
+  Dynamics { interp.GetDynamicSymbols(func.GetSourceContext()) },
+  DynamicScope { Dynamics, func.GetSourceContext() }
 {
   Interp.PushStackFrame(*this);
 }
@@ -80,12 +81,18 @@ Function& StackFrame::GetFunction() {
 }
 //=============================================================================
 
-EvaluationContext::EvaluationContext(Interpreter &interpreter, Symbol &currentFunction, ExpressionPtr &expr, ArgList &args):
+EvaluationContext::EvaluationContext(Interpreter &interpreter, CompiledFunction &compiledFunction, Symbol &currentFunction, ExpressionPtr &expr, ArgList &args):
   Interp(interpreter),
   CurrentFunction(currentFunction),
-  Expr(expr),
-  Args(args)
+  Expr_(expr),
+  Args(args),
+  SourceContext_(compiledFunction.GetSourceContext()),
+  Factory(SourceContext_)
 {
+}
+
+const SourceContext& EvaluationContext::GetSourceContext() const {
+  return SourceContext_;
 }
 
 bool EvaluationContext::EvaluateNoError(ExpressionPtr &expr) {
@@ -143,7 +150,7 @@ Sexp* EvaluationContext::GetList(ExpressionPtr &expr) {
 }
 
 const string EvaluationContext::GetThisFunctionName() {
-  if (auto thisSexp = TypeHelper::GetValue<Sexp>(Expr)) {
+  if (auto thisSexp = TypeHelper::GetValue<Sexp>(Expr_)) {
     if (auto thisFn = TypeHelper::GetValue<Function>(thisSexp->Args.front())) {
       if (thisFn->Symbol) {
         if (auto thisFnSym = TypeHelper::GetValue<Symbol>(thisFn->Symbol)) {
@@ -184,15 +191,22 @@ bool EvaluationContext::ArgumentExpectedError() {
   return Error("Argument expected");
 }
 
+bool EvaluationContext::AllocationError() {
+  return Error("Allocation failed");
+}
+
 //=============================================================================
 
 Interpreter::Interpreter(CommandInterface &cmdInterface):
   CmdInterface { cmdInterface },
-  DynamicSymbols { },
+  Modules { },
+  SourceContext_ { CreateModule("Internal", ""), 0 },
+  DynamicSymbolStore { },
+  DynamicSymbols { DynamicSymbolStore, SourceContext_ },
   Settings { DynamicSymbols },
   StackFrames { },
-  MainFunc { },
-  MainFrame {*this, MainFunc},
+  MainFunc { SourceContext_ },
+  MainFrame { *this, MainFunc },
   TypeReducers { },
   Errors { },
   ErrorWhere { "Interpreter" },
@@ -201,8 +215,13 @@ Interpreter::Interpreter(CommandInterface &cmdInterface):
   ExitCode { 0 },
   Environment_ { }
 {
-  MainFunc.Symbol.reset(new Symbol("__main__"));
+  MainFunc.Symbol.reset(new Symbol(SourceContext_, "__main__"));
   RegisterReducers();
+}
+
+Interpreter::~Interpreter() {
+  for (auto *mod : Modules)
+    delete mod;
 }
 
 InterpreterSettings& Interpreter::GetSettings() {
@@ -222,7 +241,6 @@ vector<string> Interpreter::GetErrorStackTrace() const {
 bool Interpreter::PushError(const EvalError &error) {
   if (Errors.empty()) {
     Errors.push_back(error);
-
     ErrorStackTrace.clear();
     for (auto curr = crbegin(StackFrames); curr != crend(StackFrames); ++curr)
       ErrorStackTrace.push_back((*curr)->GetFunction().SymbolName());
@@ -251,8 +269,8 @@ void Interpreter::SetExitCode(int exitCode) {
   ExitCode = exitCode;
 }
 
-SymbolTable& Interpreter::GetDynamicSymbols() {
-  return DynamicSymbols;
+SymbolTable Interpreter::GetDynamicSymbols(const SourceContext &sourceContext) {
+  return SymbolTable(DynamicSymbolStore, sourceContext);
 }
 
 StackFrame& Interpreter::GetCurrentStackFrame() {
@@ -291,6 +309,16 @@ CommandInterface& Interpreter::GetCommandInterface() {
 
 Environment& Interpreter::GetEnvironment() {
   return Environment_;
+}
+
+ModuleInfo* Interpreter::CreateModule(const string& name, const string &filePath) {
+  unique_ptr<ModuleInfo> newModulePtr { new ModuleInfo { name, filePath } };
+  if (newModulePtr) {
+    ModuleInfo* newMod = newModulePtr.get();
+    Modules.push_back(newModulePtr.release());
+    return newMod;
+  }
+  return nullptr;
 }
 
 bool Interpreter::GetCurrFrameSymbol(const string &symbolName, ExpressionPtr &value) {
@@ -416,7 +444,7 @@ bool Interpreter::ReduceSexpFunction(ExpressionPtr &expr, Function &function) {
 bool Interpreter::ReduceSexpCompiledFunction(ExpressionPtr &expr, CompiledFunction &function, ArgList &args) {
   if (function.Symbol) {
     if (auto fnSym = TypeHelper::GetValue<Symbol>(function.Symbol)) {
-      EvaluationContext ctx(*this, *fnSym, expr, args);
+      EvaluationContext ctx(*this, function, *fnSym, expr, args);
       return function.Fn(ctx);
     }
   } 
@@ -472,14 +500,14 @@ bool Interpreter::EvaluateArgs(ArgList &args) {
 }
 
 bool Interpreter::BuildListSexp(Sexp &wrappedSexp, ArgList &args) {
-  wrappedSexp.Args.push_front(ExpressionPtr { new Symbol(Settings.GetListSexp()) });
+  wrappedSexp.Args.push_front(ExpressionPtr { new Symbol(wrappedSexp.GetSourceContext(), Settings.GetListSexp()) });
   ArgListHelper::CopyTo(args, wrappedSexp.Args);
   return true;
 }
 
 bool Interpreter::ReduceSexpList(ExpressionPtr &expr, ArgList &args) {
   if (EvaluateArgs(args)) {
-    ExpressionPtr wrappedExpr { new Sexp {} };
+    ExpressionPtr wrappedExpr { new Sexp { expr->GetSourceContext() } };
     auto wrappedSexp = static_cast<Sexp*>(wrappedExpr.get());
     if (!BuildListSexp(*wrappedSexp, args))
       return false;

@@ -16,7 +16,9 @@ Parser::Parser(CommandInterface &commandInterface, ITokenizer &tokenizer, Interp
   CommandInterface_ { commandInterface },
   Tokenizer_ { tokenizer },
   Settings { settings },
-  Debug { debug }
+  SourceContext_ { },
+  Debug { debug },
+  LineNum { 0 }
 {
 }
 
@@ -24,6 +26,9 @@ bool Parser::Parse() {
   Reset();
 
   string line;
+  ++LineNum;
+  if (Debug)
+    cout << "Source: " << FilePath << ":" << LineNum << endl;
   if (CommandInterface_.ReadInputLine(line)) {
     Tokenizer_.SetLine(line);
     
@@ -43,12 +48,12 @@ bool Parser::Parse() {
   return false;
 }
 
-bool HasInfixArgCount(InterpreterSettings &settings, Sexp &sexp, ArgList::iterator &currArg, ArgList::iterator &firstPos) {
+bool Parser::HasInfixArgCount(InterpreterSettings &settings, Sexp &sexp, ArgList::iterator &currArg, ArgList::iterator &firstPos) const {
   size_t nArgs = sexp.Args.size();
   if (nArgs < 3) // (3 + 4)
     return false;
 
-  ExpressionPtr defaultSexpArg { new Symbol(settings.GetDefaultSexp()) };
+  ExpressionPtr defaultSexpArg { new Symbol(SourceContext_, settings.GetDefaultSexp()) };
   if (Expression::AreEqual(defaultSexpArg, *currArg)) {
     firstPos = ++currArg;
     if ((nArgs % 2) == 1)
@@ -114,8 +119,8 @@ void Parser::TransformInfixSexp(Sexp &sexp, bool isImplicit) const {
     auto fnFirst = begin(newArgs);
     auto fnCurr = fnFirst;
     auto fnArg = end(newArgs);
-    ExpressionPtr opSym { new Symbol(infixOp.first) };
-    ExpressionPtr opExpr { new Sexp() };
+    ExpressionPtr opSym { new Symbol(SourceContext_, infixOp.first) };
+    ExpressionPtr opExpr { new Sexp(SourceContext_) };
     Sexp &opSexp = static_cast<Sexp&>(*opExpr);
     size_t fnArgNum = 1;
     size_t totalArgNum = 1;
@@ -183,8 +188,8 @@ unique_ptr<Sexp> Parser::ExpressionTree() const {
 }
 
 void Parser::Reset() {
-  ExprTree = unique_ptr<Sexp>(new Sexp);
-  ExprTree->Args.push_back(ExpressionPtr { new Symbol { Settings.GetDefaultSexp() } });
+  ExprTree = unique_ptr<Sexp>(new Sexp(SourceContext_));
+  ExprTree->Args.push_back(ExpressionPtr { new Symbol { SourceContext_, Settings.GetDefaultSexp() } });
   Error_ = "";
   Depth = 0;
 }
@@ -234,11 +239,11 @@ bool Parser::ParseNumber(Sexp &root) {
   if (!val.empty()) {
     int base = NumConverter::GetNumberBase(val);
     if (base == 10 && NumConverter::IsBase10NumberFloat(val)) {
-      ExpressionPtr numExpr { new Float() };
+      ExpressionPtr numExpr { new Float(SourceContext_) };
       return ParseNum<Float>(val, numExpr, root, Error_);
     }
     else {
-      ExpressionPtr numExpr { new Int() };
+      ExpressionPtr numExpr { new Int(SourceContext_) };
       return ParseNum<Int>(val, numExpr, root, Error_);
     }
   }
@@ -251,7 +256,7 @@ bool Parser::ParseNumber(Sexp &root) {
 bool Parser::ParseSymbol(Sexp &root) {
   auto &val = (*Tokenizer_).Value;
   if (!val.empty()) {
-    root.Args.push_back(ExpressionPtr { new Symbol { val } });
+    root.Args.push_back(ExpressionPtr { new Symbol { SourceContext_, val } });
     return true;
   }
   else {
@@ -261,14 +266,14 @@ bool Parser::ParseSymbol(Sexp &root) {
 }
 
 bool Parser::ParseString(Sexp &root) {
-  root.Args.push_back(ExpressionPtr { new Str { (*Tokenizer_).Value } });
+  root.Args.push_back(ExpressionPtr { new Str { SourceContext_, (*Tokenizer_).Value } });
   return true;
 }
 
 bool Parser::ParseParenOpen(Sexp &root) {
   ++Depth;
   ++Tokenizer_;
-  auto currSexpExpr = ExpressionPtr { new Sexp };
+  auto currSexpExpr = ExpressionPtr { new Sexp(SourceContext_) };
   auto currSexp = static_cast<Sexp*>(currSexpExpr.get());
   return ParseSexpArgs(root, *currSexp);
 }
@@ -280,7 +285,7 @@ bool Parser::ParseParenClose(Sexp &root) {
 
 bool Parser::ParseSexpArgs(Sexp &root, Sexp &curr) {
   bool parseResult = true;
-  Sexp currLineSexp;
+  Sexp currLineSexp { SourceContext_ };
   bool isMultiline = false;
 begin:
   currLineSexp.Args.clear();
@@ -297,7 +302,7 @@ begin:
     ArgListHelper::CopyTo(currLineSexp.Args, curr.Args);
     if (isMultiline)
       TransformInfixSexp(curr, false); 
-    root.Args.push_back(ExpressionPtr { curr.Clone() });
+    root.Args.emplace_back(curr.Clone());
     (*Tokenizer_).Type = TokenTypes::UNKNOWN;
     return true;
   }
@@ -305,6 +310,9 @@ begin:
     if (Depth) {
       string line;
       if (CommandInterface_.HasMore()) {
+        ++LineNum;
+        if (Debug)
+          cout << "Source: " << FilePath << ":" << LineNum << endl;
         CommandInterface_.ReadContinuedInputLine(line);
         Tokenizer_.SetLine(line);
         ++Tokenizer_;
@@ -326,12 +334,12 @@ begin:
 }
 
 bool Parser::ParseQuote(Sexp &root) {
-  ExpressionPtr newExpr { new Sexp };
+  ExpressionPtr newExpr { new Sexp(SourceContext_) };
   Sexp &newSexp = static_cast<Sexp&>(*newExpr);
   ++Tokenizer_;
   if (ParseToken(newSexp)) {
     if (!newSexp.Args.empty()) {
-      root.Args.emplace_back(new Quote(move(newSexp.Args.front())));
+      root.Args.emplace_back(new Quote(SourceContext_, move(newSexp.Args.front())));
       newSexp.Args.pop_front();
       return true;
     }

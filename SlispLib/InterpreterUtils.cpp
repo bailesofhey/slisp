@@ -15,6 +15,11 @@ EvalError::EvalError(const string &where, const string &what):
 }
 
 //=============================================================================
+SymbolTable::SymbolTable(SymbolTableType& symbols, const SourceContext &sourceContext):
+  Symbols(symbols),
+  SourceContext_(sourceContext)
+{
+}
 
 void SymbolTable::PutSymbol(const string &symbolName, ExpressionPtr &value) {
   PutSymbol(symbolName, move(value));
@@ -37,35 +42,35 @@ void SymbolTable::PutSymbol(const string &symbolName, ExpressionPtr &&value) {
 }
 
 void SymbolTable::PutSymbolBool(const string &symbolName, bool value) {
-  PutSymbol(symbolName, ExpressionPtr { new Bool { value } });
+  PutSymbol(symbolName, ExpressionPtr { new Bool { SourceContext_, value } });
 }
 
 void SymbolTable::PutSymbolStr(const string &symbolName, const string &value) {
-  PutSymbol(symbolName, ExpressionPtr { new Str { value } });
+  PutSymbol(symbolName, ExpressionPtr { new Str { SourceContext_, value } });
 }
 
 void SymbolTable::PutSymbolInt(const string &symbolName, int64_t value) {
-  PutSymbol(symbolName, ExpressionPtr { new Int { value } });
+  PutSymbol(symbolName, ExpressionPtr { new Int { SourceContext_, value } });
 }
 
 void SymbolTable::PutSymbolFloat(const string &symbolName, double value) {
-  PutSymbol(symbolName, ExpressionPtr { new Float { value } });
+  PutSymbol(symbolName, ExpressionPtr { new Float { SourceContext_, value } });
 }
 
 void SymbolTable::PutSymbolQuote(const string &symbolName, ExpressionPtr &&value) {
-  PutSymbol(symbolName, ExpressionPtr { new Quote { move(value) } });
+  PutSymbol(symbolName, ExpressionPtr { new Quote { SourceContext_, move(value) } });
 }
 
 void SymbolTable::PutSymbolFunction(const string &symbolName, Function &&func) {
-  func.Symbol = ExpressionPtr { new Symbol(symbolName) };
+  func.Symbol = ExpressionPtr { new Symbol(SourceContext_, symbolName) };
   PutSymbol(symbolName, func.Clone());
 }
 
 void SymbolTable::PutSymbolFunction(const string &symbolName, initializer_list<string> signatures, const string &doc, initializer_list<ExampleDef> examples, SlipFunction fn, FuncDef &&def) {
-  ExpressionPtr funcExpr { new CompiledFunction { move(def), fn } };
+  ExpressionPtr funcExpr { new CompiledFunction { SourceContext_, move(def), fn } };
   if (funcExpr) {
     auto *func = static_cast<CompiledFunction*>(funcExpr.get());
-    func->Symbol = ExpressionPtr { new Symbol(symbolName) };
+    func->Symbol = ExpressionPtr { new Symbol(SourceContext_, symbolName) };
     func->Signatures = signatures;
     func->Doc = doc;
     func->Examples = examples;
@@ -115,9 +120,10 @@ size_t SymbolTable::GetCount() const {
 
 //=============================================================================
 
-Scope::Scope(SymbolTable &symbols):
+Scope::Scope(SymbolTable &symbols, const SourceContext &sourceContext):
   Symbols { symbols },
-  ShadowedSymbols {},
+  ShadowedSymbolStore {},
+  ShadowedSymbols { ShadowedSymbolStore, sourceContext },
   ScopedSymbols {}
 {
 }
@@ -200,7 +206,7 @@ void InterpreterSettings::UnregisterInfixSymbol(const string &symbolName) {
 }
 
 int InterpreterSettings::GetInfixSymbolPrecedence(const string &symbolName) const {
-  for (int i = 0; i < InfixSymbolNames.size(); ++i) {
+  for (size_t i = 0; i < InfixSymbolNames.size(); ++i) {
     if (InfixSymbolNames[i] == symbolName)
       return i;
   }

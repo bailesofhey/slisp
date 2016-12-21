@@ -18,10 +18,16 @@ using namespace std;
 
 //=============================================================================
 
-void StdLib::Load(Interpreter &interpreter) {
+bool StdLib::Load(Interpreter &interpreter) {
+  auto* thisModule = interpreter.CreateModule("StdLib", "");
+  if (!thisModule)
+    return false;
+
+  SourceContext_ = SourceContext(thisModule, 0);
+
   // Constants
 
-  auto &symbols = interpreter.GetDynamicSymbols();
+  auto &symbols = interpreter.GetDynamicSymbols(SourceContext_);
   auto &settings = interpreter.GetSettings();
 
   LoadEnvironment(symbols, interpreter.GetEnvironment());
@@ -943,8 +949,9 @@ void StdLib::Load(Interpreter &interpreter) {
 
   // Lists
 
-  symbols.PutSymbolQuote("nil", ExpressionPtr { new Sexp { } });
+  symbols.PutSymbolQuote("nil", ExpressionPtr { new Sexp(SourceContext_) });
   settings.PutListFunction(CompiledFunction {
+    SourceContext_,
     FuncDef { FuncDef::AnyArgs(), FuncDef::OneArg(Quote::TypeInstance) },
     StdLib::List
   });
@@ -959,6 +966,7 @@ void StdLib::Load(Interpreter &interpreter) {
   );
 
   symbols.PutSymbolFunction("list", CompiledFunction {
+    SourceContext_,
     FuncDef { FuncDef::AnyArgs(), FuncDef::OneArg(Quote::TypeInstance) },
     StdLib::List
   });
@@ -1532,6 +1540,7 @@ void StdLib::Load(Interpreter &interpreter) {
   settings.RegisterInfixSymbol("&=");
   settings.RegisterInfixSymbol("^=");
   settings.RegisterInfixSymbol("|=");
+  return true;
 }
 
 void StdLib::UnLoad(Interpreter &interpreter) {
@@ -1542,27 +1551,29 @@ void StdLib::SetInteractiveMode(Interpreter &interpreter, bool enabled) {
   auto &settings = interpreter.GetSettings();
   if (enabled) {
     settings.PutDefaultFunction(CompiledFunction {
+      SourceContext_,
       FuncDef { FuncDef::AnyArgs(), FuncDef::NoArgs() },
       &StdLib::DefaultFunction
     }); 
   }
   else {
     settings.PutDefaultFunction(CompiledFunction {
+      SourceContext_,
       FuncDef { FuncDef::AnyArgs(Literal::TypeInstance), FuncDef::NoArgs() },
       [](EvaluationContext &ctx) {
-        ctx.Expr = List::GetNil();
-        return true;
+        return ctx.ReturnNil();
       }
     }); 
   }
 }
 
-void AddCommandLineArgs(SymbolTable &symbols, const string &name, const vector<string> &args) {
-  ExpressionPtr argsExpr { new Sexp() };
+void AddCommandLineArgs(const SourceContext &sourceContext, SymbolTable &symbols, const string &name, const vector<string> &args) {
+  ExpressionPtr argsExpr { new Sexp(sourceContext) };
   Sexp &argsList = static_cast<Sexp&>(*argsExpr);
+  
   for (auto &arg : args)
-    argsList.Args.emplace_back(new Str(arg));
-  symbols.PutSymbol(name, ExpressionPtr { new Quote(move(argsExpr)) });
+    argsList.Args.emplace_back(new Str(sourceContext, arg));
+  symbols.PutSymbol(name, ExpressionPtr { new Quote(sourceContext, move(argsExpr)) });
 }
 
 void StdLib::LoadEnvironment(SymbolTable &symbols, const Environment &env) {
@@ -1574,22 +1585,21 @@ void StdLib::LoadEnvironment(SymbolTable &symbols, const Environment &env) {
   symbols.PutSymbolInt("sys.versionNumber.build", version.Build);
   symbols.PutSymbolStr("sys.program", env.Program); 
   symbols.PutSymbolStr("sys.script", env.Script);
-  AddCommandLineArgs(symbols, "sys.args", env.Args);
+  AddCommandLineArgs(SourceContext_, symbols, "sys.args", env.Args);
 }
 
 // Interpreter Functions
 
 bool StdLib::EvaluateListSexp(EvaluationContext &ctx) {
-  ExpressionPtr listExpr { new Sexp() };
-  Sexp &sexp = static_cast<Sexp&>(*listExpr);
-  ArgListHelper::CopyTo(ctx.Args, sexp.Args);
-  if (ctx.Evaluate(listExpr, "list")) {
-    ctx.Args.clear();
-    ctx.Args.push_back(move(listExpr));
-    return Display(ctx);
+  if (auto list = ctx.New<Sexp>()) {
+    ArgListHelper::CopyTo(ctx.Args, list.Val.Args);
+    if (ctx.Evaluate(list.Expr, "list")) {
+      ctx.Args.clear();
+      ctx.Args.push_back(move(list.Expr));
+      return Display(ctx);
+    }
   }
-  else
-    return false; 
+  return false;
 }
 
 bool StdLib::DefaultFunction(EvaluationContext &ctx) {
@@ -1619,8 +1629,7 @@ bool StdLib::Render(EvaluationContext &ctx, bool isDisplay) {
     ++argNum;
   }
 
-  ctx.Expr = List::GetNil();
-  return true;
+  return ctx.ReturnNil();
 }
 
 bool StdLib::Display(EvaluationContext &ctx) {
@@ -1649,18 +1658,15 @@ bool StdLib::Prompt(EvaluationContext &ctx) {
   bool result = cmdInt.ReadLine(prefix, inputLine);
   cmdInt.SetInteractiveMode(oldInteractiveMode);
 
-  if (result) {
-    ctx.Expr.reset(new Str(inputLine));
-    return true;
-  }
+  if (result)
+    return ctx.ReturnNew<Str>(inputLine);
   else
     return ctx.Error("ReadLine failed");
 }
 
 bool StdLib::Quit(EvaluationContext &ctx) {
   ctx.Interp.Stop();
-  ctx.Expr = List::GetNil();
-  return true;
+  return ctx.ReturnNil();
 }
 
 bool StdLib::Exit(EvaluationContext &ctx) {
@@ -1675,13 +1681,13 @@ bool StdLib::Exit(EvaluationContext &ctx) {
 }
 
 bool StdLib::Symbols(EvaluationContext &ctx) {
-  ExpressionPtr sexpExpr { new Sexp };
-  Sexp &sexp = static_cast<Sexp&>(*sexpExpr);
-  ctx.Interp.GetDynamicSymbols().ForEach([&sexp](const std::string &symName, ExpressionPtr &expr) {
-    sexp.Args.emplace_back(new Str(symName));
-  });
-  ctx.Expr.reset(new Quote(move(sexpExpr)));
-  return true;
+  if (auto sexp = ctx.New<Sexp>()) {
+    ctx.Interp.GetDynamicSymbols(ctx.GetSourceContext()).ForEach([&ctx, &sexp](const std::string &symName, ExpressionPtr &expr) {
+      sexp.Val.Args.emplace_back(ctx.Alloc<Str>(symName));
+    });
+    return ctx.ReturnNew<Quote>(move(sexp.Expr));
+  }
+  return false;
 }
 
 bool LookupSymbol(EvaluationContext &ctx, ExpressionPtr &currArg, string &symName, ExpressionPtr &symValue) {
@@ -1730,7 +1736,7 @@ bool StdLib::Help(EvaluationContext &ctx) {
     }
   };
 
-  auto &symbols = ctx.Interp.GetDynamicSymbols();
+  auto &symbols = ctx.Interp.GetDynamicSymbols(ctx.GetSourceContext());
   if (ctx.Args.empty()) {
     fullHelp = false;
     symbols.ForEach(functor);
@@ -1750,9 +1756,8 @@ bool StdLib::Help(EvaluationContext &ctx) {
     }
   }
 
-  ctx.Expr = List::GetNil();
   ctx.Interp.GetCommandInterface().WriteOutputLine(ss.str());
-  return true;
+  return ctx.ReturnNil();
 }
 
 template <class F>
@@ -1760,55 +1765,61 @@ bool HelpSubFunction(EvaluationContext &ctx, F functor) {
   string symName;
   ExpressionPtr symValue;
   if (LookupSymbol(ctx, ctx.Args.front(), symName, symValue)) {
-    if (auto fn = TypeHelper::GetValue<Function>(symValue)) {
-      ctx.Expr.reset(functor(*fn));
-      return true;
-    }
+    if (auto fn = TypeHelper::GetValue<Function>(symValue))
+      return ctx.Return(functor(*fn));
   }
   return false;
 }
 
 bool StdLib::HelpSignatures(EvaluationContext &ctx) {
-  return HelpSubFunction(ctx, [](Function &fn) { 
-    ExpressionPtr listExpr { new Sexp };
-    Sexp &list = static_cast<Sexp&>(*listExpr);
-    for (auto &sig : fn.Signatures)
-      list.Args.emplace_back(new Str(sig));
-    return new Quote(move(listExpr)); 
+  return HelpSubFunction(ctx, [&ctx](Function &fn) { 
+    if (auto list = ctx.New<Sexp>()) {
+      for (auto &sig : fn.Signatures)
+        list.Val.Args.emplace_back(ctx.Alloc<Str>(sig));
+      return ctx.Alloc<Quote>(move(list.Expr)); 
+    }
+    return (Quote*)nullptr;
   });
 }
 
 bool StdLib::HelpDoc(EvaluationContext &ctx) {
-  return HelpSubFunction(ctx, [](Function &fn) { 
-    return new Str(fn.Doc); 
+  return HelpSubFunction(ctx, [&ctx](Function &fn) { 
+    return ctx.Alloc<Str>(fn.Doc); 
   });
 }
 
 bool StdLib::HelpExamples(EvaluationContext &ctx) {
-  return HelpSubFunction(ctx, [](Function &fn) { 
-    ExpressionPtr listExpr { new Sexp };
-    Sexp &list = static_cast<Sexp&>(*listExpr);
-    for (auto &example : fn.Examples) {
-      ExpressionPtr exExpr { new Sexp };
-      Sexp &ex = static_cast<Sexp&>(*exExpr);
-      ex.Args.emplace_back(new Str(example.Code));
-      ex.Args.emplace_back(new Str(example.ExpectedValue));
-      list.Args.emplace_back(new Quote(move(exExpr)));
+  return HelpSubFunction(ctx, [&ctx](Function &fn) { 
+    if (auto list = ctx.New<Sexp>()) {
+      for (auto &example : fn.Examples) {
+        if (auto ex = ctx.New<Sexp>()) {
+          ex.Val.Args.emplace_back(ctx.Alloc<Str>(example.Code));
+          ex.Val.Args.emplace_back(ctx.Alloc<Str>(example.ExpectedValue));
+          list.Val.Args.emplace_back(ctx.Alloc<Quote>(move(ex.Expr)));
+        }
+        else
+          return (Quote*)nullptr;
+      }
+      return ctx.Alloc<Quote>(move(list.Expr));
     }
-    return new Quote(move(listExpr));
+    else
+      return (Quote*)nullptr;
   });
 }
 
-void BuildOpSexp(EvaluationContext &ctx, const string &op, ExpressionPtr &symToSetExpr) {
-  ExpressionPtr opExpr { new Sexp() };
-  Sexp &opSexp = static_cast<Sexp&>(*opExpr);
-  opSexp.Args.push_back(ExpressionPtr { new Symbol(op) });
-  opSexp.Args.push_back(symToSetExpr->Clone());
-  ArgListHelper::CopyTo(ctx.Args, opSexp.Args);
-  
-  if (!ctx.Args.empty())
-    ctx.Args.pop_front();
-  ctx.Args.push_front(move(opExpr));
+bool BuildOpSexp(EvaluationContext &ctx, const string &op, ExpressionPtr &symToSetExpr) {
+  if (auto opExpr = ctx.New<Sexp>()) {
+    opExpr.Val.Args.emplace_back(ctx.Alloc<Symbol>(op));
+    opExpr.Val.Args.push_back(symToSetExpr->Clone());
+    ArgListHelper::CopyTo(ctx.Args, opExpr.Val.Args);
+    
+    if (!ctx.Args.empty())
+      ctx.Args.pop_front();
+    ctx.Args.push_front(move(opExpr.Expr));
+    return true;
+  }
+  else
+    return false;
 }
 
 bool StdLib::Set(EvaluationContext &ctx) {
@@ -1818,26 +1829,30 @@ bool StdLib::Set(EvaluationContext &ctx) {
     string symToSetName = symToSet->Value;
     const string setOp = ctx.GetThisFunctionName();
     if (!setOp.empty()) {
+      bool buildOpResult = true;
       if (setOp.length() > 1 && setOp.back() == '=') { 
         string op = setOp.substr(0, setOp.length() - 1);
-        BuildOpSexp(ctx, op, symToSetExpr);
+        buildOpResult = BuildOpSexp(ctx, op, symToSetExpr);
       }
       else if (setOp == "++")
-        BuildOpSexp(ctx, "incr", symToSetExpr);
+        buildOpResult = BuildOpSexp(ctx, "incr", symToSetExpr);
       else if (setOp == "--")
-        BuildOpSexp(ctx, "decr", symToSetExpr);
+        buildOpResult = BuildOpSexp(ctx, "decr", symToSetExpr);
+
+      if (!buildOpResult)
+        return false;
 
       ExpressionPtr value = move(ctx.Args.front());
       ctx.Args.pop_front();
       if (ctx.Evaluate(value, "value")) {
         auto &currStackFrame = ctx.Interp.GetCurrentStackFrame();
         ExpressionPtr temp;
-        ctx.Expr = value->Clone();
+        bool ret = ctx.Return(value->Clone());
         if (currStackFrame.GetLocalSymbols().GetSymbol(symToSetName, temp))
           currStackFrame.PutLocalSymbol(symToSetName, move(value));
         else
           currStackFrame.PutDynamicSymbol(symToSetName, move(value));
-        return true;
+        return ret;
       }
     }
     return false;
@@ -1857,8 +1872,7 @@ bool StdLib::UnSet(EvaluationContext &ctx) {
     auto &currFrame = ctx.Interp.GetCurrentStackFrame();
     if (currFrame.GetSymbol(symName, value)) {
       currFrame.DeleteSymbol(symName);
-      ctx.Expr = move(value);
-      return true;
+      return ctx.Return(value);
     }
     else
       return ctx.UnknownSymbolError(symName);
@@ -1877,8 +1891,7 @@ bool StdLib::InfixRegistrationFunction(EvaluationContext &ctx, const string &nam
         settings.UnregisterInfixSymbol(sym.Value);
       else
         settings.RegisterInfixSymbol(sym.Value);
-      ctx.Expr = List::GetNil(); 
-      return true;
+      return ctx.ReturnNil();
     }
     else
       return false;
@@ -1899,19 +1912,15 @@ bool StdLib::InfixUnregister(EvaluationContext &ctx) {
 
 
 bool StdLib::Exists(EvaluationContext &ctx) {
-  if (auto filename = ctx.GetRequiredValue<Str>(ctx.Args.front())) {
-    ctx.Expr.reset(new Bool(FileSystem().Exists(filename->Value)));
-    return true;
-  }
+  if (auto filename = ctx.GetRequiredValue<Str>(ctx.Args.front()))
+    return ctx.ReturnNew<Bool>(FileSystem().Exists(filename->Value));
   else
     return false;
 }
 
 bool StdLib::Delete(EvaluationContext &ctx) {
-  if (auto filename = ctx.GetRequiredValue<Str>(ctx.Args.front())) {
-    ctx.Expr.reset(new Bool(FileSystem().Delete(filename->Value)));
-    return true;
-  }
+  if (auto filename = ctx.GetRequiredValue<Str>(ctx.Args.front())) 
+    return ctx.ReturnNew<Bool>(FileSystem().Delete(filename->Value));
   else
     return false;
 }
@@ -1923,13 +1932,14 @@ bool StdLib::ReadLines(EvaluationContext &ctx) {
     FileSystem fs;
     FilePtr file = fs.Open(filename->Value, FileSystemInterface::Read);
     if (file) {
-      ExpressionPtr linesExpr { new Sexp() };
-      Sexp &linesSexp = static_cast<Sexp&>(*linesExpr);
-      string currLine;
-      while (file->ReadLine(currLine))
-        linesSexp.Args.emplace_back(new Str(currLine));
-      ctx.Expr.reset(new Quote(move(linesExpr)));
-      return true;
+      if (auto lines = ctx.New<Sexp>()) {
+        string currLine;
+        while (file->ReadLine(currLine))
+          lines.Val.Args.emplace_back(ctx.Alloc<Str>(currLine));
+        return ctx.ReturnNew<Quote>(move(lines.Expr));
+      }
+      else
+        return false;
     }
     else
       return ctx.Error("Could not open \"" + filename->Value + "\" for reading");
@@ -1958,8 +1968,7 @@ bool StdLib::WriteLines(EvaluationContext &ctx) {
           else
             return false;
         }
-        ctx.Expr.reset(new Bool(true));
-        return true;
+        return ctx.ReturnNew<Bool>(true);
       }
       else
         return false;
@@ -1976,8 +1985,7 @@ bool StdLib::WriteLines(EvaluationContext &ctx) {
 template<class BeginIt, class EndIt>
 bool ReverseGeneric(EvaluationContext &ctx, ExpressionPtr &arg, BeginIt beginIt, EndIt endIt) {
   reverse(beginIt, endIt);
-  ctx.Expr = move(arg);
-  return true;
+  return ctx.Return(arg);
 }
 
 bool StdLib::Reverse(EvaluationContext &ctx) {
@@ -2022,8 +2030,7 @@ bool StdLib::At(EvaluationContext &ctx) {
       if (idx < 0)
         idx += str->Value.length();
       try {
-        ctx.Expr.reset(new Str(string(1, str->Value.at(static_cast<size_t>(idx)))));
-        return true;
+        return ctx.ReturnNew<Str>(string(1, str->Value.at(static_cast<size_t>(idx))));
       }
       catch (out_of_range) {
         return ctx.Error("index " + to_string(idx) + " is out of bounds");
@@ -2043,10 +2050,8 @@ bool StdLib::At(EvaluationContext &ctx) {
           ExpressionPtr& curr = iterator->Next();
           more = curr.operator bool();
           if (more) {
-            if (currIdx == idx) {
-              ctx.Expr = curr->Clone();
-              return true;
-            }
+            if (currIdx == idx)
+              return ctx.Return(curr->Clone());
           }
           ++currIdx;
         } while (more);
@@ -2084,15 +2089,15 @@ bool StdLib::Add(EvaluationContext &ctx) {
 
 bool StdLib::Length(EvaluationContext &ctx) {
   return SequenceFn(ctx, 
-    [](string &value)  { return new Int(value.size()); },
-    [](ArgList &value) { return new Int(value.size()); }
+    [&ctx](string &value)  { return ctx.Alloc<Int>(value.size()); },
+    [&ctx](ArgList &value) { return ctx.Alloc<Int>(value.size()); }
   );
 }
 
 bool StdLib::EmptyQ(EvaluationContext &ctx) {
   return SequenceFn(ctx, 
-    [](string &value)  { return new Bool(value.empty()); },
-    [](ArgList &value) { return new Bool(value.empty()); }
+    [&ctx](string &value)  { return ctx.Alloc<Bool>(value.empty()); },
+    [&ctx](ArgList &value) { return ctx.Alloc<Bool>(value.empty()); }
   );
 }
 
@@ -2101,16 +2106,12 @@ bool StdLib::SequenceFn(EvaluationContext &ctx, S strFn, L listFn) {
   ExpressionPtr arg = move(ctx.Args.front());
   ctx.Args.clear();
   if (ctx.Evaluate(arg, 1)) {
-    if (auto str = TypeHelper::GetValue<Str>(arg)) {
-      ctx.Expr.reset(strFn(str->Value));
-      return true;
-    }
+    if (auto str = TypeHelper::GetValue<Str>(arg))
+      return ctx.Return(strFn(str->Value));
     else if (auto quote = TypeHelper::GetValue<Quote>(arg)) {
       if (ctx.IsQuoteAList(*quote)) {
-        if (auto listSexp = TypeHelper::GetValue<Sexp>(quote->Value)) {
-          ctx.Expr.reset(listFn(listSexp->Args));
-          return true;
-        }
+        if (auto listSexp = TypeHelper::GetValue<Sexp>(quote->Value))
+          return ctx.Return(listFn(listSexp->Args));
       }
     }
     return ctx.TypeError("str/list", arg);
@@ -2215,20 +2216,22 @@ bool StdLib::ForeachIterate(EvaluationContext &ctx, Expression *iterableArg, Sym
         more = curr.operator bool();
         if (more) {
           if (currElementSym) {
-            Scope scope(ctx.Interp.GetCurrentStackFrame().GetLocalSymbols());
-            scope.PutSymbol(currElementSym->Value, ExpressionPtr { new Ref(curr) }); 
+            Scope scope(ctx.Interp.GetCurrentStackFrame().GetLocalSymbols(), ctx.GetSourceContext());
+            scope.PutSymbol(currElementSym->Value, ExpressionPtr { ctx.Alloc<Ref>(curr) }); 
             ctx.Args.clear();
             ArgListHelper::CopyTo(bodyCopy, ctx.Args);
             if (!Begin(ctx))
               return false;
           }
           else {
-            ExpressionPtr fnEvalExpr { new Sexp };
-            Sexp &fnEvalSexp = static_cast<Sexp&>(*fnEvalExpr);
-            fnEvalSexp.Args.push_back(fn->Clone());
-            fnEvalSexp.Args.push_back(ExpressionPtr { new Ref(curr) });
-            if (ctx.Evaluate(fnEvalExpr, "function evaluation"))
-              ctx.Expr = move(fnEvalExpr);
+            if (auto fnEval = ctx.New<Sexp>()) {
+              fnEval.Val.Args.push_back(fn->Clone());
+              fnEval.Val.Args.emplace_back(ctx.Alloc<Ref>(curr));
+              if (ctx.Evaluate(fnEval.Expr, "function evaluation"))
+                ctx.Return(fnEval.Expr);
+              else
+                return false;
+            }
             else
               return false;
           }
@@ -2294,8 +2297,7 @@ bool StdLib::Mod(EvaluationContext &ctx) {
 bool StdLib::Hex(EvaluationContext &ctx) {
   stringstream ss;
   ss << "0x" << hex << *ctx.Args.front();
-  ctx.Expr.reset(new Str(ss.str()));
-  return true;
+  return ctx.ReturnNew<Str>(ss.str());
 }
 
 bool StdLib::Bin(EvaluationContext &ctx) {
@@ -2319,15 +2321,13 @@ bool StdLib::Bin(EvaluationContext &ctx) {
   string s = ss.str();
   reverse(begin(s), end(s));
 
-  ctx.Expr.reset(new Str(s));
-  return true;
+  return ctx.ReturnNew<Str>(s);
 }
 
 bool StdLib::Dec(EvaluationContext &ctx) {
   stringstream ss;
   ss << *ctx.Args.front();
-  ctx.Expr.reset(new Str(ss.str()));
-  return true;
+  return ctx.ReturnNew<Str>(ss.str());
 }
 
 bool StdLib::PowInt(EvaluationContext &ctx) {
@@ -2351,8 +2351,7 @@ bool EvenOddHelper(EvaluationContext &ctx, bool isEven) {
   if (auto num = ctx.GetRequiredValue<Int>(numExpr)) {
     if (num->Value < 0)
       return ctx.Error("expecting positive " + Int::TypeInstance.Name());
-    ctx.Expr.reset(new Bool { (num->Value % 2) == (isEven ? 0 : 1) });
-    return true;
+    return ctx.ReturnNew<Bool>((num->Value % 2) == (isEven ? 0 : 1));
   }
   else
     return false;
@@ -2505,10 +2504,8 @@ bool StdLib::BitXor(EvaluationContext &ctx) {
 }
 
 bool StdLib::BitNot(EvaluationContext &ctx) {
-  if (auto num = ctx.GetRequiredValue<Int>(ctx.Args.front())) {
-    ctx.Expr.reset(new Int(~num->Value));
-    return true;
-  }
+  if (auto num = ctx.GetRequiredValue<Int>(ctx.Args.front()))
+    return ctx.ReturnNew<Int>(~num->Value);
   return false;
 }
 
@@ -2518,29 +2515,29 @@ bool StdLib::Trim(EvaluationContext &ctx) {
   ExpressionPtr firstArg = move(ctx.Args.front());
   ctx.Args.pop_front();
   if (auto str = ctx.GetRequiredValue<Str>(firstArg)) {
-    ExpressionPtr result { new Str() };
-    string &resultValue = static_cast<Str*>(result.get())->Value;
-    string &val = str->Value;
-    size_t firstNonSpace = val.find_first_not_of(' ');
-    size_t lastNonSpace = val.find_last_not_of(' ');
+    if (auto result = ctx.New<Str>()) {
+      string &resultValue = result.Val.Value;
+      string &val = str->Value;
+      size_t firstNonSpace = val.find_first_not_of(' ');
+      size_t lastNonSpace = val.find_last_not_of(' ');
 
-    if (firstNonSpace != string::npos) 
-      resultValue.assign(val.begin() + firstNonSpace, val.begin() + lastNonSpace + 1);
+      if (firstNonSpace != string::npos) 
+        resultValue.assign(val.begin() + firstNonSpace, val.begin() + lastNonSpace + 1);
 
-    ctx.Expr = move(result);
-    return true;
+      return ctx.Return(result.Expr);
+    }
+    else
+      return false;
   }
   else
     return false;
 }
 
-
 template<typename F>
 static bool CharTransform(EvaluationContext &ctx, F fn) {
   if (auto str = ctx.GetRequiredValue<Str>(ctx.Args.front())) {
     for_each(str->Value.begin(), str->Value.end(), [&fn](char &ch) { ch = fn(ch); });
-    ctx.Expr = str->Clone();
-    return true;
+    return ctx.Return(str->Clone());
   }
   else
     return false;
@@ -2575,8 +2572,7 @@ bool StdLib::SubStr(EvaluationContext &ctx) {
       }
 
       try {
-        ctx.Expr.reset(new Str(str->Value.substr(static_cast<size_t>(startIdx->Value), count)));
-        return true;
+        return ctx.ReturnNew<Str>(str->Value.substr(static_cast<size_t>(startIdx->Value), count));
       }
       catch (out_of_range) {
         return ctx.Error("index " + to_string(startIdx->Value) + " is out of range");
@@ -2618,8 +2614,7 @@ bool FindFunction(EvaluationContext &ctx, bool reverse) {
         return false;
     }
     size_t idx = reverse ? haystack.rfind(needle, start) : haystack.find(needle, start);
-    ctx.Expr.reset(new Int((idx == string::npos) ? -1LL : idx));
-    return true;
+    return ctx.ReturnNew<Int>((idx == string::npos) ? -1LL : idx);
   });
 }
 
@@ -2633,30 +2628,26 @@ bool StdLib::RFind(EvaluationContext &ctx) {
 
 bool StdLib::Compare(EvaluationContext &ctx) {
   return BinaryStrFunction(ctx, [&ctx](const string &haystack, const string &needle) {
-    ctx.Expr.reset(new Int(haystack.compare(needle)));
-    return true;
+    return ctx.ReturnNew<Int>(haystack.compare(needle));
   });
 }
 
 bool StdLib::Contains(EvaluationContext &ctx) {
   return BinaryStrFunction(ctx, [&ctx](const string &haystack, const string &needle) {
-    ctx.Expr.reset(new Bool(haystack.find(needle) != string::npos));
-    return true;
+    return ctx.ReturnNew<Bool>(haystack.find(needle) != string::npos);
   });
 }
 
 bool StdLib::StartsWith(EvaluationContext &ctx) {
   return BinaryStrFunction(ctx, [&ctx](const string &haystack, const string &needle) {
-    ctx.Expr.reset(new Bool(haystack.find(needle) == 0));
-    return true;
+    return ctx.ReturnNew<Bool>(haystack.find(needle) == 0);
   });
 }
 
 bool StdLib::EndsWith(EvaluationContext &ctx) {
   return BinaryStrFunction(ctx, [&ctx](const string &haystack, const string &needle) {
     size_t pos = haystack.rfind(needle); 
-    ctx.Expr.reset(new Bool(pos != string::npos && pos == (haystack.length() - needle.length())));
-    return true;
+    return ctx.ReturnNew<Bool>(pos != string::npos && pos == (haystack.length() - needle.length()));
   });
 }
 
@@ -2699,8 +2690,7 @@ bool StdLib::Replace(EvaluationContext &ctx) {
       ++nReplacements;
     } 
 
-    ctx.Expr.reset(new Str(haystack));
-    return true;
+    return ctx.ReturnNew<Str>(haystack);
   });
 }
 
@@ -2715,34 +2705,34 @@ bool StdLib::Split(EvaluationContext &ctx) {
         return false;
     }
 
-    ExpressionPtr result { new Sexp() };
-    Sexp &list = static_cast<Sexp&>(*result);
+    if (auto result = ctx.New<Sexp>()) {
+      if (!haystack.empty()) {
+        if (!needle.empty()) {
+          size_t offset = 0;
+          size_t lastFind = 0;
+          size_t needleLength = needle.length();
+          bool more = true;
+          while (more) {
+            lastFind = haystack.find(needle, offset);
+            if (lastFind == string::npos) {
+              lastFind = haystack.length();
+              more = false;
+            }
 
-    if (!haystack.empty()) {
-      if (!needle.empty()) {
-        size_t offset = 0;
-        size_t lastFind = 0;
-        size_t needleLength = needle.length();
-        bool more = true;
-        while (more) {
-          lastFind = haystack.find(needle, offset);
-          if (lastFind == string::npos) {
-            lastFind = haystack.length();
-            more = false;
-          }
-
-          string newElem(haystack, offset, lastFind - offset);
-          if (!flattenEmptyValues || !newElem.empty())
-            list.Args.emplace_back(new Str(move(newElem)));
-          offset = lastFind + needle.length();
-        } 
+            string newElem(haystack, offset, lastFind - offset);
+            if (!flattenEmptyValues || !newElem.empty())
+              result.Val.Args.emplace_back(ctx.Alloc<Str>(move(newElem)));
+            offset = lastFind + needle.length();
+          } 
+        }
+        else
+          result.Val.Args.emplace_back(ctx.Alloc<Str>(haystack));
       }
-      else
-        list.Args.emplace_back(new Str(haystack));
-    }
 
-    ctx.Expr.reset(new Quote(move(result)));
-    return true;
+      return ctx.ReturnNew<Quote>(move(result.Expr));
+    }
+    else
+      return false;
   });
 }
 
@@ -2778,8 +2768,7 @@ bool StdLib::Join(EvaluationContext &ctx) {
         ++i;
       }
 
-      ctx.Expr.reset(new Str(ss.str()));
-      return true;
+      return ctx.ReturnNew<Str>(ss.str());
     }
     else
       return false;
@@ -2818,7 +2807,6 @@ bool FormatSpecifier(EvaluationContext &ctx, stringstream &ss, const string &pat
   }
 
   formatValue->Print(ss);
-
   return true;
 }
 
@@ -2883,8 +2871,7 @@ bool StdLib::Format(EvaluationContext &ctx) {
       }
     }
 
-    ctx.Expr.reset(new Str(ss.str()));
-    return true;
+    return ctx.ReturnNew<Str>(ss.str());
   }
   else
     return false;
@@ -2899,32 +2886,30 @@ bool StdLib::AddStr(EvaluationContext &ctx) {
       return false;
     ctx.Args.pop_front();
   }
-
-  ctx.Expr.reset(new Str { ss.str() });
-  return true;
+  return ctx.ReturnNew<Str>(ss.str());
 }
-
 
 // Lists
 
 bool StdLib::List(EvaluationContext &ctx) {
-  ExpressionPtr listExpr { new Sexp {} };
-  auto list = static_cast<Sexp*>(listExpr.get());
-  int argNum = 1;
-  while (!ctx.Args.empty()) {
-    ExpressionPtr arg = move(ctx.Args.front());
-    ctx.Args.pop_front();
-    if (ctx.Evaluate(arg, argNum))
-      list->Args.push_back(move(arg));
-    else
-      return false; 
-    ++argNum;
+  if (auto list = ctx.New<Sexp>()) {
+    int argNum = 1;
+    while (!ctx.Args.empty()) {
+      ExpressionPtr arg = move(ctx.Args.front());
+      ctx.Args.pop_front();
+      if (ctx.Evaluate(arg, argNum))
+        list.Val.Args.push_back(move(arg));
+      else
+        return false; 
+      ++argNum;
+    }
+    return ctx.ReturnNew<Quote>(move(list.Expr));
   }
-
-  ctx.Expr.reset(new Quote { move(listExpr) });
-  return true;
+  else
+    return false;
 }
 
+// TODO: Refactor
 bool StdLib::TransformList(EvaluationContext &ctx, ListTransforms transform) {
   ExpressionPtr fnExpr { move(ctx.Args.front()) };
   ctx.Args.pop_front();
@@ -2937,11 +2922,11 @@ bool StdLib::TransformList(EvaluationContext &ctx, ListTransforms transform) {
       transform == ListTransforms::Filter ||
       transform == ListTransforms::Take ||
       transform == ListTransforms::Skip)
-    resultExpr.reset(new Sexp());
+    resultExpr.reset(ctx.Alloc<Sexp>());
   else if (transform == ListTransforms::Any)
-    resultExpr.reset(new Bool(false));
+    resultExpr.reset(ctx.Alloc<Bool>(false));
   else if (transform == ListTransforms::All)
-    resultExpr.reset(new Bool(true));
+    resultExpr.reset(ctx.Alloc<Bool>(true));
 
   auto resultList = static_cast<Sexp*>(resultExpr.get());
 
@@ -2958,65 +2943,61 @@ bool StdLib::TransformList(EvaluationContext &ctx, ListTransforms transform) {
         ++i;
         ExpressionPtr item = move(list->Args.front());
         list->Args.pop_front();
-        ExpressionPtr evalExpr { new Sexp { } };
-        auto evalSexp = static_cast<Sexp*>(evalExpr.get());
-        evalSexp->Args.push_back(fn->Clone());
+
+        auto eval = ctx.New<Sexp>();
+        if (!eval)
+          return false;
+
+        eval.Val.Args.push_back(fn->Clone());
 
         if (transform == ListTransforms::Reduce) {
           if (resultExpr)
-            evalSexp->Args.push_back(resultExpr->Clone());
+            eval.Val.Args.push_back(resultExpr->Clone());
           else {
             resultExpr = item->Clone();
             continue;
           }
         }
 
-        evalSexp->Args.push_back(item->Clone());
-        if (!ctx.EvaluateNoError(evalExpr))
+        eval.Val.Args.push_back(item->Clone());
+        if (!ctx.EvaluateNoError(eval.Expr))
           return ctx.Error("Failed to call " +  fn->ToString() + " on item " + to_string(i));
 
         if (transform == ListTransforms::Map)
-          resultList->Args.push_back(move(evalExpr));
+          resultList->Args.push_back(move(eval.Expr));
         else if (transform == ListTransforms::Filter ||
                  transform == ListTransforms::Any ||
                  transform == ListTransforms::All ||
                  transform == ListTransforms::Take ||
                  transform == ListTransforms::Skip) {
-          if (auto predResult = ctx.GetRequiredValue<Bool>(evalExpr)) {
+          if (auto predResult = ctx.GetRequiredValue<Bool>(eval.Expr)) {
             if (transform == ListTransforms::Filter || transform == ListTransforms::Take) {
               if (predResult->Value)
                 resultList->Args.push_back(item->Clone());
-              else if (transform == ListTransforms::Take) {
-                ctx.Expr.reset(new Quote(move(resultExpr)));
-                return true;
-              }
+              else if (transform == ListTransforms::Take) 
+                return ctx.ReturnNew<Quote>(move(resultExpr));
             }
             else if (transform == ListTransforms::Skip) {
               if (!predResult->Value) {
                 resultList->Args.push_back(item->Clone());
                 ArgListHelper::CopyTo(list->Args, resultList->Args);
-                ctx.Expr.reset(new Quote(move(resultExpr)));
-                return true;
+                return ctx.ReturnNew<Quote>(move(resultExpr));
               }
             }
             else if (transform == ListTransforms::Any) {
-              if (predResult->Value) {
-                ctx.Expr.reset(new Bool(true));
-                return true;
-              }
+              if (predResult->Value) 
+                return ctx.ReturnNew<Bool>(true);
             }
             else if (transform == ListTransforms::All) {
-              if (!predResult->Value) {
-                ctx.Expr.reset(new Bool(false));
-                return true;
-              }
+              if (!predResult->Value)
+                return ctx.ReturnNew<Bool>(false);
             }
           }
           else
             return false;
         }
         else if (transform == ListTransforms::Reduce)
-          resultExpr = move(evalExpr);
+          resultExpr = move(eval.Expr);
       }
     }
     else 
@@ -3025,8 +3006,7 @@ bool StdLib::TransformList(EvaluationContext &ctx, ListTransforms transform) {
   else
     return false;
 
-  ctx.Expr.reset(new Quote { move(resultExpr) });
-  return true;
+  return ctx.ReturnNew<Quote>(move(resultExpr));
 }
 
 bool StdLib::Map(EvaluationContext &ctx) {
@@ -3061,23 +3041,22 @@ bool StdLib::TakeSkip(EvaluationContext &ctx, bool isTake) {
 
       ExpressionPtr listExpr = move(ctx.Args.front());
       if (auto list = ctx.GetRequiredListValue(listExpr)) {
-        ExpressionPtr newListExpr { new Sexp() };
-        Sexp &newList = static_cast<Sexp&>(*newListExpr);
-
-        if (isTake) {
-          while (!list->Args.empty() && count.Value--) {
-            newList.Args.push_back(move(list->Args.front()));
-            list->Args.pop_front();
+        if (auto newList = ctx.New<Sexp>()) {
+          if (isTake) {
+            while (!list->Args.empty() && count.Value--) {
+              newList.Val.Args.push_back(move(list->Args.front()));
+              list->Args.pop_front();
+            }
           }
+          else {
+            while (!list->Args.empty() && count.Value--)
+              list->Args.pop_front();
+            ArgListHelper::CopyTo(list->Args, newList.Val.Args);
+          }
+          return ctx.ReturnNew<Quote>(move(newList.Expr));
         }
-        else {
-          while (!list->Args.empty() && count.Value--)
-            list->Args.pop_front();
-          ArgListHelper::CopyTo(list->Args, newList.Args);
-        }
-
-        ctx.Expr.reset(new Quote(move(newListExpr)));
-        return true;
+        else
+          return false;
       }
       else
         return false;
@@ -3100,11 +3079,11 @@ bool StdLib::Skip(EvaluationContext &ctx) {
 }
 
 bool StdLib::Zip(EvaluationContext &ctx) {
-  int ctxArgNum = 1;
-
-  ExpressionPtr resultExpr { new Sexp() };
-  Sexp &resultList = static_cast<Sexp&>(*resultExpr);
+  auto result = ctx.New<Sexp>();
+  if (!result)
+    return false;
   
+  int ctxArgNum = 1;
   bool evalArg = true;
   ExpressionPtr fnArg;
   if (ctx.Evaluate(ctx.Args.front(), ctxArgNum)) {
@@ -3113,7 +3092,7 @@ bool StdLib::Zip(EvaluationContext &ctx) {
       ctx.Args.pop_front();
     }
     else {
-      fnArg.reset(new Symbol("list"));
+      fnArg.reset(ctx.Alloc<Symbol>("list"));
       evalArg = false; // don't eval first arg twice
     }
   }
@@ -3140,9 +3119,11 @@ bool StdLib::Zip(EvaluationContext &ctx) {
   int elementNum = 1;
   bool more = true;
   while (more) {
-    ExpressionPtr evalExpr { new Sexp() };
-    Sexp &evalSexp = static_cast<Sexp&>(*evalExpr);
-    evalSexp.Args.push_back(fnArg->Clone());
+    auto eval = ctx.New<Sexp>();
+    if (!eval)
+      return false;
+
+    eval.Val.Args.push_back(fnArg->Clone());
 
     int listNum = 1;
     for (auto &list : lists) {
@@ -3154,22 +3135,21 @@ bool StdLib::Zip(EvaluationContext &ctx) {
         more = !list->Args.empty();
 
       if (more) {
-        evalSexp.Args.push_back(move(list->Args.front()));
+        eval.Val.Args.push_back(move(list->Args.front()));
         list->Args.pop_front();
       }
       ++listNum;
     }
 
     if (more) {
-      if (ctx.Evaluate(evalExpr, "element " + to_string(elementNum++)))
-        resultList.Args.emplace_back(move(evalExpr));
+      if (ctx.Evaluate(eval.Expr, "element " + to_string(elementNum++)))
+        result.Val.Args.emplace_back(move(eval.Expr));
       else
         return false;
     }
   }
 
-  ctx.Expr.reset(new Quote(move(resultExpr)));
-  return true;
+  return ctx.ReturnNew<Quote>(move(result.Expr));
 }
 
 // const symbols!!
@@ -3201,8 +3181,10 @@ bool PerformListOp(EvaluationContext &ctx, ExpressionPtr &listExpr, const string
   Sexp *list = inplace ? GetSexpFromListExpr(ctx, listExpr) : ctx.GetRequiredListValue(listExpr);
   if (list) {
     if (fn(list->Args, thisFnName)) {
-      ctx.Expr = inplace ? List::GetNil() : move(listExpr);
-      return true;
+      if (inplace)
+        return ctx.ReturnNil();
+      else
+        return ctx.Return(listExpr);
     }
     else
       return ctx.Error("Internal error: unknown function");
@@ -3257,41 +3239,40 @@ bool StdLib::Pop(EvaluationContext &ctx) {
 }
 
 bool StdLib::AddList(EvaluationContext &ctx) {
-  ExpressionPtr resultExpr { new Sexp {} };
-  auto resultList = static_cast<Sexp*>(resultExpr.get());
-  while (!ctx.Args.empty()) {
-    if (auto list = ctx.GetRequiredListValue(ctx.Args.front())) {
-      while (!list->Args.empty()) {
-        resultList->Args.push_back(move(list->Args.front()));
-        list->Args.pop_front();
+  if (auto result = ctx.New<Sexp>()) {
+    while (!ctx.Args.empty()) {
+      if (auto list = ctx.GetRequiredListValue(ctx.Args.front())) {
+        while (!list->Args.empty()) {
+          result.Val.Args.push_back(move(list->Args.front()));
+          list->Args.pop_front();
+        }
       }
+      else
+        return false;
+      ctx.Args.pop_front();
     }
-    else
-      return false;
-    ctx.Args.pop_front();
+    return ctx.ReturnNew<Quote>(move(result.Expr));
   }
-
-  ctx.Expr.reset(new Quote { move(resultExpr) });
-  return true;
+  else
+    return false;
 }
 
 bool StdLib::Head(EvaluationContext &ctx) {
   ExpressionPtr seqArg { move(ctx.Args.front()) };
   if (auto str = TypeHelper::GetValue<Str>(seqArg)) {
     if (str->Value.empty())
-      ctx.Expr.reset(new Str());
+      return ctx.ReturnNew<Str>();
     else 
-      ctx.Expr.reset(new Str(string(1, str->Value[0])));
-    return true;
+      return ctx.ReturnNew<Str>(string(1, str->Value[0]));
   }
   else if (auto list = ctx.GetRequiredListValue(seqArg)) {
     if (list->Args.empty())
-      ctx.Expr = List::GetNil();
+      return ctx.ReturnNil();
     else {
-      ctx.Expr = move(list->Args.front());
+      bool ret = ctx.Return(move(list->Args.front()));
       list->Args.pop_front();
+      return ret;
     }
-    return true;
   }
   else
     return false;
@@ -3301,25 +3282,25 @@ bool StdLib::Tail(EvaluationContext &ctx) {
   ExpressionPtr seqArg { move(ctx.Args.front()) };
   if (auto str = TypeHelper::GetValue<Str>(seqArg)) {
     if (str->Value.empty())
-      ctx.Expr.reset(new Str());
+      return ctx.ReturnNew<Str>();
     else
-      ctx.Expr.reset(new Str(str->Value.substr(1)));
-    return true;
+      return ctx.ReturnNew<Str>(str->Value.substr(1));
   }
   else if (auto list = ctx.GetRequiredListValue(seqArg)) {
     if (list->Args.empty())
-      ctx.Expr = List::GetNil();
+      return ctx.ReturnNil();
     else {
       list->Args.pop_front();
-      ExpressionPtr tail { new Sexp {} };
-      auto newList = static_cast<Sexp*>(tail.get());
-      while (!list->Args.empty()) {
-        newList->Args.push_back(move(list->Args.front()));
-        list->Args.pop_front();
+      if (auto newList = ctx.New<Sexp>()) {
+        while (!list->Args.empty()) {
+          newList.Val.Args.push_back(move(list->Args.front()));
+          list->Args.pop_front();
+        }
+        return ctx.ReturnNew<Quote>(move(newList.Expr));
       }
-      ctx.Expr.reset(new Quote { move(tail) });
+      else
+        return false;
     }
-    return true;
   }
   else
     return false;
@@ -3329,17 +3310,15 @@ bool StdLib::Last(EvaluationContext &ctx) {
   ExpressionPtr seqArg { move(ctx.Args.front()) };
   if (auto str = TypeHelper::GetValue<Str>(seqArg)) {
     if (str->Value.empty())
-      ctx.Expr.reset(new Str());
+      return ctx.ReturnNew<Str>();
     else
-      ctx.Expr.reset(new Str(string(1, str->Value.back())));
-    return true;
+      return ctx.ReturnNew<Str>(string(1, str->Value.back()));
   }
   else if (auto list = ctx.GetRequiredListValue(seqArg)) {
     if (list->Args.empty())
-      ctx.Expr = List::GetNil();
+      return ctx.ReturnNil();
     else
-      ctx.Expr = list->Args.back()->Clone();
-    return true;
+      return ctx.Return(list->Args.back()->Clone());
   }
   else
     return false;
@@ -3378,12 +3357,13 @@ bool StdLib::Range(EvaluationContext &ctx) {
           return ctx.Error("start cannot be less than end when using a negative step");
       }
 
-      ExpressionPtr listSexp { new Sexp };
-      auto list = static_cast<Sexp*>(listSexp.get());
-      for (int64_t i = start; positiveStep ? (i <= end) : (i >= end); i += step)
-        list->Args.push_back(ExpressionPtr { new Int(i) });
-      ctx.Expr.reset(new Quote(move(listSexp)));
-      return true;
+      if (auto list = ctx.New<Sexp>()) {
+        for (int64_t i = start; positiveStep ? (i <= end) : (i >= end); i += step)
+          list.Val.Args.emplace_back(ctx.Alloc<Int>(i));
+        return ctx.ReturnNew<Quote>(move(list.Expr));
+      }
+      else
+        return false;
     }
     else
       return false;
@@ -3402,10 +3382,8 @@ bool StdLib::BinaryLogicalFunc(EvaluationContext &ctx, bool isAnd) {
     if (ctx.Evaluate(currArg, argNum)) {
       if (auto argValue = ctx.GetRequiredValue<Bool>(currArg)) {
         bool value = argValue->Value;
-        if (isAnd ? !value : value) {
-          ctx.Expr.reset(new Bool(isAnd ? false : true));
-          return true;
-        }
+        if (isAnd ? !value : value)
+          return ctx.ReturnNew<Bool>(isAnd ? false : true);
       }
       else
         return false;
@@ -3415,8 +3393,7 @@ bool StdLib::BinaryLogicalFunc(EvaluationContext &ctx, bool isAnd) {
 
     ++argNum;
   }
-  ctx.Expr.reset(new Bool(isAnd ? true : false));
-  return true;
+  return ctx.ReturnNew<Bool>(isAnd ? true : false);
 }
 
 bool StdLib::And(EvaluationContext &ctx) {
@@ -3432,10 +3409,8 @@ bool StdLib::Not(EvaluationContext &ctx) {
     ExpressionPtr arg = move(ctx.Args.front());
     ctx.Args.pop_front();
     if (ctx.Evaluate(arg, 1)) {
-      if (auto boolArg = ctx.GetRequiredValue<Bool>(arg)) {
-        ctx.Expr.reset(new Bool(!boolArg->Value));
-        return true;
-      }
+      if (auto boolArg = ctx.GetRequiredValue<Bool>(arg))
+        return ctx.ReturnNew<Bool>(!boolArg->Value);
       else
         return false;
     }
@@ -3493,18 +3468,15 @@ bool ExpressionPredicateFn(EvaluationContext &ctx, ExpressionPredicate fn) {
         ctx.Args.pop_front();
         ++argNum;
         if (ctx.Evaluate(currArg, argNum)) {
-          if (!fn(*prevArg, *currArg)) {
-            ctx.Expr.reset(new Bool(false));
-            return true;
-          }
+          if (!fn(*prevArg, *currArg))
+            return ctx.ReturnNew<Bool>(false);
         }
         else
           return false; 
 
         prevArg = move(currArg);
       }
-      ctx.Expr.reset(new Bool(true));
-      return true;
+      return ctx.ReturnNew<Bool>(true);
     }
     else
       return false; 
@@ -3540,10 +3512,7 @@ bool StdLib::Gte(EvaluationContext &ctx) {
 // Branching, scoping and evaluation
 
 bool StdLib::QuoteFn(EvaluationContext &ctx) {
-  ExpressionPtr quote { new Quote { move(ctx.Args.front()) } };
-  ctx.Args.pop_front();
-  ctx.Expr = move(quote);
-  return true;
+  return ctx.ReturnNew<Quote>(move(ctx.Args.front()));
 }
 
 bool StdLib::Unquote(EvaluationContext &ctx) {
@@ -3557,11 +3526,9 @@ bool StdLib::Unquote(EvaluationContext &ctx) {
       toEvaluate = move(quoteExpr);
 
     if (ctx.Evaluate(toEvaluate, "expression"))
-      ctx.Expr = move(toEvaluate);
+      return ctx.Return(toEvaluate);
     else
       return false;
-
-    return true;
   }
   return false;
 }
@@ -3584,10 +3551,8 @@ bool StdLib::Cond(EvaluationContext &ctx) {
         if (ctx.Evaluate(boolExpr, "condition")) {
           if (auto boolResult = ctx.GetRequiredValue<Bool>(boolExpr)) {
             if (boolResult->Value) {
-              if (ctx.Evaluate(statementExpr, "statement")) {
-                ctx.Expr = move(statementExpr);
-                return true;
-              }
+              if (ctx.Evaluate(statementExpr, "statement"))
+                return ctx.Return(statementExpr);
               else
                 return false;
             }
@@ -3605,8 +3570,7 @@ bool StdLib::Cond(EvaluationContext &ctx) {
       return false;
     ++argNum;
   }
-  ctx.Expr = List::GetNil();
-  return true;
+  return ctx.ReturnNil();
 }
 
 // (switch (type x)                  #  (switch (type x)
@@ -3644,10 +3608,8 @@ bool StdLib::Switch(EvaluationContext &ctx) {
           if (argSexp->Args.size() == 1) {
             ExpressionPtr statementExpr = move(argSexp->Args.front());
             argSexp->Args.pop_front();
-            if (ctx.Evaluate(statementExpr, "statement")) {
-              ctx.Expr = move(statementExpr);
-              return true;
-            }
+            if (ctx.Evaluate(statementExpr, "statement"))
+              return ctx.Return(statementExpr);
             else
               return false;
           }
@@ -3664,12 +3626,10 @@ bool StdLib::Switch(EvaluationContext &ctx) {
             ctx.Args.push_front(move(valueExpr));
             ctx.Args.push_front(varExpr->Clone());
             if (Eq(ctx)) {
-              if (auto boolResult = ctx.GetRequiredValue<Bool>(ctx.Expr)) {
+              if (auto boolResult = ctx.GetRequiredValue<Bool>(ctx.Expr_)) {
                 if (boolResult->Value) {
-                  if (ctx.Evaluate(statementExpr, "statement")) {
-                    ctx.Expr = move(statementExpr);
-                    return true;
-                  }
+                  if (ctx.Evaluate(statementExpr, "statement"))
+                    return ctx.Return(statementExpr);
                   else
                     return false;
                 }
@@ -3691,12 +3651,11 @@ bool StdLib::Switch(EvaluationContext &ctx) {
   }
   else
     return false;
-  ctx.Expr = List::GetNil();
-  return true;
+  return ctx.ReturnNil();
 }
 
 bool StdLib::While(EvaluationContext &ctx) {
-  ExpressionPtr lastStatementResult = List::GetNil();
+  ExpressionPtr lastStatementResult = List::GetNil(ctx.GetSourceContext());
   ArgList loopArgs;
   while (true) {
     loopArgs.clear();
@@ -3717,10 +3676,8 @@ bool StdLib::While(EvaluationContext &ctx) {
             ++bodyStatementNum;
           }
         }
-        else {
-          ctx.Expr = move(lastStatementResult);
-          return true;
-        }
+        else 
+          return ctx.Return(lastStatementResult);
       }
       else
         return false;
@@ -3753,12 +3710,10 @@ bool StdLib::If(EvaluationContext &ctx) {
       else if (falseExpr)
         branchExpr = move(falseExpr);
       else 
-        branchExpr = List::GetNil();
+        branchExpr = List::GetNil(ctx.GetSourceContext());
 
-      if (ctx.Evaluate(branchExpr, "branch")) {
-        ctx.Expr = move(branchExpr);
-        return true;
-      }
+      if (ctx.Evaluate(branchExpr, "branch"))
+        return ctx.Return(branchExpr);
       else
         return false; 
     }
@@ -3769,10 +3724,9 @@ bool StdLib::If(EvaluationContext &ctx) {
     return false;
 }
 
-// Go through all the code and harden, perform additional argument checking
-
+// TODO: Go through all the code and harden, perform additional argument checking
 bool StdLib::Let(EvaluationContext &ctx) {
-  Scope scope(ctx.Interp.GetCurrentStackFrame().GetLocalSymbols());
+  Scope scope(ctx.Interp.GetCurrentStackFrame().GetLocalSymbols(), ctx.GetSourceContext());
   ExpressionPtr varsExpr = move(ctx.Args.front());
   ctx.Args.pop_front();
   if (auto vars = ctx.GetRequiredValue<Sexp>(varsExpr)) {
@@ -3820,9 +3774,7 @@ bool StdLib::Begin(EvaluationContext &ctx) {
     if (!ctx.Evaluate(currCodeExpr, "body"))
       return false;
   }
-
-  ctx.Expr = move(currCodeExpr);
-  return true;
+  return ctx.Return(currCodeExpr);
 }
 
 bool StdLib::Lambda(EvaluationContext &ctx) {
@@ -3835,23 +3787,23 @@ bool StdLib::Lambda(EvaluationContext &ctx) {
   ArgList anonFuncArgs;
   int nArgs = 0;
   if (LambdaPrepareFormals(ctx, formalsExpr, anonFuncArgs, nArgs)) {
-    ExpressionPtr func {
-      new InterpretedFunction {
-        FuncDef {
-          FuncDef::ManyArgs(Literal::TypeInstance, nArgs),
-          FuncDef::AnyArgs()
-        },
-        move(codeExpr),
-        move(anonFuncArgs)
-      } 
-    };
-    auto *interpFunc = static_cast<InterpretedFunction*>(func.get());
-    auto &locals = ctx.Interp.GetCurrentStackFrame().GetLocalSymbols();
-    locals.ForEach([interpFunc](const string &name, ExpressionPtr &value) {
-      interpFunc->Closure.emplace(name, value->Clone());
-    });
-    ctx.Expr = move(func);
-    return true;
+    auto func = ctx.New<InterpretedFunction>(
+      FuncDef {
+        FuncDef::ManyArgs(Literal::TypeInstance, nArgs),
+        FuncDef::AnyArgs()
+      },
+      move(codeExpr),
+      move(anonFuncArgs)
+    );
+    if (func) {
+      auto &locals = ctx.Interp.GetCurrentStackFrame().GetLocalSymbols();
+      locals.ForEach([&func](const string &name, ExpressionPtr &value) {
+        func.Val.Closure.emplace(name, value->Clone());
+      });
+      return ctx.Return(func.Expr);
+    }
+    else
+      return false;
   }
   else
     return false;
@@ -3876,33 +3828,36 @@ bool StdLib::LambdaPrepareFormals(EvaluationContext &ctx, ExpressionPtr &formals
 bool StdLib::Def(EvaluationContext &ctx) {
   ExpressionPtr symbolExpr { move(ctx.Args.front()) };
   ctx.Args.pop_front();
+  if (auto lambda = ctx.New<Sexp>()) {
+    lambda.Val.Args.emplace_back(ctx.Alloc<Symbol>("lambda"));
+    lambda.Val.Args.push_back(move(ctx.Args.front()));
+    ctx.Args.pop_front();
+    lambda.Val.Args.push_back(move(ctx.Args.front()));
+    ctx.Args.pop_front();
 
-  ExpressionPtr lambdaExpr { new Sexp { } };
-  auto lambda = static_cast<Sexp*>(lambdaExpr.get());
-  lambda->Args.push_back(ExpressionPtr { new Symbol { "lambda" } });
-  lambda->Args.push_back(move(ctx.Args.front()));
-  ctx.Args.pop_front();
-  lambda->Args.push_back(move(ctx.Args.front()));
-  ctx.Args.pop_front();
-
-  if (ctx.Evaluate(lambdaExpr, "lambdaExpr")) {
-    ExpressionPtr setExpr { new Sexp {} };
-    auto set = static_cast<Sexp*>(setExpr.get());
-    set->Args.push_back(ExpressionPtr { new Symbol { "set" } });
-    set->Args.push_back(move(symbolExpr));
-    set->Args.push_back(move(lambdaExpr)); 
-    if (ctx.Evaluate(setExpr, "setExpr")) {
-      ctx.Expr = move(setExpr);
-      return true;
+    if (ctx.Evaluate(lambda.Expr, "lambdaExpr")) {
+      if (auto set = ctx.New<Sexp>()) {
+        set.Val.Args.emplace_back(ctx.Alloc<Symbol>("set"));
+        set.Val.Args.push_back(move(symbolExpr));
+        set.Val.Args.push_back(move(lambda.Expr)); 
+        if (ctx.Evaluate(set.Expr, "setExpr"))
+          return ctx.Return(set.Expr);
+      }
+      else
+        return false;
     }
+    return false; 
   }
-  return false; 
+  else
+    return false;
 }
 
 bool StdLib::Apply(EvaluationContext &ctx) {
-  ExpressionPtr applicationExpr { new Sexp { } };
-  auto application = static_cast<Sexp*>(applicationExpr.get());
-  application->Args.push_back(move(ctx.Args.front()));
+  auto application = ctx.New<Sexp>();
+  if (!application)
+    return false;
+
+  application.Val.Args.push_back(move(ctx.Args.front()));
   ctx.Args.pop_front();
 
   ExpressionPtr appArgsExpr { move(ctx.Args.front()) };
@@ -3910,22 +3865,19 @@ bool StdLib::Apply(EvaluationContext &ctx) {
 
   if (ctx.Evaluate(appArgsExpr, "argsList")) {
     ExpressionPtr newArgs;
-    if (auto quote = TypeHelper::GetValue<Quote>(appArgsExpr)) {
+    if (auto quote = TypeHelper::GetValue<Quote>(appArgsExpr))
       newArgs = move(quote->Value);
-    }
     else
       newArgs = move(appArgsExpr);
 
     if (auto appArgsSexp = ctx.GetRequiredValue<Sexp>(newArgs, "list")) {
       while (!appArgsSexp->Args.empty()) {
-        application->Args.push_back(move(appArgsSexp->Args.front()));
+        application.Val.Args.push_back(move(appArgsSexp->Args.front()));
         appArgsSexp->Args.pop_front();
       }
 
-      if (ctx.Evaluate(applicationExpr, "functionApplication")) {
-        ctx.Expr = move(applicationExpr);
-        return true;
-      }
+      if (ctx.Evaluate(application.Expr, "functionApplication"))
+        return ctx.Return(application.Expr);
       else
         return false; 
     }
@@ -3953,25 +3905,22 @@ bool StdLib::Try(EvaluationContext &ctx) {
   ctx.Args.pop_front();
   ExpressionPtr catchExpr { move(ctx.Args.front()) };
   ctx.Args.pop_front();
-  if (ctx.EvaluateNoError(expr)) {
-    ctx.Expr = move(expr);
-    return true;
-  }
+  if (ctx.EvaluateNoError(expr))
+    return ctx.Return(expr);
   else {
     auto &errors = ctx.Interp.GetErrors();
-    Scope scope(ctx.Interp.GetCurrentStackFrame().GetLocalSymbols());
-    scope.PutSymbol("$error.msg", ExpressionPtr { new Str(errors.empty() ? "<unknown>" : errors.front().What) });
+    Scope scope(ctx.Interp.GetCurrentStackFrame().GetLocalSymbols(), ctx.GetSourceContext());
+    scope.PutSymbol("$error.msg", ExpressionPtr { ctx.Alloc<Str>(errors.empty() ? "<unknown>" : errors.front().What) });
 
-    ExpressionPtr stackSexpExpr { new Sexp() };
-    Sexp& stackSexp = static_cast<Sexp&>(*stackSexpExpr);
-    for (auto &frame : ctx.Interp.GetErrorStackTrace())
-      stackSexp.Args.emplace_back(new Str(frame));
-    scope.PutSymbol("$error.stack", ExpressionPtr { new Quote(move(stackSexpExpr)) });
-
-    ctx.Interp.ClearErrors();
-    if (ctx.Evaluate(catchExpr, "catch")) {
-      ctx.Expr = move(catchExpr);
-      return true;
+    if (auto stack = ctx.New<Sexp>()) {
+      for (auto &frame : ctx.Interp.GetErrorStackTrace())
+        stack.Val.Args.emplace_back(ctx.Alloc<Str>(frame));
+      scope.PutSymbol("$error.stack", ExpressionPtr { ctx.Alloc<Quote>(move(stack.Expr)) });
+      ctx.Interp.ClearErrors();
+      if (ctx.Evaluate(catchExpr, "catch"))
+        return ctx.Return(catchExpr);
+      else
+        return false;
     }
     else
       return false;
@@ -3992,8 +3941,7 @@ bool StdLib::BoolFunc(EvaluationContext &ctx) {
         value = floatValue->Value != 0.0;
       else if (auto strValue = TypeHelper::GetValue<Str>(expr))
         value = strValue->Value != "";
-      ctx.Expr.reset(new Bool(value));
-      return true;
+      return ctx.ReturnNew<Bool>(value);
     }
     else
       return false;
@@ -4020,8 +3968,7 @@ bool StdLib::IntFunc(EvaluationContext &ctx) {
           }
         }
       }
-      ctx.Expr.reset(new Int(value));
-      return true;
+      return ctx.ReturnNew<Int>(value);
     }
     else
       return false;
@@ -4048,8 +3995,7 @@ bool StdLib::FloatFunc(EvaluationContext &ctx) {
           }
         }
       }
-      ctx.Expr.reset(new Float(value));
-      return true;
+      return ctx.ReturnNew<Float>(value);
     }
     else
       return false;
@@ -4060,10 +4006,8 @@ bool StdLib::FloatFunc(EvaluationContext &ctx) {
 bool StdLib::StrFunc(EvaluationContext &ctx) {
   string value = "";
   if (auto &expr = ctx.Args.front()) {
-    if (ctx.Evaluate(expr, 1)) {
-      ctx.Expr.reset(new Str(expr->ToString()));
-      return true;
-    }
+    if (ctx.Evaluate(expr, 1))
+      return ctx.ReturnNew<Str>(expr->ToString());
     else
       return false;
   }
@@ -4081,10 +4025,8 @@ bool StdLib::SymbolFunc(EvaluationContext &ctx) {
   if (auto &expr = ctx.Args.front()) {
     if (ctx.Evaluate(expr, 1)) {
       if (auto *str = ctx.GetRequiredValue<Str>(expr)) {
-        if (IsStrASymbol(str->Value)) {
-          ctx.Expr.reset(new Symbol(str->Value));
-          return true;
-        }
+        if (IsStrASymbol(str->Value))
+          return ctx.ReturnNew<Symbol>(str->Value);
         else
           return ctx.Error("symbol can't be empty, contain a space or start with a digit");
       }
@@ -4099,8 +4041,7 @@ bool StdLib::Breakpoint(EvaluationContext &ctx) {
 #else
   std::raise(SIGABRT);
 #endif
-  ctx.Expr = List::GetNil();
-  return true;
+  return ctx.ReturnNil();
 }
 
 bool StdLib::TypeFunc(EvaluationContext &ctx) {
@@ -4115,10 +4056,8 @@ bool StdLib::TypeFunc(EvaluationContext &ctx) {
     typeName = ctx.Args.front()->Type().Name();
 
   ExpressionPtr typeSymbol;
-  if (ctx.GetSymbol(typeName, typeSymbol)) {
-    ctx.Expr = move(typeSymbol);
-    return true;
-  }
+  if (ctx.GetSymbol(typeName, typeSymbol))
+    return ctx.Return(typeSymbol);
   else
     return ctx.Error("unknown type");
 }
@@ -4131,22 +4070,21 @@ bool StdLib::TypeQFunc(EvaluationContext &ctx) {
       if (thisFuncName == "symbol") {
         if (auto *sym = ctx.GetRequiredValue<Symbol>(ctx.Args.front())) {
           Expression *value = nullptr;
-          ctx.Expr.reset(new Bool(ctx.GetSymbol(sym->Value, value)));
-          return true;
+          return ctx.ReturnNew<Bool>(ctx.GetSymbol(sym->Value, value));
         }
         else
           return false;
       }
       else {
         bool isAtomFunc = thisFuncName == "atom";
-        ExpressionPtr typeExpr { new Sexp };
-        auto *typeSexp = static_cast<Sexp*>(typeExpr.get());
-        typeSexp->Args.push_back(ExpressionPtr { new Symbol("type") });
-        typeSexp->Args.push_back(ctx.Args.front()->Clone());
-        ctx.Args.clear();
-        ctx.Args.push_back(ExpressionPtr { new Symbol(isAtomFunc ? "list" : thisFuncName) });
-        ctx.Args.push_back(move(typeExpr));
-        return isAtomFunc ? Ne(ctx) : Eq(ctx);
+        if (auto type = ctx.New<Sexp>()) {
+          type.Val.Args.emplace_back(ctx.Alloc<Symbol>("type"));
+          type.Val.Args.push_back(ctx.Args.front()->Clone());
+          ctx.Args.clear();
+          ctx.Args.emplace_back(ctx.Alloc<Symbol>(isAtomFunc ? "list" : thisFuncName));
+          ctx.Args.push_back(move(type.Expr));
+          return isAtomFunc ? Ne(ctx) : Eq(ctx);
+        }
       }
     }
   }
@@ -4163,17 +4101,15 @@ bool StdLib::UnaryFunction(EvaluationContext &ctx, F fn) {
 template <class T, class R, class F>
 bool StdLib::UnaryFunction(EvaluationContext &ctx, F fn) {
   ExpressionPtr numExpr = ctx.Args.front()->Clone();
-  if (auto num = ctx.GetRequiredValue<T>(numExpr)) {
-    ctx.Expr.reset(new R { fn(num->Value) });
-    return true;
-  }
+  if (auto num = ctx.GetRequiredValue<T>(numExpr))
+    return ctx.ReturnNew<R>(fn(num->Value));
   return false;
 }
 
 template<class T, class F>
 bool StdLib::BinaryFunction(EvaluationContext &ctx, F fn) {
   bool first = true;
-  T result { 0 };
+  T result { ctx.GetSourceContext(), 0 };
   int argNum = 1;
   while (!ctx.Args.empty()) {
     bool ok = false;
@@ -4197,8 +4133,7 @@ bool StdLib::BinaryFunction(EvaluationContext &ctx, F fn) {
     ++argNum;
   }
 
-  ctx.Expr.reset(new T { result });
-  return true;
+  return ctx.Return(result.Clone());
 }
 
 template <class B, class I, class F, class S>
@@ -4206,7 +4141,7 @@ bool StdLib::BinaryPredicate(EvaluationContext &ctx, B bFn, I iFn, F fFn, S sFn)
   auto currArg = ctx.Args.begin();
   if (currArg != ctx.Args.end()) {
     if (ctx.Evaluate(*currArg, 1)) {
-      Bool defaultValue { true };
+      Bool defaultValue { ctx.GetSourceContext(), true };
       if (bFn && TypeHelper::IsA<Bool>(*currArg))
         return PredicateHelper<Bool>(ctx, bFn, defaultValue);
       else if (iFn && TypeHelper::IsA<Int>(*currArg))
@@ -4227,7 +4162,7 @@ bool StdLib::BinaryPredicate(EvaluationContext &ctx, B bFn, I iFn, F fFn, S sFn)
 
 template <class T, class F, class R>
 bool StdLib::PredicateHelper(EvaluationContext &ctx, F fn, R defaultResult) {
-  R result { defaultResult };
+  R result(ctx.GetSourceContext(), defaultResult.Value);
   ExpressionPtr firstArg = move(ctx.Args.front());
   ctx.Args.pop_front();
   if (auto last = ctx.GetRequiredValue<T>(firstArg)) {
@@ -4236,7 +4171,7 @@ bool StdLib::PredicateHelper(EvaluationContext &ctx, F fn, R defaultResult) {
       if (ctx.Evaluate(ctx.Args.front(), argNum)) {
         auto curr = TypeHelper::GetValue<T>(ctx.Args.front());
         if (curr) {
-          R tmp { fn(result, *last, *curr) };
+          R tmp(ctx.GetSourceContext(), fn(result, *last, *curr));
           result = tmp;
         }
         else
@@ -4254,6 +4189,5 @@ bool StdLib::PredicateHelper(EvaluationContext &ctx, F fn, R defaultResult) {
   else
     return false;
 
-  ctx.Expr = move(result.Clone());
-  return true;
+  return ctx.Return(result.Clone());
 }

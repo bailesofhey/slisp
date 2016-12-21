@@ -109,7 +109,7 @@ const string FuncDef::VarArgDef::ToString() const {
     return "";
   else {
     stringstream ss;
-    for (int i = 0; i < MinArgs; ++i)
+    for (size_t i = 0; i < MinArgs; ++i)
       ss << " " << Type.Name();
     
     if (MaxArgs == ANY_ARGS) {
@@ -119,7 +119,7 @@ const string FuncDef::VarArgDef::ToString() const {
     }
     else if (MaxArgs > MinArgs) {
       ss << " |";
-      for (int i = 0; i < MaxArgs; ++i)
+      for (size_t i = 0; i < MaxArgs; ++i)
         ss << " " << Type.Name();
     }
     return ss.str();
@@ -320,33 +320,34 @@ const string FuncDef::ToString() const {
 
 const TypeInfo Function::TypeInstance("fn", TypeInfo::NewUndefined);
 
-Function::Function():
+Function::Function(const SourceContext &sourceContext):
   Function {
+    sourceContext,
     FuncDef { ArgDefPtr {}, ArgDefPtr {} }
   }
 {
 }
 
-Function::Function(FuncDef &&def):
-  Function(move(def), ExpressionPtr {})
+Function::Function(const SourceContext &sourceContext, FuncDef &&def):
+  Function(sourceContext, move(def), ExpressionPtr {})
 {
 }
 
-Function::Function(FuncDef &&def, ExpressionPtr &&sym):
-  Literal { TypeInstance },
+Function::Function(const SourceContext &sourceContext, FuncDef &&def, ExpressionPtr &&sym):
+  Literal { sourceContext, TypeInstance },
   Def { move(def) },
   Symbol { move(sym) }
 {
   Def.Name = SymbolName();
 }
 
-Function::Function(FuncDef &&def, ExpressionPtr &sym):
-  Function(move(def), move(sym))
+Function::Function(const SourceContext &sourceContext, FuncDef &&def, ExpressionPtr &sym):
+  Function(sourceContext, move(def), move(sym))
 {
 }
 
 Function::Function(const Function &rhs):
-  Literal { TypeInstance },
+  Literal { rhs.GetSourceContext(), TypeInstance },
   Def { rhs.Def },
   Symbol { },
   Signatures { rhs.Signatures },
@@ -361,8 +362,9 @@ Function::Function(const Function &rhs):
 void Function::Display(ostream &out) const {
   out << "<Function";
   if (Symbol) {
+    out << ":";
     if (auto *sym = dynamic_cast<::Symbol*>(Symbol.get()))
-      out << ":" << *sym;
+      out << *sym;
   }
   out << ">";
 }
@@ -385,9 +387,10 @@ std::string Function::SymbolName() const {
 //=============================================================================
 
 const TypeInfo CompiledFunction::TypeInstance("compiledfunction", TypeInfo::NewUndefined);
+const CompiledFunction CompiledFunction::Null(NullSourceContext);
 
-CompiledFunction::CompiledFunction():
-  Function {},
+CompiledFunction::CompiledFunction(const SourceContext &sourceContext):
+  Function { sourceContext },
   Fn { nullptr }
 {
 }
@@ -398,8 +401,8 @@ CompiledFunction::CompiledFunction(const CompiledFunction &rhs):
 {
 }
 
-CompiledFunction::CompiledFunction(FuncDef &&def, SlipFunction fn):
-  Function { move(def) },
+CompiledFunction::CompiledFunction(const SourceContext &sourceContext, FuncDef &&def, SlipFunction fn):
+  Function { sourceContext, move(def) },
   Fn { fn }
 {
 }
@@ -435,10 +438,11 @@ void CompiledFunction::Swap(CompiledFunction &rhs) {
 //=============================================================================
 
 const TypeInfo InterpretedFunction::TypeInstance("interpretedfunction", TypeInfo::NewUndefined);
+const InterpretedFunction InterpretedFunction::Null(NullSourceContext);
 
 InterpretedFunction::InterpretedFunction(const InterpretedFunction &rhs):
   Function(rhs),
-  Code { ExpressionPtr { } },
+  Code { rhs.GetSourceContext(), ExpressionPtr { } },
   Args { },
   Closure { }
 {
@@ -449,11 +453,19 @@ InterpretedFunction::InterpretedFunction(const InterpretedFunction &rhs):
     Closure.emplace(kv.first, kv.second->Clone());
 }
 
-InterpretedFunction::InterpretedFunction(FuncDef &&def, ExpressionPtr &&code, ArgList &&args):
-  Function { move(def) },
-  Code { move(code) },
+InterpretedFunction::InterpretedFunction(const SourceContext &sourceContext, FuncDef &&def, ExpressionPtr &&code, ArgList &&args):
+  Function { sourceContext, move(def) },
+  Code { sourceContext, move(code) },
   Args { move(args) },
   Closure { }
+{
+}
+
+InterpretedFunction::InterpretedFunction(const SourceContext &sourceContext):
+  Function { sourceContext },
+  Code { sourceContext, ExpressionPtr {} },
+  Args {},
+  Closure {}
 {
 }
 

@@ -18,6 +18,7 @@ struct EvalError {
 
 class SymbolTable {
   public:
+    explicit SymbolTable(SymbolTableType& symbols, const SourceContext &sourceContext);
     void PutSymbol(const std::string &symbolName, ExpressionPtr &value);
     void PutSymbol(const std::string &symbolName, ExpressionPtr &&value);
     void PutSymbolBool(const std::string &symbolName, bool value);
@@ -34,12 +35,13 @@ class SymbolTable {
     size_t GetCount() const;
 
   private:
-    SymbolTableType Symbols;
+    SymbolTableType& Symbols;
+    SourceContext SourceContext_;
 };
 
 class Scope {
   public:
-    explicit Scope(SymbolTable &symbols);
+    explicit Scope(SymbolTable &symbols, const SourceContext &sourceContext);
     ~Scope();
     void PutSymbol(const std::string &symbolName, ExpressionPtr &value);
     void PutSymbol(const std::string &symbolName, ExpressionPtr &&value);
@@ -47,6 +49,7 @@ class Scope {
 
   private:
     SymbolTable                  &Symbols;
+    SymbolTableType              ShadowedSymbolStore;
     SymbolTable                  ShadowedSymbols;
     std::vector<std::string>     ScopedSymbols;
 };

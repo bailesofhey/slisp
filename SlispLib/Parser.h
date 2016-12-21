@@ -19,11 +19,14 @@ class Parser {
     bool Parse();
     const std::string& Error() const;
     std::unique_ptr<Sexp> ExpressionTree() const;
+    size_t                LineNum;
+    std::string           FilePath;
 
   private:
     CommandInterface      &CommandInterface_;
     ITokenizer            &Tokenizer_;
     InterpreterSettings   &Settings;
+    SourceContext         SourceContext_;
     std::unique_ptr<Sexp> ExprTree;
     std::string           Error_;
     int                   Depth;
@@ -42,4 +45,5 @@ class Parser {
     bool ParseNone(Sexp &root);
 
     void TransformInfixSexp(Sexp &sexp, bool isImplicit) const;
+    bool HasInfixArgCount(InterpreterSettings &settings, Sexp &sexp, ArgList::iterator &currArg, ArgList::iterator &firstPos) const;
 };
