@@ -365,22 +365,14 @@ void Function::Display(ostream &out) const {
     out << ":";
     if (auto *sym = dynamic_cast<::Symbol*>(Symbol.get()))
       out << *sym;
-    //out << ":";
-    //if (auto *interp = dynamic_cast<const InterpretedFunction*>(this)) {
-    //  auto &sourceContext = interp->Code.Value->GetSourceContext();
-    //  if (!sourceContext.empty())
-    //    out << sourceContext.Module->Name;
-    //  out << ":";
-    //  if (!sourceContext.empty())
-    //    out << sourceContext.LineNum;
-    //}
-    //else {
-    //  if (!SourceContext_.empty())
-    //    out << SourceContext_.Module->Name;
-    //  out << ":";
-    //  if (!SourceContext_.empty())
-    //    out << SourceContext_.LineNum;
-    //}
+    /*
+    out << ":";
+    if (!SourceContext_.empty())
+      out << SourceContext_.Module->Name;
+    out << ":";
+    if (!SourceContext_.empty())
+      out << SourceContext_.LineNum;
+    */
   }
   out << ">";
 }

@@ -1848,6 +1848,7 @@ bool StdLib::Set(EvaluationContext &ctx) {
         auto &currStackFrame = ctx.Interp.GetCurrentStackFrame();
         ExpressionPtr temp;
         bool ret = ctx.Return(value->Clone());
+        value->SetSourceContext(symToSetExpr->GetSourceContext());
         if (currStackFrame.GetLocalSymbols().GetSymbol(symToSetName, temp))
           currStackFrame.PutLocalSymbol(symToSetName, move(value));
         else
