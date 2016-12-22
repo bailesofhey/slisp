@@ -17,8 +17,7 @@ Parser::Parser(CommandInterface &commandInterface, ITokenizer &tokenizer, Interp
   Tokenizer_ { tokenizer },
   Settings { settings },
   SourceContext_ { },
-  Debug { debug },
-  LineNum { 0 }
+  Debug { debug }
 {
 }
 
@@ -26,9 +25,9 @@ bool Parser::Parse() {
   Reset();
 
   string line;
-  ++LineNum;
-  if (Debug)
-    cout << "Source: " << FilePath << ":" << LineNum << endl;
+  ++SourceContext_.LineNum;
+  if (Debug && !SourceContext_.empty())
+    cout << "Source: " << SourceContext_.Module->FilePath << ":" << SourceContext_.LineNum << endl;
   if (CommandInterface_.ReadInputLine(line)) {
     Tokenizer_.SetLine(line);
     
@@ -310,9 +309,9 @@ begin:
     if (Depth) {
       string line;
       if (CommandInterface_.HasMore()) {
-        ++LineNum;
-        if (Debug)
-          cout << "Source: " << FilePath << ":" << LineNum << endl;
+        ++SourceContext_.LineNum;
+        if (Debug && !SourceContext_.empty())
+          cout << "Source: " << SourceContext_.Module->FilePath << ":" << SourceContext_.LineNum << endl;
         CommandInterface_.ReadContinuedInputLine(line);
         Tokenizer_.SetLine(line);
         ++Tokenizer_;

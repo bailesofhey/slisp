@@ -19,7 +19,7 @@ using namespace std;
 //=============================================================================
 
 bool StdLib::Load(Interpreter &interpreter) {
-  auto* thisModule = interpreter.CreateModule("StdLib", "");
+  auto* thisModule = interpreter.CreateModule("StdLib", "StdLib");
   if (!thisModule)
     return false;
 

@@ -31,6 +31,11 @@ SourceContext::SourceContext(const SourceContext &rhs):
   LineNum(rhs.LineNum)
 {
 }
+
+bool SourceContext::empty() const {
+  return Module == nullptr || LineNum == 0;
+}
+
 //=============================================================================
 
 TypeInfo::TypeInfo(const string &typeName, const ExpressionNewFn newFn):
@@ -57,6 +62,12 @@ Expression::Expression(const SourceContext &sourceContext, const TypeInfo& typeI
   Type_ { typeInfo },
   SourceContext_ { sourceContext }
 { 
+}
+
+Expression::Expression(const Expression &rhs):
+  Type_ { rhs.Type_ },
+  SourceContext_ { rhs.SourceContext_ }
+{
 }
 
 Expression::~Expression() {

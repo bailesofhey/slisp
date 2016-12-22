@@ -19,14 +19,12 @@ class Parser {
     bool Parse();
     const std::string& Error() const;
     std::unique_ptr<Sexp> ExpressionTree() const;
-    size_t                LineNum;
-    std::string           FilePath;
+    SourceContext         SourceContext_;
 
   private:
     CommandInterface      &CommandInterface_;
     ITokenizer            &Tokenizer_;
     InterpreterSettings   &Settings;
-    SourceContext         SourceContext_;
     std::unique_ptr<Sexp> ExprTree;
     std::string           Error_;
     int                   Depth;

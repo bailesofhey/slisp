@@ -200,7 +200,7 @@ bool EvaluationContext::AllocationError() {
 Interpreter::Interpreter(CommandInterface &cmdInterface):
   CmdInterface { cmdInterface },
   Modules { },
-  SourceContext_ { CreateModule("Internal", ""), 0 },
+  SourceContext_ { CreateModule("Internal", "Internal"), 0 },
   DynamicSymbolStore { },
   DynamicSymbols { DynamicSymbolStore, SourceContext_ },
   Settings { DynamicSymbols },
@@ -220,8 +220,8 @@ Interpreter::Interpreter(CommandInterface &cmdInterface):
 }
 
 Interpreter::~Interpreter() {
-  for (auto *mod : Modules)
-    delete mod;
+  for (auto it = begin(Modules); it != end(Modules); ++it)
+    delete it->second;
 }
 
 InterpreterSettings& Interpreter::GetSettings() {
@@ -311,14 +311,20 @@ Environment& Interpreter::GetEnvironment() {
   return Environment_;
 }
 
-ModuleInfo* Interpreter::CreateModule(const string& name, const string &filePath) {
-  unique_ptr<ModuleInfo> newModulePtr { new ModuleInfo { name, filePath } };
-  if (newModulePtr) {
-    ModuleInfo* newMod = newModulePtr.get();
-    Modules.push_back(newModulePtr.release());
-    return newMod;
+ModuleInfo* Interpreter::CreateModule(const string &name, const string &filePath) {
+  auto it = Modules.find(name);
+  if (it != Modules.end())
+    return it->second;
+  else {
+    unique_ptr<ModuleInfo> newModule { new ModuleInfo {name, filePath} };
+    if (newModule) {
+      ModuleInfo *newModuleInfo = newModule.get();
+      Modules[name] = newModule.release();
+      return newModuleInfo;
+    }
+    else
+      return nullptr;
   }
-  return nullptr;
 }
 
 bool Interpreter::GetCurrFrameSymbol(const string &symbolName, ExpressionPtr &value) {

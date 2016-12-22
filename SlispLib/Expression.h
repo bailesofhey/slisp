@@ -20,6 +20,7 @@ struct SourceContext {
   explicit SourceContext();
   explicit SourceContext(ModuleInfo* module, size_t lineNum);
   explicit SourceContext(const SourceContext &rhs);
+  bool empty() const;
 };
 
 static const SourceContext NullSourceContext;
@@ -51,6 +52,7 @@ struct Expression {
   const TypeInfo& Type_;
 
   explicit Expression(const SourceContext &sourceContext, const TypeInfo& typeInfo);
+  Expression(const Expression& rhs);
   virtual ~Expression();
   virtual ExpressionPtr Clone() const = 0;
   virtual ExpressionPtr New(const SourceContext &sourceContext) const;
@@ -66,7 +68,7 @@ struct Expression {
 
   friend std::ostream& operator<<(std::ostream &out, const Expression &expr);
   static bool AreEqual(const ExpressionPtr &lhs, const ExpressionPtr &rhs);
-private:
+protected:
   SourceContext SourceContext_;
 };
 

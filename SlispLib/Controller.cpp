@@ -186,20 +186,18 @@ void Controller::Run(const string &code) {
 bool Controller::RunFile(const string &inPath) {
   OutputSettingsScope scope(OutManager, 0);
   istream& oldIn = CmdInterface.GetInput();
-  string oldFilePath = CurrFilePath;
-  size_t oldLineNum = CurrLineNum;
+  SourceContext oldSourceContext(Parser_.SourceContext_);
   fstream in;
   in.open(inPath, ios_base::in);
   if (in.is_open()) {
     CmdInterface.SetInput(in);
-    CurrFilePath = inPath;
-    CurrLineNum = 0;
-    Parser_.LineNum = 0;
+    Parser_.SourceContext_.Module = Interpreter_.CreateModule(inPath, inPath);
+    Parser_.SourceContext_.LineNum = 0;
+
     REPL();
     CmdInterface.SetInput(oldIn);
-    Parser_.LineNum = oldLineNum;
-    CurrFilePath = oldFilePath;
-    CurrLineNum = oldLineNum;
+
+    Parser_.SourceContext_ = oldSourceContext;
     return true;
   }
   return false;
@@ -241,7 +239,7 @@ void Controller::SetupModules() {
   if (!Lib.Load(Interpreter_))
     throw runtime_error("Failed to load StdLib module");
 
-  auto *thisMod = Interpreter_.CreateModule("Controller", "");
+  auto *thisMod = Interpreter_.CreateModule("Controller", "Controller");
   if (!thisMod)
     throw runtime_error("Failed to load Controller module");
   
@@ -278,8 +276,6 @@ void Controller::REPL() {
 
 void Controller::RunSingle() {
   stringstream ss;
-  ++CurrLineNum;
-  Parser_.FilePath = CurrFilePath;
   if (Parser_.Parse()) {
     auto exprTree = Parser_.ExpressionTree();
     if (exprTree) {
