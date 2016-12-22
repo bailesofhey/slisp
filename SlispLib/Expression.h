@@ -11,6 +11,9 @@
 struct ModuleInfo {
   std::string Name;
   std::string FilePath;
+  uint32_t LoadCount;
+
+  explicit ModuleInfo(const std::string &name, const std::string &filePath);
 };
 
 struct SourceContext {

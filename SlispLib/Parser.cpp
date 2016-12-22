@@ -26,8 +26,6 @@ bool Parser::Parse() {
 
   string line;
   ++SourceContext_.LineNum;
-  if (Debug && !SourceContext_.empty())
-    cout << "Source: " << SourceContext_.Module->FilePath << ":" << SourceContext_.LineNum << endl;
   if (CommandInterface_.ReadInputLine(line)) {
     Tokenizer_.SetLine(line);
     
@@ -310,8 +308,6 @@ begin:
       string line;
       if (CommandInterface_.HasMore()) {
         ++SourceContext_.LineNum;
-        if (Debug && !SourceContext_.empty())
-          cout << "Source: " << SourceContext_.Module->FilePath << ":" << SourceContext_.LineNum << endl;
         CommandInterface_.ReadContinuedInputLine(line);
         Tokenizer_.SetLine(line);
         ++Tokenizer_;

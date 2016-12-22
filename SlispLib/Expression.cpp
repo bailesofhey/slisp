@@ -11,6 +11,12 @@ using namespace std;
 
 //=============================================================================
 
+ModuleInfo::ModuleInfo(const std::string &name, const std::string &filePath):
+  Name(name),
+  FilePath(filePath),
+  LoadCount(0)
+{
+}
 
 //=============================================================================
 

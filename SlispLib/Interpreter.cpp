@@ -239,6 +239,7 @@ vector<string> Interpreter::GetErrorStackTrace() const {
   return errStackTrace;
 }
 
+// TODO: Refactor
 bool Interpreter::PushError(const EvalError &error) {
   if (Errors.empty()) {
     Errors.push_back(error);
@@ -336,11 +337,14 @@ Environment& Interpreter::GetEnvironment() {
 
 ModuleInfo* Interpreter::CreateModule(const string &name, const string &filePath) {
   auto it = Modules.find(name);
-  if (it != Modules.end())
+  if (it != Modules.end()) {
+    ++(it->second->LoadCount);
     return it->second;
+  }
   else {
     unique_ptr<ModuleInfo> newModule { new ModuleInfo {name, filePath} };
     if (newModule) {
+      newModule->LoadCount = 1;
       ModuleInfo *newModuleInfo = newModule.get();
       Modules[name] = newModule.release();
       return newModuleInfo;
