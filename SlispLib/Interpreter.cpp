@@ -5,6 +5,7 @@
 #include <memory>
 #include <algorithm>
 #include <iterator>
+#include <sstream>
 
 #include "Interpreter.h"
 #include "Expression.h"
@@ -164,7 +165,7 @@ const string EvaluationContext::GetThisFunctionName() {
 }
 
 bool EvaluationContext::Error(const string &what) {
-  return Interp.PushError(EvalError { CurrentFunction.Value, what });
+  return Interp.PushError(EvalError { Expr_->GetSourceContext(), CurrentFunction.Value, what });
 }
 
 bool EvaluationContext::EvaluateError(int argNum) {
@@ -242,8 +243,30 @@ bool Interpreter::PushError(const EvalError &error) {
   if (Errors.empty()) {
     Errors.push_back(error);
     ErrorStackTrace.clear();
-    for (auto curr = crbegin(StackFrames); curr != crend(StackFrames); ++curr)
-      ErrorStackTrace.push_back((*curr)->GetFunction().SymbolName());
+    for (size_t i = StackFrames.size(); i > 0; --i) {
+      stringstream ss;
+      auto &frame = StackFrames[i - 1];
+      auto &fn = frame->GetFunction();
+      ss << fn.SymbolName();
+      if (i != StackFrames.size()) {
+        auto &fn2 = StackFrames[i]->GetFunction();
+        if (fn2.Symbol) {
+          auto &src = fn2.Symbol->GetSourceContext();
+          if (src.Module || src.LineNum)
+            ss << " (" 
+               << (src.Module ? src.Module->FilePath : "<module>") << ":" 
+               << src.LineNum << ")";
+        }
+      }
+      else {
+        if (error.SourceContext_.Module || error.SourceContext_.LineNum) {
+          ss << " (" 
+             << (error.SourceContext_.Module ? error.SourceContext_.Module->FilePath : "<module>") << ":" 
+             << error.SourceContext_.LineNum << ")";
+        }
+      }
+      ErrorStackTrace.push_back(ss.str());
+    }
   }
   return false;
 }
@@ -428,6 +451,7 @@ bool Interpreter::ReduceSexpFunction(ExpressionPtr &expr, Function &function) {
   auto evaluator = bind(&Interpreter::EvaluatePartial, this, _1);
   ExpressionPtr funcCopy = function.Clone();
   auto funcToCall = static_cast<Function*>(funcCopy.get());
+  funcToCall->Def.Name = funcDef.Name;
   if (funcDef.ValidateArgs(evaluator, expr, error)) {
     auto e = static_cast<Sexp*>(expr.get());
     ArgList args;

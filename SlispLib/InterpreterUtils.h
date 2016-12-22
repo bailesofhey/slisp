@@ -12,8 +12,10 @@
 struct EvalError {
   std::string Where; //TODO: Function
   std::string What;
+  SourceContext SourceContext_;
 
   explicit EvalError(const std::string &where, const std::string &what);
+  explicit EvalError(const SourceContext &sourceContext, const std::string &where, const std::string &what);
 };
 
 class SymbolTable {

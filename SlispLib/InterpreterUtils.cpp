@@ -9,8 +9,14 @@ using namespace std;
 //=============================================================================
 
 EvalError::EvalError(const string &where, const string &what):
+  EvalError(NullSourceContext, where, what)
+{
+}
+
+EvalError::EvalError(const SourceContext &sourceContext, const string &where, const string &what):
   Where { where },
-  What { what }
+  What { what },
+  SourceContext_(sourceContext) 
 {
 }
 

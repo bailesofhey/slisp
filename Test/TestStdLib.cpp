@@ -2571,7 +2571,17 @@ TEST_F(StdLibBranchTest, TestError_StackTrace) {
   ASSERT_NE(Out.str().find("dFn"), string::npos);
 
   ASSERT_TRUE(RunSuccess("(try (aFn) $error.msg)", "boom!"));
-  ASSERT_TRUE(RunSuccess("(try (aFn) $error.stack)", "(\"dFn\" \"cFn\" \"bFn\" \"aFn\" \"__main__\")"));
+  ASSERT_TRUE(RunSuccess("(try (aFn) $error.stack)", ""));
+  int dFnPos = Out.str().find("dFn");
+  int cFnPos = Out.str().find("cFn");
+  int bFnPos = Out.str().find("bFn");
+  int aFnPos = Out.str().find("aFn");
+  int mainFnPos = Out.str().find("main");
+  ASSERT_GT(dFnPos, 0);
+  ASSERT_GT(cFnPos, dFnPos);
+  ASSERT_GT(bFnPos, cFnPos);
+  ASSERT_GT(aFnPos, bFnPos);
+  ASSERT_GT(mainFnPos, aFnPos);
 }
 
 TEST_F(StdLibBranchTest, TestTry) {

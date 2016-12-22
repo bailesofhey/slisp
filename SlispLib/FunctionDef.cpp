@@ -385,6 +385,8 @@ bool Function::operator==(const Function &rhs) const {
 }
 
 std::string Function::SymbolName() const {
+  if (!Def.Name.empty())
+    return Def.Name;
   if (Symbol) {
     if (auto *sym = dynamic_cast<::Symbol*>(Symbol.get()))
       return sym->Value;
