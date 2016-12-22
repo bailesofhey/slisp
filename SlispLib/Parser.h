@@ -19,12 +19,14 @@ class Parser {
     bool Parse();
     const std::string& Error() const;
     std::unique_ptr<Sexp> ExpressionTree() const;
-    SourceContext         SourceContext_;
+    SourceContext GetSourceContext() const;
+    void SetSourceContext(const SourceContext &sourceContext);
 
   private:
     CommandInterface      &CommandInterface_;
     ITokenizer            &Tokenizer_;
     InterpreterSettings   &Settings;
+    SourceContext         SourceContext_;
     std::unique_ptr<Sexp> ExprTree;
     std::string           Error_;
     int                   Depth;

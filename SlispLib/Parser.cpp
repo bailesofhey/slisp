@@ -164,7 +164,6 @@ void Parser::TransformInfixSexp(Sexp &sexp, bool isImplicit) const {
 
     if (!opSexp.Args.empty())
       newArgs.insert(fnCurr, opExpr->Clone());
-  
   }
 
   sexp.Args.erase(firstPos, endArg);
@@ -182,6 +181,14 @@ const string& Parser::Error() const {
 
 unique_ptr<Sexp> Parser::ExpressionTree() const {
   return unique_ptr<Sexp>(static_cast<Sexp*>(ExprTree->Clone().release()));
+}
+
+SourceContext Parser::GetSourceContext() const {
+  return SourceContext_;
+}
+
+void Parser::SetSourceContext(const SourceContext &sourceContext) {
+  SourceContext_ = sourceContext;
 }
 
 void Parser::Reset() {

@@ -3891,12 +3891,8 @@ bool StdLib::Apply(EvaluationContext &ctx) {
 
 bool StdLib::Error(EvaluationContext &ctx) {
   ExpressionPtr msgExpr { move(ctx.Args.front()) };
-  if (auto *msgVal = ctx.GetRequiredValue<Str>(msgExpr)) {
-    string currUserFunc;
-    auto& frame = ctx.Interp.GetCurrentStackFrame();
-    ctx.Interp.PushError(EvalError { frame.GetFunction().SymbolName(), msgVal->Value });
-    return false;
-  }
+  if (auto *msgVal = ctx.GetRequiredValue<Str>(msgExpr))
+    return ctx.Error(msgVal->Value);
   else
     return false;
 }

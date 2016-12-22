@@ -184,25 +184,25 @@ void Controller::Run(const string &code) {
 }
 
 bool Controller::RunFile(const string &inPath) {
-  auto *mod =  Interpreter_.CreateModule(inPath, inPath);
-  if (mod && mod->LoadCount > 1)
-    return true; // already loaded
+  if (auto *mod = Interpreter_.CreateModule(inPath, inPath)) {
+    if (mod->LoadCount > 1)
+      return true; // already loaded
 
-  OutputSettingsScope scope(OutManager, 0);
-  istream& oldIn = CmdInterface.GetInput();
-  SourceContext oldSourceContext(Parser_.SourceContext_);
-  Parser_.SourceContext_.Module = mod;
-  Parser_.SourceContext_.LineNum = 0;
-  fstream in;
-  in.open(inPath, ios_base::in);
-  if (in.is_open()) {
-    CmdInterface.SetInput(in);
+    OutputSettingsScope scope(OutManager, 0);
+    istream& oldIn = CmdInterface.GetInput();
+    SourceContext oldSourceContext(Parser_.GetSourceContext());
+    Parser_.SetSourceContext(SourceContext(mod, 0));
+    fstream in;
+    in.open(inPath, ios_base::in);
+    if (in.is_open()) {
+      CmdInterface.SetInput(in);
 
-    REPL();
-    CmdInterface.SetInput(oldIn);
+      REPL();
+      CmdInterface.SetInput(oldIn);
 
-    Parser_.SourceContext_ = oldSourceContext;
-    return true;
+      Parser_.SetSourceContext(oldSourceContext);
+      return true;
+    }
   }
   return false;
 }

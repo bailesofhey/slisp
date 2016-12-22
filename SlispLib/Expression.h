@@ -22,7 +22,7 @@ struct SourceContext {
 
   explicit SourceContext();
   explicit SourceContext(ModuleInfo* module, size_t lineNum);
-  explicit SourceContext(const SourceContext &rhs);
+  SourceContext(const SourceContext &rhs);
   bool empty() const;
 };
 
