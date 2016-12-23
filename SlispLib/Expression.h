@@ -22,7 +22,6 @@ struct SourceContext {
 
   explicit SourceContext();
   explicit SourceContext(ModuleInfo* module, size_t lineNum);
-  SourceContext(const SourceContext &rhs);
   bool empty() const;
 };
 
@@ -55,7 +54,6 @@ struct Expression {
   const TypeInfo& Type_;
 
   explicit Expression(const SourceContext &sourceContext, const TypeInfo& typeInfo);
-  Expression(const Expression& rhs);
   virtual ~Expression();
   virtual ExpressionPtr Clone() const = 0;
   virtual ExpressionPtr New(const SourceContext &sourceContext) const;
