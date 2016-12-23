@@ -1749,7 +1749,7 @@ bool StdLib::Help(EvaluationContext &ctx) {
 
       string symName;
       ExpressionPtr symValue;
-      if (LookupSymbol(ctx, currArg, symName, symValue))
+      if (LookupSymbol(ctx, currArg, symName, symValue) && symValue)
         functor(symName, symValue);
       else
         return false;
