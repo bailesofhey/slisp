@@ -2525,6 +2525,8 @@ TEST_F(StdLibBranchTest, TestDef) {
   ASSERT_TRUE(RunSuccess("(add (1 2) (3 4 5))", "(1 2 3 4 5)"));
   ASSERT_TRUE(RunFail("(add 3 \"foo\")"));
   ASSERT_TRUE(RunFail("(add + -)"));
+  ASSERT_TRUE(RunSuccess("(def implicitBegin (a) (++ a) (++ a))", "Function"));
+  ASSERT_TRUE(RunSuccess("(implicitBegin 2)", "4"));
 }
 
 TEST_F(StdLibBranchTest, TestApply) {

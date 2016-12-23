@@ -32,17 +32,15 @@
   (print (format "=================")))
       
 (def unittest.-print-header ()
-  (begin
-    (unittest.-print-divider)
-    (print "Unit Test Results")
-    (unittest.-print-divider)))
+  (unittest.-print-divider)
+  (print "Unit Test Results")
+  (unittest.-print-divider))
       
 (def unittest.-print-footer (npass nfail nerror)
-  (begin
-    (unittest.-print-divider)
-    (print (format "passed: {npass}"))
-    (print (format "failed: {nfail}"))
-    (print (format "errors: {nerror}"))
-    (unittest.-print-divider)
-    (print (format "total:  {}" (+ npass nfail nerror)))
-    (unittest.-print-divider)))
+  (unittest.-print-divider)
+  (print (format "passed: {npass}"))
+  (print (format "failed: {nfail}"))
+  (print (format "errors: {nerror}"))
+  (unittest.-print-divider)
+  (print (format "total:  {}" (+ npass nfail nerror)))
+  (unittest.-print-divider)))

@@ -1334,7 +1334,7 @@ bool StdLib::Load(Interpreter &interpreter) {
     "define named function",
     {{"(def add (a b) (+ a b))", "<Function:add>"}},
     StdLib::Def, 
-    FuncDef { FuncDef::Args({&Symbol::TypeInstance, &Sexp::TypeInstance, &Sexp::TypeInstance}), FuncDef::OneArg(Function::TypeInstance) }
+    FuncDef { FuncDef::ManyArgs(Sexp::TypeInstance, 3, ArgDef::ANY_ARGS), FuncDef::OneArg(Function::TypeInstance) }
   );
   symbols.PutSymbolFunction(
     "apply", 
@@ -3829,28 +3829,33 @@ bool StdLib::LambdaPrepareFormals(EvaluationContext &ctx, ExpressionPtr &formals
 bool StdLib::Def(EvaluationContext &ctx) {
   ExpressionPtr symbolExpr { move(ctx.Args.front()) };
   ctx.Args.pop_front();
-  if (auto lambda = ctx.New<Sexp>()) {
-    lambda.Val.Args.emplace_back(ctx.Alloc<Symbol>("lambda"));
-    lambda.Val.Args.push_back(move(ctx.Args.front()));
-    ctx.Args.pop_front();
-    lambda.Val.Args.push_back(move(ctx.Args.front()));
-    ctx.Args.pop_front();
+  if (auto *symbol = ctx.GetRequiredValue<Symbol>(symbolExpr)) {
+    if (auto lambda = ctx.New<Sexp>()) {
+      lambda.Val.Args.emplace_back(ctx.Alloc<Symbol>("lambda"));
+      lambda.Val.Args.push_back(move(ctx.Args.front()));
+      ctx.Args.pop_front();
 
-    if (ctx.Evaluate(lambda.Expr, "lambdaExpr")) {
-      if (auto set = ctx.New<Sexp>()) {
-        set.Val.Args.emplace_back(ctx.Alloc<Symbol>("set"));
-        set.Val.Args.push_back(move(symbolExpr));
-        set.Val.Args.push_back(move(lambda.Expr)); 
-        if (ctx.Evaluate(set.Expr, "setExpr"))
-          return ctx.Return(set.Expr);
+      if (auto begin = ctx.New<Sexp>()) {
+        begin.Val.Args.emplace_back(ctx.Alloc<Symbol>("begin"));
+        while (!ctx.Args.empty()) {
+          begin.Val.Args.push_back(move(ctx.Args.front()));
+          ctx.Args.pop_front();
+        }
+        lambda.Val.Args.push_back(move(begin.Expr));
+
+        if (ctx.Evaluate(lambda.Expr, "lambdaExpr")) {
+          if (auto set = ctx.New<Sexp>()) {
+            set.Val.Args.emplace_back(ctx.Alloc<Symbol>("set"));
+            set.Val.Args.emplace_back(ctx.Alloc<Symbol>(symbol->Value));
+            set.Val.Args.push_back(move(lambda.Expr)); 
+            if (ctx.Evaluate(set.Expr, "setExpr"))
+              return ctx.Return(set.Expr);
+          }
+        }
       }
-      else
-        return false;
     }
-    return false; 
   }
-  else
-    return false;
+  return false;
 }
 
 bool StdLib::Apply(EvaluationContext &ctx) {
