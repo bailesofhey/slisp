@@ -112,6 +112,20 @@ TEST_F(ControllerTest, TestNestedIncludes) {
   ASSERT_NE(out.str().find("5"), string::npos);
 }
 
+TEST_F(ControllerTest, TestLoadOnce) {
+  stringstream out;
+  Controller controller;
+  controller.SetOutput(out);
+  ASSERT_TRUE(controller.RunFile("Test/TestIncludeA.slisp"));
+  controller.Run("(fivefn)");
+  ASSERT_NE(out.str().find("5"), string::npos);
+
+  controller.Run("(unset fivefn)");
+  ASSERT_TRUE(controller.RunFile("Test/TestIncludeA.slisp"));
+  controller.Run("(fivefn)");
+  ASSERT_NE(out.str().find("Error"), string::npos);
+}
+
 TEST_F(ControllerTest, TestOutputStream) {
   stringstream out1,
                     out2;

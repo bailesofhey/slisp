@@ -25,7 +25,7 @@
                 (set result (format "error: {}" $error.msg))))
             (print (format "{symName}: {result}"))))))
     (print-footer npass nfail nerror)
-    (if (or (> nfail 0) (> nerror 0)) false true)))
+    (and (== nfail 0) (== nerror 0))))
       
 (def print-divider ()
   (print (format "=================")))
