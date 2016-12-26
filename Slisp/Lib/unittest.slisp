@@ -4,43 +4,42 @@
   (let ((npass 0)
         (nfail 0)
         (nerror 0))
-    (begin
-      (unittest.-print-header)
-      (foreach symName in (symbols)
-        (let ((sym (symbol symName)))
-          (if (and (fn? sym) (startswith symName "test-"))
-            (let ((result false))
+    (print-header)
+    (foreach symName in (symbols)
+      (let ((sym (symbol symName))
+            (result false))
+        (if (and (fn? sym) (startswith symName "test-"))          
+          (begin
+            (try
               (begin
-                (try
+                (set result ((unquote sym)))           
+                (if result
                   (begin
-                    (set result ((unquote sym)))           
-                    (if result
-                      (begin
-                        (++ npass)
-                        (set result "pass"))
-                      (begin
-                        (++ nfail)
-                        (set result "fail"))))
+                    (++ npass)
+                    (set result "pass"))
                   (begin
-                    (++ nerror)
-                    (set result (format "error: {}" $error.msg))))
-                (print (format "{symName}: {result}")))))))
-      (unittest.-print-footer npass nfail nerror)
-      (if (or (> nfail 0) (> nerror 0)) false true))))
+                    (++ nfail)
+                    (set result "fail"))))
+              (begin
+                (++ nerror)
+                (set result (format "error: {}" $error.msg))))
+            (print (format "{symName}: {result}"))))))
+    (print-footer npass nfail nerror)
+    (if (or (> nfail 0) (> nerror 0)) false true)))
       
-(def unittest.-print-divider ()
+(def print-divider ()
   (print (format "=================")))
       
-(def unittest.-print-header ()
-  (unittest.-print-divider)
+(def print-header ()
+  (print-divider)
   (print "Unit Test Results")
-  (unittest.-print-divider))
+  (print-divider))
       
-(def unittest.-print-footer (npass nfail nerror)
-  (unittest.-print-divider)
+(def print-footer (npass nfail nerror)
+  (print-divider)
   (print (format "passed: {npass}"))
   (print (format "failed: {nfail}"))
   (print (format "errors: {nerror}"))
-  (unittest.-print-divider)
+  (print-divider)
   (print (format "total:  {}" (+ npass nfail nerror)))
-  (unittest.-print-divider)))
+  (print-divider)))
