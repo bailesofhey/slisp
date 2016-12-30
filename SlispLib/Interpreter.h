@@ -17,25 +17,30 @@ class Interpreter;
 
 class StackFrame {
   public:
-    explicit StackFrame(Interpreter &interp, Function &&func);
-    explicit StackFrame(Interpreter &interp, Function &func);
+    explicit StackFrame(Interpreter &interp, InterpretedFunction &&func);
+    explicit StackFrame(Interpreter &interp, InterpretedFunction &func);
     ~StackFrame();
+    void PutSymbol(const std::string &symbolName, ExpressionPtr &value);
+
+    // these needed?
     void PutLocalSymbol(const std::string &symbolName, ExpressionPtr &&value);
     void PutLocalSymbol(const std::string &symbolName, ExpressionPtr &value);
     void PutDynamicSymbol(const std::string &symbolName, ExpressionPtr &value);
     void PutDynamicSymbol(const std::string &symbolName, ExpressionPtr &&value);
+
     bool GetSymbol(const std::string &symbolName, ExpressionPtr &valueCopy);
     bool GetSymbol(const std::string &symbolName, Expression *&value);
     void DeleteSymbol(const std::string &symbolName);
     SymbolTable& GetLocalSymbols();
-    Function& GetFunction();
+    InterpretedFunction& GetFunction();
 
   private:
     Interpreter     &Interp;
-    Function        &Func;
+    InterpretedFunction  &Func;
     SymbolTable     Dynamics;
     SymbolTableType LocalStore;
     SymbolTable     Locals;
+    SymbolTable     Closure;
     Scope           DynamicScope;
 };
 
@@ -195,7 +200,7 @@ class Interpreter {
     SymbolTable                        DynamicSymbols;
     InterpreterSettings                Settings;
     std::vector<StackFrame*>           StackFrames;
-    CompiledFunction                   MainFunc;
+    InterpretedFunction                MainFunc;
     StackFrame                         MainFrame;
     TypeReducersType                   TypeReducers;
     std::list<EvalError>               Errors;

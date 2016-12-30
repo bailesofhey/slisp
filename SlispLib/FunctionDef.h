@@ -180,12 +180,11 @@ struct InterpretedFunction: public Function {
 
   explicit InterpretedFunction(const SourceContext &sourceContext, FuncDef &&def, ExpressionPtr &&code, ArgList &&args);
   explicit InterpretedFunction(const InterpretedFunction &rhs);
+  explicit InterpretedFunction(const SourceContext &sourceContext);
   virtual ExpressionPtr Clone() const override;
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const InterpretedFunction &rhs) const;
   bool operator!=(const InterpretedFunction &rhs) const;
-private:
-  explicit InterpretedFunction(const SourceContext &sourceContext);
 };
 
 class TypeHelper {

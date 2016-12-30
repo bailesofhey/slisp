@@ -26,7 +26,7 @@ SourceContext::SourceContext():
 {
 }
 
-SourceContext::SourceContext(ModuleInfo* module, size_t lineNum):
+SourceContext::SourceContext(ModuleInfo *module, size_t lineNum):
   Module(module),
   LineNum(lineNum)
 {
@@ -92,7 +92,7 @@ const string Expression::ToString() const {
   return ss.str();
 }
 
-void Expression::Print(ostream& out) const {
+void Expression::Print(ostream &out) const {
   Display(out);
 }
 
@@ -464,11 +464,11 @@ bool Symbol::operator==(const Expression &rhs) const {
       && dynamic_cast<const Symbol&>(rhs) == *this;
 }
 
-bool Symbol::operator==(const Symbol& rhs) const {
+bool Symbol::operator==(const Symbol &rhs) const {
   return Value == rhs.Value;
 }
 
-bool Symbol::operator!=(const Symbol& rhs) const {
+bool Symbol::operator!=(const Symbol &rhs) const {
   return !(*this == rhs);
 }
 
@@ -621,6 +621,10 @@ Ref::Ref(const SourceContext &sourceContext, ExpressionPtr &value):
 }
 
 ExpressionPtr Ref::Clone() const {
+  // 16 failing tests
+  // unset requires a deep copy, otherwise ref points to garbage
+  //return ExpressionPtr { new Ref(GetSourceContext(), Value) };
+
   return Value->Clone();
 }
 
@@ -628,7 +632,12 @@ ExpressionPtr Ref::NewRef() const {
   return ExpressionPtr { new Ref(GetSourceContext(), Value) }; 
 }
 
-void Ref::Display(ostream& out) const {
+void Ref::Display(ostream &out) const {
+  Value->Display(out);
+}
+
+void Ref::Print(ostream &out) const {
+  Value->Print(out);
 }
 
 IteratorPtr Ref::GetIterator() {

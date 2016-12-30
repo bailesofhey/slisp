@@ -369,7 +369,7 @@ class StackFrameTest: public InterpreterTest {
 TEST_F(StackFrameTest, TestSimple) {
   ExpressionPtr temp;
   {
-    CompiledFunction outerFunc(NullSourceContext);
+    InterpretedFunction outerFunc(NullSourceContext);
     StackFrame outer(Interpreter_, outerFunc);
     outer.PutDynamicSymbol("dynamic", ExpressionPtr { Factory.Alloc<Int>(1) });
     outer.PutLocalSymbol("outer", ExpressionPtr { Factory.Alloc<Int>(2) });
@@ -377,7 +377,7 @@ TEST_F(StackFrameTest, TestSimple) {
     ASSERT_TRUE(outer.GetSymbol("outer", temp));
     ASSERT_EQ(1, outer.GetLocalSymbols().GetCount());
     {
-      CompiledFunction innerFun(NullSourceContext);
+      InterpretedFunction innerFun(NullSourceContext);
       StackFrame inner(Interpreter_, innerFun);
       inner.PutDynamicSymbol("dynamic2", ExpressionPtr { Factory.Alloc<Int>(3) });
       inner.PutLocalSymbol("inner", ExpressionPtr { Factory.Alloc<Int>(4) });
@@ -398,7 +398,7 @@ TEST_F(StackFrameTest, TestSimple) {
 TEST_F(StackFrameTest, TestShadowing) {
   ExpressionPtr temp;
   {
-    CompiledFunction outerFunc(NullSourceContext);
+    InterpretedFunction outerFunc(NullSourceContext);
     StackFrame outer(Interpreter_, outerFunc);
     ExpressionPtr one { Factory.Alloc<Int>(1) };
     ExpressionPtr two { Factory.Alloc<Int>(2) };
@@ -410,7 +410,7 @@ TEST_F(StackFrameTest, TestShadowing) {
     ASSERT_EQ(*two, *temp);
     ASSERT_EQ(1, outer.GetLocalSymbols().GetCount());
     {
-      CompiledFunction innerFun(NullSourceContext);
+      InterpretedFunction innerFun(NullSourceContext);
       StackFrame inner(Interpreter_, innerFun);
       ExpressionPtr foo { Factory.Alloc<Str>("foo") };
       ExpressionPtr bar { Factory.Alloc<Str>("bar") };
@@ -495,13 +495,13 @@ TEST_F(InterpreterTest, TestStackFrames) {
   initialDynCount = getCurrDynCount();
   initialLocalCount = getCurrLocalCount();
   {
-    StackFrame outer(Interpreter_, CompiledFunction(NullSourceContext));
+    StackFrame outer(Interpreter_, InterpretedFunction(NullSourceContext));
     outer.PutDynamicSymbol("d1", ExpressionPtr { Factory.Alloc<Int>(1) });
     outer.PutLocalSymbol("outer1", ExpressionPtr { Factory.Alloc<Int>(2) });
     ASSERT_EQ(initialDynCount + 1, getCurrDynCount());
     ASSERT_EQ(initialLocalCount + 1, getCurrLocalCount());
     {
-      StackFrame inner(Interpreter_, CompiledFunction(NullSourceContext));
+      StackFrame inner(Interpreter_, InterpretedFunction(NullSourceContext));
       inner.PutDynamicSymbol("d2", ExpressionPtr { Factory.Alloc<Int>(3) });
       inner.PutLocalSymbol("inner1", ExpressionPtr { Factory.Alloc<Int>(4) });
       ASSERT_EQ(initialDynCount + 2, getCurrDynCount());

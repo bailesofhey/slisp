@@ -15,16 +15,17 @@ using namespace std;
 using namespace std::placeholders;
 
 //=============================================================================
-StackFrame::StackFrame(Interpreter &interp, Function &func):
+StackFrame::StackFrame(Interpreter &interp, InterpretedFunction &func):
   StackFrame(interp, move(func))
 {
 }
 
-StackFrame::StackFrame(Interpreter &interp, Function &&func):
+StackFrame::StackFrame(Interpreter &interp, InterpretedFunction &&func):
   Interp { interp },
   Func { func },
   LocalStore { },
   Locals { LocalStore, func.GetSourceContext() },
+  Closure { func.Closure, func.GetSourceContext() },
   Dynamics { interp.GetDynamicSymbols(func.GetSourceContext()) },
   DynamicScope { Dynamics, func.GetSourceContext() }
 {
@@ -35,7 +36,24 @@ StackFrame::~StackFrame() {
   Interp.PopStackFrame();
 }
 
+void StackFrame::PutSymbol(const string &symbolName, ExpressionPtr &value) {
+  ExpressionPtr existingValue;
+  if (Closure.GetSymbol(symbolName, existingValue))
+    Closure.PutSymbol(symbolName, value);
+  else {
+    existingValue.reset();
+    if (Locals.GetSymbol(symbolName, existingValue))
+      Locals.PutSymbol(symbolName, value);
+    else
+      DynamicScope.PutSymbol(symbolName, value);
+  }
+}
+
 void StackFrame::PutLocalSymbol(const string &symbolName, ExpressionPtr &&value) {
+  Expression *existingSymbol = nullptr;
+  if (Closure.GetSymbol(symbolName, existingSymbol)) {
+    return Closure.PutSymbol(symbolName, value);
+  }
   Locals.PutSymbol(symbolName, value);
 }
 
@@ -52,14 +70,18 @@ void StackFrame::PutDynamicSymbol(const string &symbolName, ExpressionPtr &value
 }
 
 bool StackFrame::GetSymbol(const string &symbolName, ExpressionPtr &valueCopy) {
-  if (Locals.GetSymbol(symbolName, valueCopy))
+  if (Closure.GetSymbol(symbolName, valueCopy))
+    return true;
+  else if (Locals.GetSymbol(symbolName, valueCopy))
     return true;
   else
     return Dynamics.GetSymbol(symbolName, valueCopy);
 }
 
 bool StackFrame::GetSymbol(const string &symbolName, Expression *&value) {
-  if (Locals.GetSymbol(symbolName, value))
+  if (Closure.GetSymbol(symbolName, value))
+    return true;
+  else if (Locals.GetSymbol(symbolName, value))
     return true;
   else
     return Dynamics.GetSymbol(symbolName, value);
@@ -67,17 +89,23 @@ bool StackFrame::GetSymbol(const string &symbolName, Expression *&value) {
 
 void StackFrame::DeleteSymbol(const string &symbolName) {
   ExpressionPtr value;
-  if (Locals.GetSymbol(symbolName, value))
-    Locals.DeleteSymbol(symbolName);
-  else 
-    Dynamics.DeleteSymbol(symbolName);
+  if (Closure.GetSymbol(symbolName, value))
+    Closure.DeleteSymbol(symbolName);
+  else {
+    value.reset();
+    if (Locals.GetSymbol(symbolName, value))
+      Locals.DeleteSymbol(symbolName);
+    else 
+      Dynamics.DeleteSymbol(symbolName);
+  }
 }
 
+// TODO: What about Closure?
 SymbolTable& StackFrame::GetLocalSymbols() {
   return Locals;
 }
 
-Function& StackFrame::GetFunction() {
+InterpretedFunction& StackFrame::GetFunction() {
   return Func;
 }
 //=============================================================================
@@ -453,17 +481,14 @@ bool Interpreter::ReduceSexpFunction(ExpressionPtr &expr, Function &function) {
   auto &funcDef = function.Def;
   string error;
   auto evaluator = bind(&Interpreter::EvaluatePartial, this, _1);
-  ExpressionPtr funcCopy = function.Clone();
-  auto funcToCall = static_cast<Function*>(funcCopy.get());
-  funcToCall->Def.Name = funcDef.Name;
   if (funcDef.ValidateArgs(evaluator, expr, error)) {
     auto e = static_cast<Sexp*>(expr.get());
     ArgList args;
     ArgListHelper::CopyTo(e->Args, args);
     args.pop_front();
-    if (auto compiledFunction = dynamic_cast<CompiledFunction*>(funcToCall))
+    if (auto compiledFunction = dynamic_cast<CompiledFunction*>(&function))
       return ReduceSexpCompiledFunction(expr, *compiledFunction, args);
-    else if (auto interpretedFunction = dynamic_cast<InterpretedFunction*>(funcToCall))
+    else if (auto interpretedFunction = dynamic_cast<InterpretedFunction*>(&function))
       return ReduceSexpInterpretedFunction(expr, *interpretedFunction, args);
     else
       return PushError(EvalError { ErrorWhere, "Unsupported Function Type" });
@@ -504,8 +529,9 @@ bool Interpreter::ReduceSexpInterpretedFunction(ExpressionPtr &expr, Interpreted
     else
       return PushError(EvalError { ErrorWhere, "Current formal is not a symbol " + (*currFormal)->ToString() });
   }
-  for (auto &kv : function.Closure)
-    newFrame.PutLocalSymbol(kv.first, move(kv.second->Clone()));
+  //for (auto &kv : function.Closure)
+    //newFrame.PutLocalSymbol(kv.first, ExpressionPtr { new Ref(kv.second->GetSourceContext(), kv.second) });
+    //newFrame.PutLocalSymbol(kv.first, move(kv.second->Clone()));
 
   if (currArg != endArg)
     return PushError(EvalError { ErrorWhere, "too many args passed to function" });

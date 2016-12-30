@@ -17,11 +17,11 @@ struct ModuleInfo {
 };
 
 struct SourceContext {
-  ModuleInfo* Module;
+  ModuleInfo *Module;
   size_t LineNum;
 
   explicit SourceContext();
-  explicit SourceContext(ModuleInfo* module, size_t lineNum);
+  explicit SourceContext(ModuleInfo *module, size_t lineNum);
   bool empty() const;
 };
 
@@ -57,8 +57,8 @@ struct Expression {
   virtual ~Expression();
   virtual ExpressionPtr Clone() const = 0;
   virtual ExpressionPtr New(const SourceContext &sourceContext) const;
-  virtual void Display(std::ostream& out) const = 0;
-  virtual void Print(std::ostream& out) const;
+  virtual void Display(std::ostream &out) const = 0;
+  virtual void Print(std::ostream &out) const;
   const std::string ToString() const;
   virtual bool operator==(const Expression &rhs) const = 0;
   bool operator!=(const Expression &rhs) const;
@@ -96,7 +96,7 @@ struct Void: public Expression {
 struct Literal: public Expression {
   static const TypeInfo TypeInstance;
 
-  explicit Literal(const SourceContext &sourceContext, const TypeInfo& typeInfo);
+  explicit Literal(const SourceContext &sourceContext, const TypeInfo &typeInfo);
 };
 
 struct Bool: public Literal {
@@ -108,7 +108,7 @@ struct Bool: public Literal {
   explicit Bool(const SourceContext &sourceContext);
   explicit Bool(const SourceContext &sourceContext, bool value);
   virtual ExpressionPtr Clone() const override;
-  virtual void Display(std::ostream& out) const override;
+  virtual void Display(std::ostream &out) const override;
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Bool &rhs) const;
   bool operator!=(const Bool &rhs) const;
@@ -128,7 +128,7 @@ struct Int: public Literal {
   explicit Int(const SourceContext &sourceContext);
   explicit Int(const SourceContext &sourceContext, int64_t value);
   virtual ExpressionPtr Clone() const override;
-  virtual void Display(std::ostream& out) const override;
+  virtual void Display(std::ostream &out) const override;
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Int &rhs) const;
   bool operator!=(const Int &rhs) const;
@@ -148,7 +148,7 @@ struct Float: public Literal {
   explicit Float(const SourceContext &sourceContext);
   explicit Float(const SourceContext &sourceContext, double value);
   virtual ExpressionPtr Clone() const override;
-  virtual void Display(std::ostream& out) const override;
+  virtual void Display(std::ostream &out) const override;
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Float &rhs) const;
   bool operator!=(const Float &rhs) const;
@@ -168,8 +168,8 @@ struct Str: public Literal, IIterable {
   explicit Str(const SourceContext &sourceContext);
   explicit Str(const SourceContext &sourceContext, const std::string& value);
   virtual ExpressionPtr Clone() const override;
-  virtual void Display(std::ostream& out) const override;
-  virtual void Print(std::ostream& out) const override;
+  virtual void Display(std::ostream &out) const override;
+  virtual void Print(std::ostream &out) const override;
   virtual IteratorPtr GetIterator();
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Str &rhs) const;
@@ -200,8 +200,8 @@ struct Quote: public Literal, IIterable {
 
   explicit Quote(const SourceContext &sourceContext, ExpressionPtr &&expr);
   virtual ExpressionPtr Clone() const override;
-  virtual void Display(std::ostream& out) const override;
-  virtual void Print(std::ostream& out) const override;
+  virtual void Display(std::ostream &out) const override;
+  virtual void Print(std::ostream &out) const override;
   virtual IteratorPtr GetIterator();
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Quote &rhs) const;
@@ -217,7 +217,7 @@ struct Symbol: public Expression {
 
   explicit Symbol(const SourceContext &sourceContext, const std::string& value);
   virtual ExpressionPtr Clone() const override;
-  virtual void Display(std::ostream& out) const override;
+  virtual void Display(std::ostream &out) const override;
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Symbol& rhs) const;
   bool operator!=(const Symbol& rhs) const;
@@ -245,7 +245,7 @@ struct Sexp: public Expression, IIterable {
   explicit Sexp(const SourceContext &sourceContext);
   explicit Sexp(const SourceContext &sourceContext, ArgList &&args);
   explicit Sexp(const SourceContext &sourceContext, std::initializer_list<ExpressionPtr> &&args);
-  virtual void Display(std::ostream& out) const override;
+  virtual void Display(std::ostream &out) const override;
   virtual ExpressionPtr Clone() const override;
   virtual IteratorPtr GetIterator();
   virtual bool operator==(const Expression &rhs) const override;
@@ -270,11 +270,12 @@ struct Ref: public Expression, IIterable {
   static const Ref Null;
 
   ExpressionPtr &Value;
-
+  
   explicit Ref(const SourceContext &sourceContext, ExpressionPtr &value);
   virtual ExpressionPtr Clone() const override;
   ExpressionPtr NewRef() const;
-  virtual void Display(std::ostream& out) const override;
+  virtual void Display(std::ostream &out) const override;
+  virtual void Print(std::ostream &out) const override;
   virtual IteratorPtr GetIterator();
   virtual bool operator==(const Expression &rhs) const override;
   bool operator==(const Ref &rhs) const;

@@ -211,6 +211,7 @@ TEST_F(StdLibInterpreterTest, TestPrint) {
   ASSERT_TRUE(RunSuccess("(print)", ""));
   ASSERT_TRUE(RunSuccess("(print 42)", "42"));
   ASSERT_TRUE(RunSuccess("(print \"foo\")", "foo"));
+  ASSERT_EQ(Out.str().find("\""), string::npos);
 }
 
 TEST_F(StdLibInterpreterTest, TestPrompt) {

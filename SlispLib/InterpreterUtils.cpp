@@ -87,8 +87,14 @@ void SymbolTable::PutSymbolFunction(const string &symbolName, initializer_list<s
 bool SymbolTable::GetSymbol(const string &symbolName, ExpressionPtr &valueCopy) {
   auto it = Symbols.find(symbolName);
   if (it != Symbols.end()) {
-    if (it->second)
-      valueCopy = ExpressionPtr { it->second->Clone() };
+    if (it->second) {
+      if (auto func = dynamic_cast<Function*>(it->second.get()))
+        valueCopy.reset(new Ref(it->second->GetSourceContext(), it->second));
+      else if (auto ref = dynamic_cast<Ref*>(it->second.get()))
+        valueCopy = ref->NewRef();
+      else
+        valueCopy = ExpressionPtr { it->second->Clone() };
+    }
     else
       valueCopy = ExpressionPtr { };
     return true;
@@ -108,8 +114,26 @@ bool SymbolTable::GetSymbol(const string &symbolName, Expression *&value) {
   }
   else
     return false;
-
 }
+
+/*
+bool SymbolTable::GetSymbolRef(const std::string &symbolName, ExpressionPtr &ref) {
+  auto it = Symbols.find(symbolName);
+  if (it != Symbols.end()) {
+    if (it->second) {
+      if (auto *valueRef = dynamic_cast<Ref*>(it->second.get()))
+        ref = valueRef->NewRef();
+      else
+        ref.reset(new Ref(it->second->GetSourceContext(), it->second));
+    }
+    else
+      ref = ExpressionPtr {};
+    return true;
+  }
+  else
+    return false;
+}
+*/
 
 void SymbolTable::DeleteSymbol(const string &symbolName) {
   Symbols.erase(symbolName);
@@ -227,11 +251,13 @@ bool InterpreterSettings::IsSymbolFunction(const string &symbolName) const {
 
 bool InterpreterSettings::GetSpecialFunction(const string &name, FunctionPtr &func) const {
   ExpressionPtr symbol;
-  if (DynamicSymbols.GetSymbol(name, symbol)) {
-    if (auto sym = TypeHelper::GetValue<Function>(symbol)) {
-      symbol.release();
-      func.reset(sym);
-      return true;
+  if (DynamicSymbols.GetSymbol(name, symbol) && symbol) {
+    if (auto sym = symbol->Clone()) {
+      if (auto symFunc = dynamic_cast<Function*>(sym.get())) {
+        sym.release();
+        func.reset(symFunc);
+        return true;
+      }
     }
     else
       throw runtime_error("Special function not a function");

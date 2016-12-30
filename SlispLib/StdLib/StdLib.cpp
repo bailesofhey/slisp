@@ -1849,10 +1849,7 @@ bool StdLib::Set(EvaluationContext &ctx) {
         ExpressionPtr temp;
         bool ret = ctx.Return(value->Clone());
         value->SetSourceContext(symToSetExpr->GetSourceContext());
-        if (currStackFrame.GetLocalSymbols().GetSymbol(symToSetName, temp))
-          currStackFrame.PutLocalSymbol(symToSetName, move(value));
-        else
-          currStackFrame.PutDynamicSymbol(symToSetName, move(value));
+        currStackFrame.PutSymbol(symToSetName, move(value));
         return ret;
       }
     }
@@ -1872,8 +1869,9 @@ bool StdLib::UnSet(EvaluationContext &ctx) {
     ExpressionPtr value;
     auto &currFrame = ctx.Interp.GetCurrentStackFrame();
     if (currFrame.GetSymbol(symName, value)) {
+      bool result = ctx.Return(value->Clone());
       currFrame.DeleteSymbol(symName);
-      return ctx.Return(value);
+      return result; 
     }
     else
       return ctx.UnknownSymbolError(symName);
@@ -4059,7 +4057,7 @@ bool StdLib::TypeFunc(EvaluationContext &ctx) {
 
   ExpressionPtr typeSymbol;
   if (ctx.GetSymbol(typeName, typeSymbol))
-    return ctx.Return(typeSymbol);
+    return ctx.Return(typeSymbol->Clone());
   else
     return ctx.Error("unknown type");
 }

@@ -32,6 +32,7 @@ class SymbolTable {
     void PutSymbolQuote(const std::string &symbolName, ExpressionPtr &&value);
     bool GetSymbol(const std::string &symbolName, ExpressionPtr &valueCopy);
     bool GetSymbol(const std::string &symbolName, Expression *&value);
+    //bool GetSymbolRef(const std::string &symbolName, ExpressionPtr &ref);
     void DeleteSymbol(const std::string &symbolName);
     void ForEach(std::function<void(const std::string &, ExpressionPtr &)>);
     size_t GetCount() const;
