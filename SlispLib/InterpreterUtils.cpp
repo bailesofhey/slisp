@@ -252,18 +252,18 @@ bool InterpreterSettings::IsSymbolFunction(const string &symbolName) const {
 bool InterpreterSettings::GetSpecialFunction(const string &name, FunctionPtr &func) const {
   ExpressionPtr symbol;
   if (DynamicSymbols.GetSymbol(name, symbol) && symbol) {
-    if (auto sym = symbol->Clone()) {
-      if (auto symFunc = dynamic_cast<Function*>(sym.get())) {
-        sym.release();
-        func.reset(symFunc);
-        return true;
+    if (auto *ref = dynamic_cast<Ref*>(symbol.get())) {
+      if (auto symFunc = dynamic_cast<Function*>(ref->Value.get())) {
+        if (ExpressionPtr fnCopy = symFunc->Clone()) {
+          func.reset((Function*)fnCopy.release());
+          return true;
+        }
       }
+      else
+        throw runtime_error("Special function not a function");
     }
-    else
-      throw runtime_error("Special function not a function");
   }
-  else
-    return false;
+  return false;
 }
 
 //=============================================================================

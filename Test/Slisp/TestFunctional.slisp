@@ -1,0 +1,19 @@
+(import lib/unittest)
+
+(def make-incrementer (n)
+  (fn () (++ n)))
+  
+(def make-adder (initial)
+  (let ((n initial))
+    (fn (delta) (+= n delta))))
+    
+(def test-closures ()
+  (set inc1 (make-incrementer 1))
+  (set inc2 (make-incrementer 10))
+  (and
+    (== 2 (inc1))
+    (== 3 (inc1))
+    (== 11 (inc2))
+    (== 12 (inc2))
+    (== 4 (inc1))))
+    

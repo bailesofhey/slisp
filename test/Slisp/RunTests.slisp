@@ -1,6 +1,7 @@
 (import lib/unittest)
 
 (import tests/TestNumerics)
+(import tests/TestFunctional)
 
 (if (runtests)
   (exit 0)

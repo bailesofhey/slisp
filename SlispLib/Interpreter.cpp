@@ -529,9 +529,6 @@ bool Interpreter::ReduceSexpInterpretedFunction(ExpressionPtr &expr, Interpreted
     else
       return PushError(EvalError { ErrorWhere, "Current formal is not a symbol " + (*currFormal)->ToString() });
   }
-  //for (auto &kv : function.Closure)
-    //newFrame.PutLocalSymbol(kv.first, ExpressionPtr { new Ref(kv.second->GetSourceContext(), kv.second) });
-    //newFrame.PutLocalSymbol(kv.first, move(kv.second->Clone()));
 
   if (currArg != endArg)
     return PushError(EvalError { ErrorWhere, "too many args passed to function" });

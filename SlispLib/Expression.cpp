@@ -623,9 +623,9 @@ Ref::Ref(const SourceContext &sourceContext, ExpressionPtr &value):
 ExpressionPtr Ref::Clone() const {
   // 16 failing tests
   // unset requires a deep copy, otherwise ref points to garbage
-  //return ExpressionPtr { new Ref(GetSourceContext(), Value) };
+  return ExpressionPtr { new Ref(GetSourceContext(), Value) };
 
-  return Value->Clone();
+  //return Value->Clone();
 }
 
 ExpressionPtr Ref::NewRef() const {
