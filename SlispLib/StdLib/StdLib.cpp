@@ -4052,6 +4052,8 @@ bool StdLib::TypeFunc(EvaluationContext &ctx) {
     else
       typeName = quote->Type().Name();
   }
+  else if (auto ref = dynamic_cast<Ref*>(ctx.Args.front().get()))
+    typeName = ref->Value->Type().Name();
   else
     typeName = ctx.Args.front()->Type().Name();
 
