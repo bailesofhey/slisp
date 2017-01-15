@@ -133,6 +133,7 @@ struct FuncDef2 {
 };
 // End 0.2
 
+// TODO: struct -> class
 struct Function: public Literal {
   static const TypeInfo TypeInstance;
 
@@ -142,10 +143,10 @@ struct Function: public Literal {
   std::string Doc;
   std::vector<ExampleDef> Examples;
 
-  explicit Function(const SourceContext &sourceContext);
-  explicit Function(const SourceContext &sourceContext, FuncDef &&func);
-  explicit Function(const SourceContext &sourceContext, FuncDef &&func, ExpressionPtr &sym);
-  explicit Function(const SourceContext &sourceContext, FuncDef &&func, ExpressionPtr &&sym);
+  explicit Function(const SourceContext &sourceContext, const TypeInfo &typeInfo);
+  explicit Function(const SourceContext &sourceContext, const TypeInfo &typeInfo, FuncDef &&func);
+  explicit Function(const SourceContext &sourceContext, const TypeInfo &typeInfo, FuncDef &&func, ExpressionPtr &sym);
+  explicit Function(const SourceContext &sourceContext, const TypeInfo &typeInfo, FuncDef &&func, ExpressionPtr &&sym);
   explicit Function(const Function &rhs);
   virtual void Display(std::ostream &out) const override;
   bool operator==(const Function &rhs) const;
@@ -187,10 +188,14 @@ struct InterpretedFunction: public Function {
   bool operator!=(const InterpretedFunction &rhs) const;
 };
 
+// TODO: add tests
 class TypeHelper {
 public:
   static const ExpressionPtr Null;
+  static bool IsQuoteAList(const Quote &quote);
+  static std::string TypeName(const ExpressionPtr &expr);
   static bool TypeMatches(const TypeInfo &expected, const TypeInfo &actual);
+  static bool TypeMatches(const TypeInfo &expected, const ExpressionPtr &actualExpr);
   static bool IsAtom(const TypeInfo &type);
   static bool IsAtom(const ExpressionPtr &expr);
 
@@ -227,7 +232,7 @@ public:
   }
 
   template<class T> 
-  static ExpressionPtr& GetRef(ExpressionPtr &expr) {
+  static const ExpressionPtr& GetRef(const ExpressionPtr &expr) {
     if (SimpleIsA<T>(expr))
       return expr;
     else if (auto *ref = dynamic_cast<Ref*>(expr.get())) {
@@ -242,7 +247,7 @@ public:
   }
 
   template<class T>
-  static T* GetValue(ExpressionPtr &expr) {
+  static T* GetValue(const ExpressionPtr &expr) {
     auto &ref = GetRef<T>(expr);
     if (ref) {
       return static_cast<T*>(ref.get());
@@ -263,6 +268,13 @@ public:
 };
 
 template<>
+inline bool TypeHelper::SimpleIsA<Function>(const TypeInfo &type) {
+  return &type == &Function::TypeInstance
+      || &type == &CompiledFunction::TypeInstance
+      || &type == &InterpretedFunction::TypeInstance;
+}
+
+template<>
 inline bool TypeHelper::IsA<Literal>(const TypeInfo &type) {
   return IsAtom(type)
       || SimpleIsA<Literal>(type)
@@ -273,10 +285,7 @@ inline bool TypeHelper::IsA<Literal>(const TypeInfo &type) {
 
 template<>
 inline bool TypeHelper::IsA<Function>(const TypeInfo &type) {
-  return SimpleIsA<Function>(type)
-      || SimpleIsA<CompiledFunction>(type)
-      || SimpleIsA<InterpretedFunction>(type)
-      ;
+  return SimpleIsA<Function>(type);
 }
 
 template<>
@@ -284,8 +293,12 @@ inline bool TypeHelper::IsA<Literal>(const ExpressionPtr &expr) {
   return IsA<Literal>(expr->Type());
 }
 
+/*
 template<>
 inline bool TypeHelper::IsA<Function>(const ExpressionPtr &expr) {
-  return IsA<Function>(expr->Type());
+  //return IsA<Function>(expr->Type());
+  //return IsA<CompiledFunction>(expr->Type())
+  //    || IsA<InterpretedFunction>(expr->Type());
+  return dynamic_cast<Function*>(expr.get()) != nullptr;
 }
-
+*/

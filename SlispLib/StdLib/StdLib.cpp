@@ -2108,7 +2108,7 @@ bool StdLib::SequenceFn(EvaluationContext &ctx, S strFn, L listFn) {
     if (auto str = TypeHelper::GetValue<Str>(arg))
       return ctx.Return(strFn(str->Value));
     else if (auto quote = TypeHelper::GetValue<Quote>(arg)) {
-      if (ctx.IsQuoteAList(*quote)) {
+      if (TypeHelper::IsQuoteAList(*quote)) {
         if (auto listSexp = TypeHelper::GetValue<Sexp>(quote->Value))
           return ctx.Return(listFn(listSexp->Args));
       }
@@ -4045,18 +4045,7 @@ bool StdLib::Breakpoint(EvaluationContext &ctx) {
 }
 
 bool StdLib::TypeFunc(EvaluationContext &ctx) {
-  string typeName;
-  if (auto quote = TypeHelper::GetValue<Quote>(ctx.Args.front())) {
-    if (ctx.IsQuoteAList(*quote)) 
-      typeName = "list";
-    else
-      typeName = quote->Type().Name();
-  }
-  else if (auto ref = dynamic_cast<Ref*>(ctx.Args.front().get()))
-    typeName = ref->Value->Type().Name();
-  else
-    typeName = ctx.Args.front()->Type().Name();
-
+  string typeName = TypeHelper::TypeName(ctx.Args.front());
   ExpressionPtr typeSymbol;
   if (ctx.GetSymbol(typeName, typeSymbol))
     return ctx.Return(typeSymbol->Clone());

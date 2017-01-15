@@ -282,6 +282,7 @@ struct Ref: public Expression, IIterable {
   bool operator!=(const Ref &rhs) const;
 };
 
-namespace List {
-  ExpressionPtr GetNil(const SourceContext &sourceContext);
-}
+struct List {
+  static const TypeInfo TypeInstance;
+  static ExpressionPtr GetNil(const SourceContext &sourceContext);
+};

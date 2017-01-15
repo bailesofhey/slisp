@@ -132,7 +132,6 @@ class EvaluationContext {
     bool GetSymbol(const std::string &symName, ExpressionPtr &valueCopy);
     bool GetSymbol(const std::string &symName, Expression *&value);
 
-    bool IsQuoteAList(Quote &quote);
     Sexp* GetList(ExpressionPtr &expr);
     Sexp* GetRequiredListValue(ExpressionPtr &expr);
     const std::string GetThisFunctionName();

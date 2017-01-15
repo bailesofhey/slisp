@@ -144,17 +144,6 @@ bool EvaluationContext::GetSymbol(const string &symName, Expression *&value) {
   return Interp.GetCurrentStackFrame().GetSymbol(symName, value);
 }
 
-bool EvaluationContext::IsQuoteAList(Quote &quote) {
-  auto &quoteValue = quote.Value;
-  if (quoteValue) {
-    if (auto sexp = TypeHelper::GetValue<Sexp>(quoteValue))
-      return true; 
-    else
-      return false;
-  }
-  else
-    return false;
-}
 
 Sexp* EvaluationContext::GetRequiredListValue(ExpressionPtr &expr) {
   Sexp* result = GetList(expr);
@@ -392,7 +381,12 @@ void Interpreter::RegisterReducers() {
   TypeReducers[&Str::TypeInstance]      = bind(&Interpreter::ReduceStr,       this, _1);
   TypeReducers[&Bool::TypeInstance]     = bind(&Interpreter::ReduceBool,      this, _1);
   TypeReducers[&Symbol::TypeInstance]   = bind(&Interpreter::ReduceSymbol,    this, _1);
+
+  // TODO: this still needed?
   TypeReducers[&Function::TypeInstance] = bind(&Interpreter::ReduceFunction,  this, _1);
+
+  TypeReducers[&InterpretedFunction::TypeInstance] = bind(&Interpreter::ReduceFunction,  this, _1);
+  TypeReducers[&CompiledFunction::TypeInstance] = bind(&Interpreter::ReduceFunction,  this, _1);
   TypeReducers[&Sexp::TypeInstance]     = bind(&Interpreter::ReduceSexp,      this, _1);
   TypeReducers[&Quote::TypeInstance]    = bind(&Interpreter::ReduceQuote,     this, _1);
   TypeReducers[&Ref::TypeInstance]      = bind(&Interpreter::ReduceRef,       this, _1);

@@ -662,6 +662,8 @@ bool Ref::operator!=(const Ref &rhs) const {
 
 //=============================================================================
 
+const TypeInfo List::TypeInstance("list", TypeInfo::NewUndefined);
+
 ExpressionPtr List::GetNil(const SourceContext &sourceContext) {
   return ExpressionPtr {
     new Quote { 

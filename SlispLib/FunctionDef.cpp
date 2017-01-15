@@ -72,7 +72,7 @@ bool ArgDef::CheckArg(ExpressionEvaluator evaluator, ExpressionPtr &arg, const T
       return true;
     }
 
-    if (!TypeHelper::TypeMatches(expectedType, arg->Type())) {
+    if (!TypeHelper::TypeMatches(expectedType, arg)) {
       error = "Argument " + to_string(argNum) + ": Expected " + expectedType.Name() + ", got " + arg->Type().Name();
       return false;
     }
@@ -320,34 +320,35 @@ const string FuncDef::ToString() const {
 
 const TypeInfo Function::TypeInstance("fn", TypeInfo::NewUndefined);
 
-Function::Function(const SourceContext &sourceContext):
+Function::Function(const SourceContext &sourceContext, const TypeInfo &typeInfo):
   Function {
     sourceContext,
+    Function::TypeInstance,
     FuncDef { ArgDefPtr {}, ArgDefPtr {} }
   }
 {
 }
 
-Function::Function(const SourceContext &sourceContext, FuncDef &&def):
-  Function(sourceContext, move(def), ExpressionPtr {})
+Function::Function(const SourceContext &sourceContext, const TypeInfo &typeInfo, FuncDef &&def):
+  Function(sourceContext, typeInfo, move(def), ExpressionPtr {})
 {
 }
 
-Function::Function(const SourceContext &sourceContext, FuncDef &&def, ExpressionPtr &&sym):
-  Literal { sourceContext, TypeInstance },
+Function::Function(const SourceContext &sourceContext, const TypeInfo &typeInfo, FuncDef &&def, ExpressionPtr &&sym):
+  Literal { sourceContext, typeInfo },
   Def { move(def) },
   Symbol { move(sym) }
 {
   Def.Name = SymbolName();
 }
 
-Function::Function(const SourceContext &sourceContext, FuncDef &&def, ExpressionPtr &sym):
-  Function(sourceContext, move(def), move(sym))
+Function::Function(const SourceContext &sourceContext, const TypeInfo &typeInfo, FuncDef &&def, ExpressionPtr &sym):
+  Function(sourceContext, typeInfo, move(def), move(sym))
 {
 }
 
 Function::Function(const Function &rhs):
-  Literal { rhs.GetSourceContext(), TypeInstance },
+  Literal { rhs.GetSourceContext(), rhs.Type() },
   Def { rhs.Def },
   Symbol { },
   Signatures { rhs.Signatures },
@@ -365,14 +366,6 @@ void Function::Display(ostream &out) const {
     out << ":";
     if (auto *sym = dynamic_cast<::Symbol*>(Symbol.get()))
       out << *sym;
-    /*
-    out << ":";
-    if (!SourceContext_.empty())
-      out << SourceContext_.Module->Name;
-    out << ":";
-    if (!SourceContext_.empty())
-      out << SourceContext_.LineNum;
-    */
   }
   out << ">";
 }
@@ -396,11 +389,11 @@ std::string Function::SymbolName() const {
 
 //=============================================================================
 
-const TypeInfo CompiledFunction::TypeInstance("compiledfunction", TypeInfo::NewUndefined);
+const TypeInfo CompiledFunction::TypeInstance("compiled-fn", TypeInfo::NewUndefined);
 const CompiledFunction CompiledFunction::Null(NullSourceContext);
 
 CompiledFunction::CompiledFunction(const SourceContext &sourceContext):
-  Function { sourceContext },
+  Function { sourceContext, TypeInstance },
   Fn { nullptr }
 {
 }
@@ -412,7 +405,7 @@ CompiledFunction::CompiledFunction(const CompiledFunction &rhs):
 }
 
 CompiledFunction::CompiledFunction(const SourceContext &sourceContext, FuncDef &&def, SlipFunction fn):
-  Function { sourceContext, move(def) },
+  Function { sourceContext, TypeInstance, move(def) },
   Fn { fn }
 {
 }
@@ -447,7 +440,7 @@ void CompiledFunction::Swap(CompiledFunction &rhs) {
 
 //=============================================================================
 
-const TypeInfo InterpretedFunction::TypeInstance("interpretedfunction", TypeInfo::NewUndefined);
+const TypeInfo InterpretedFunction::TypeInstance("interpreted-fn", TypeInfo::NewUndefined);
 const InterpretedFunction InterpretedFunction::Null(NullSourceContext);
 
 InterpretedFunction::InterpretedFunction(const InterpretedFunction &rhs):
@@ -464,7 +457,7 @@ InterpretedFunction::InterpretedFunction(const InterpretedFunction &rhs):
 }
 
 InterpretedFunction::InterpretedFunction(const SourceContext &sourceContext, FuncDef &&def, ExpressionPtr &&code, ArgList &&args):
-  Function { sourceContext, move(def) },
+  Function { sourceContext, TypeInstance, move(def) },
   Code { sourceContext, move(code) },
   Args { move(args) },
   Closure { }
@@ -472,7 +465,7 @@ InterpretedFunction::InterpretedFunction(const SourceContext &sourceContext, Fun
 }
 
 InterpretedFunction::InterpretedFunction(const SourceContext &sourceContext):
-  Function { sourceContext },
+  Function { sourceContext, TypeInstance },
   Code { sourceContext, ExpressionPtr {} },
   Args {},
   Closure {}
@@ -503,6 +496,37 @@ bool InterpretedFunction::operator!=(const InterpretedFunction &rhs) const {
 //=============================================================================
 const ExpressionPtr TypeHelper::Null;
 
+bool TypeHelper::IsQuoteAList(const Quote &quote) {
+  auto &quoteValue = quote.Value;
+  if (quoteValue) {
+    if (auto sexp = TypeHelper::GetValue<Sexp>(quoteValue))
+      return true; 
+    else
+      return false;
+  }
+  else
+    return false;
+}
+
+std::string TypeHelper::TypeName(const ExpressionPtr &expr) {
+  const TypeInfo *type = nullptr;
+  if (auto quote = TypeHelper::GetValue<Quote>(expr)) {
+    if (TypeHelper::IsQuoteAList(*quote)) 
+      type = &(List::TypeInstance);
+    else
+      type = &(quote->Type());
+  }
+  else if (auto ref = dynamic_cast<Ref*>(expr.get()))
+    type = &(ref->Value->Type());
+  else
+    type = &(expr->Type());
+
+  if (TypeHelper::SimpleIsA<Function>(*type))
+    return Function::TypeInstance.Name();
+  else
+    return type->Name();
+}
+
 //TODO: Need to account for inheritance in TypeInfo itself
 bool TypeHelper::TypeMatches(const TypeInfo &expected, const TypeInfo &actual) {
   if (SimpleIsA<Literal>(expected))
@@ -511,6 +535,18 @@ bool TypeHelper::TypeMatches(const TypeInfo &expected, const TypeInfo &actual) {
     return true;
   else
     return &expected == &actual;
+}
+
+bool TypeHelper::TypeMatches(const TypeInfo &expected, const ExpressionPtr &actualExpr) {
+  if (SimpleIsA<Literal>(expected))
+    return IsA<Literal>(actualExpr);
+  else if (SimpleIsA<Sexp>(expected))
+    return true;
+  else if (SimpleIsA<Function>(expected))
+    return IsA<Function>(actualExpr); 
+  else
+    return &expected == &actualExpr->Type();
+
 }
 
 bool TypeHelper::IsAtom(const ExpressionPtr &expr) {
