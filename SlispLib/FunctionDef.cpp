@@ -544,9 +544,10 @@ bool TypeHelper::TypeMatches(const TypeInfo &expected, const ExpressionPtr &actu
     return true;
   else if (SimpleIsA<Function>(expected))
     return IsA<Function>(actualExpr); 
+  else if (auto ref = dynamic_cast<Ref*>(actualExpr.get()))
+    return TypeMatches(expected, ref->Value);
   else
     return &expected == &actualExpr->Type();
-
 }
 
 bool TypeHelper::IsAtom(const ExpressionPtr &expr) {

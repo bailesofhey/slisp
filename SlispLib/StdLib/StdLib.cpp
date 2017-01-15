@@ -1866,10 +1866,14 @@ bool StdLib::UnSet(EvaluationContext &ctx) {
   if (auto symE = ctx.GetRequiredValue<Symbol>(sym)) {
     string symName = symE->Value;
 
-    ExpressionPtr value;
+    ExpressionPtr value, valueCopy;
     auto &currFrame = ctx.Interp.GetCurrentStackFrame();
     if (currFrame.GetSymbol(symName, value)) {
-      bool result = ctx.Return(value->Clone());
+      if (auto ref = dynamic_cast<Ref*>(value.get()))
+        valueCopy = ref->Value->Clone();
+      else
+        valueCopy = value->Clone();
+      bool result = ctx.Return(valueCopy);
       currFrame.DeleteSymbol(symName);
       return result; 
     }
@@ -2067,14 +2071,13 @@ bool StdLib::Add(EvaluationContext &ctx) {
   auto currArg = ctx.Args.begin();
   if (currArg != ctx.Args.end()) {
     if (ctx.Evaluate(*currArg, 1)) {
-      auto &type = (*currArg)->Type();
-      if (TypeHelper::IsA<Int>(type))
+      if (TypeHelper::IsA<Int>(*currArg))
         return AddInt(ctx);
-      else if (TypeHelper::IsA<Float>(type))
+      else if (TypeHelper::IsA<Float>(*currArg))
         return AddFloat(ctx);
-      else if (TypeHelper::IsA<Str>(type))
+      else if (TypeHelper::IsA<Str>(*currArg))
         return AddStr(ctx);
-      else if (TypeHelper::IsA<Quote>(type))
+      else if (TypeHelper::IsA<Quote>(*currArg))
         return AddList(ctx);
       else
         return ctx.TypeError("string/int/float/list", *currArg);
@@ -4072,7 +4075,7 @@ bool StdLib::TypeQFunc(EvaluationContext &ctx) {
           type.Val.Args.emplace_back(ctx.Alloc<Symbol>("type"));
           type.Val.Args.push_back(ctx.Args.front()->Clone());
           ctx.Args.clear();
-          ctx.Args.emplace_back(ctx.Alloc<Symbol>(isAtomFunc ? "list" : thisFuncName));
+          ctx.Args.emplace_back(ctx.Alloc<Symbol>(isAtomFunc ? List::TypeInstance.Name() : thisFuncName));
           ctx.Args.push_back(move(type.Expr));
           return isAtomFunc ? Ne(ctx) : Eq(ctx);
         }

@@ -958,6 +958,8 @@ TEST_F(StdLibStrTest, TestForeach) {
   ASSERT_TRUE(RunSuccess("r = \"\"", ""));
   ASSERT_TRUE(RunSuccess("(foreach s (fn (c) (display (+ c c))))", "\"aa\"\n\"bb\"\n\"cc\""));
 
+  ASSERT_TRUE(RunSuccess("(foreach symName in (\"foo\") (symbol symName))", "foo"));
+
   //ASSERT_TRUE(RunSuccess("(foreach c in s (c = \"a\"))", "aaa"));
   //ASSERT_TRUE(RunSuccess("s", "aaa"));
 }
