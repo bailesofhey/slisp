@@ -32,6 +32,9 @@ void SymbolTable::PutSymbol(const string &symbolName, ExpressionPtr &value) {
 }
 
 void SymbolTable::PutSymbol(const string &symbolName, ExpressionPtr &&value) {
+  if (auto fn = dynamic_cast<Function*>(value.get()))
+    fn->Symbol.reset(new Symbol(fn->GetSourceContext(), symbolName));
+
   auto search = Symbols.find(symbolName);
   if (search != Symbols.end()) {
     if (auto *ref = dynamic_cast<Ref*>(search->second.get())) {
@@ -68,7 +71,6 @@ void SymbolTable::PutSymbolQuote(const string &symbolName, ExpressionPtr &&value
 }
 
 void SymbolTable::PutSymbolFunction(const string &symbolName, Function &&func) {
-  func.Symbol = ExpressionPtr { new Symbol(SourceContext_, symbolName) };
   PutSymbol(symbolName, func.Clone());
 }
 
@@ -76,7 +78,6 @@ void SymbolTable::PutSymbolFunction(const string &symbolName, initializer_list<s
   ExpressionPtr funcExpr { new CompiledFunction { SourceContext_, move(def), fn } };
   if (funcExpr) {
     auto *func = static_cast<CompiledFunction*>(funcExpr.get());
-    func->Symbol = ExpressionPtr { new Symbol(SourceContext_, symbolName) };
     func->Signatures = signatures;
     func->Doc = doc;
     func->Examples = examples;
@@ -115,25 +116,6 @@ bool SymbolTable::GetSymbol(const string &symbolName, Expression *&value) {
   else
     return false;
 }
-
-/*
-bool SymbolTable::GetSymbolRef(const std::string &symbolName, ExpressionPtr &ref) {
-  auto it = Symbols.find(symbolName);
-  if (it != Symbols.end()) {
-    if (it->second) {
-      if (auto *valueRef = dynamic_cast<Ref*>(it->second.get()))
-        ref = valueRef->NewRef();
-      else
-        ref.reset(new Ref(it->second->GetSourceContext(), it->second));
-    }
-    else
-      ref = ExpressionPtr {};
-    return true;
-  }
-  else
-    return false;
-}
-*/
 
 void SymbolTable::DeleteSymbol(const string &symbolName) {
   Symbols.erase(symbolName);

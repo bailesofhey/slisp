@@ -162,6 +162,7 @@ class Interpreter {
     bool Evaluate(ExpressionPtr &&expr);
     bool Evaluate(ExpressionPtr &expr);
     bool EvaluatePartial(ExpressionPtr &expr);
+    bool EvaluatePartialLoop(ExpressionPtr &expr);
 
     InterpreterSettings& GetSettings();
 

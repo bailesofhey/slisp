@@ -429,8 +429,6 @@ bool Interpreter::ReduceSymbol(ExpressionPtr &expr) {
       if (auto copy = value->Clone()) {
         if (copy) {
           expr = move(copy);
-          if (auto fn = TypeHelper::GetValue<Function>(expr))
-            fn->Symbol = move(symCopy);
           return true;
         }
         else
@@ -446,6 +444,14 @@ bool Interpreter::ReduceSymbol(ExpressionPtr &expr) {
     return PushError(EvalError { ErrorWhere, "Unknown symbol: " + symbol->Value });
 }
 
+bool Interpreter::EvaluatePartialLoop(ExpressionPtr &expr) {
+  do {
+    if (!EvaluatePartial(expr))
+      return PushError(EvalError { ErrorWhere, "Evaluation failed: " + expr->ToString() });
+  } while (dynamic_cast<Symbol*>(expr.get()));
+  return true;
+}
+
 bool Interpreter::ReduceSexp(ExpressionPtr &expr) {
   auto sexp = static_cast<Sexp*>(expr.get());
   auto &args = sexp->Args;
@@ -454,18 +460,17 @@ bool Interpreter::ReduceSexp(ExpressionPtr &expr) {
     ExpressionPtr firstArg = move(args.front());
     args.pop_front();
 
-    if (EvaluatePartial(firstArg)) {
-      args.push_front(move(firstArg));
-      auto &funcExpr = args.front();
-      if (auto func = TypeHelper::GetValue<Function>(funcExpr))
-        return ReduceSexpFunction(expr, *func);
-      else if (TypeHelper::TypeMatches(Literal::TypeInstance, funcExpr.get()->Type())) 
-        return ReduceSexpList(expr, args);
-      else
-        return PushError(EvalError { ErrorWhere, "Expecting function: " + funcExpr->ToString() });
-    }
+    if (!EvaluatePartialLoop(firstArg))
+      return false;
+
+    args.push_front(move(firstArg));
+    auto &funcExpr = args.front();
+    if (auto func = TypeHelper::GetValue<Function>(funcExpr))
+      return ReduceSexpFunction(expr, *func);
+    else if (TypeHelper::TypeMatches(Literal::TypeInstance, funcExpr.get()->Type())) 
+      return ReduceSexpList(expr, args);
     else
-      return PushError(EvalError { ErrorWhere, "Evaluation failed: " + firstArg->ToString() });
+      return PushError(EvalError { ErrorWhere, "Expecting function: " + funcExpr->ToString() });
   }
   else
     return ReduceSexpList(expr, args);
@@ -474,7 +479,7 @@ bool Interpreter::ReduceSexp(ExpressionPtr &expr) {
 bool Interpreter::ReduceSexpFunction(ExpressionPtr &expr, Function &function) {
   auto &funcDef = function.Def;
   string error;
-  auto evaluator = bind(&Interpreter::EvaluatePartial, this, _1);
+  auto evaluator = bind(&Interpreter::EvaluatePartialLoop, this, _1);
   if (funcDef.ValidateArgs(evaluator, expr, error)) {
     auto e = static_cast<Sexp*>(expr.get());
     ArgList args;

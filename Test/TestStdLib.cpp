@@ -2719,6 +2719,10 @@ TEST_F(StdLibOperatorsTest, TestSymbol) {
 
   ASSERT_TRUE(RunFail("(symbol \"-42\")"));
   ASSERT_TRUE(RunFail("(symbol \"0xfe\")"));
+
+  ASSERT_TRUE(RunSuccess("((symbol \"+\") 3 4)", "7"));
+  ASSERT_TRUE(RunSuccess("(set add (symbol \"+\"))", ""));
+  ASSERT_TRUE(RunSuccess("(add 3 4)", "7"));
 }
 
 TEST_F(StdLibOperatorsTest, TestType) {
@@ -2764,4 +2768,12 @@ TEST_F(StdLibOperatorsTest, TestTypeQ) {
   ASSERT_TRUE(RunSuccess("(symbol? true)", "true"));
   ASSERT_TRUE(RunSuccess("(symbol? a)", "true"));
   ASSERT_TRUE(RunSuccess("(symbol? b)", "false"));
+
+  ASSERT_TRUE(RunSuccess("(fn? (symbol \"+\"))", "true"));
+  ASSERT_TRUE(RunSuccess("(fn? (symbol \"PI\"))", "false"));
+
+  ASSERT_TRUE(RunSuccess("(set sym (symbol \"int?\"))", ""));
+  ASSERT_TRUE(RunSuccess("(fn? sym)", "true"));
+  ASSERT_TRUE(RunSuccess("(set sym (symbol \"fn?\"))", ""));
+  ASSERT_TRUE(RunSuccess("(fn? sym)", "true"));
 }
