@@ -381,10 +381,6 @@ void Interpreter::RegisterReducers() {
   TypeReducers[&Str::TypeInstance]      = bind(&Interpreter::ReduceStr,       this, _1);
   TypeReducers[&Bool::TypeInstance]     = bind(&Interpreter::ReduceBool,      this, _1);
   TypeReducers[&Symbol::TypeInstance]   = bind(&Interpreter::ReduceSymbol,    this, _1);
-
-  // TODO: this still needed?
-  TypeReducers[&Function::TypeInstance] = bind(&Interpreter::ReduceFunction,  this, _1);
-
   TypeReducers[&InterpretedFunction::TypeInstance] = bind(&Interpreter::ReduceFunction,  this, _1);
   TypeReducers[&CompiledFunction::TypeInstance] = bind(&Interpreter::ReduceFunction,  this, _1);
   TypeReducers[&Sexp::TypeInstance]     = bind(&Interpreter::ReduceSexp,      this, _1);

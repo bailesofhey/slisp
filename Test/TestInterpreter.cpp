@@ -615,12 +615,8 @@ TEST_F(EvaluationTest, TestLiteral) {
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { Factory.Alloc<Float>(3.14) }));
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { Factory.Alloc<Str>("hello, world!") }));
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { Factory.Alloc<Quote>(ExpressionPtr { Factory.Alloc<Bool>(true) })}));
-
-  FunctionPtr defaultFn;
-  ASSERT_TRUE(Interpreter_.GetSettings().GetDefaultFunction(defaultFn));
-  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { defaultFn.release() }));
-
   ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { Factory.Alloc<CompiledFunction>() }));
+  ASSERT_TRUE(Interpreter_.Evaluate(ExpressionPtr { Factory.Alloc<InterpretedFunction>() }));
   
   ExpressionPtr code {};
   ArgList args {};

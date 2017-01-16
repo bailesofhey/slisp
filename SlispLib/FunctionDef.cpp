@@ -323,7 +323,7 @@ const TypeInfo Function::TypeInstance("fn", TypeInfo::NewUndefined);
 Function::Function(const SourceContext &sourceContext, const TypeInfo &typeInfo):
   Function {
     sourceContext,
-    Function::TypeInstance,
+    typeInfo,
     FuncDef { ArgDefPtr {}, ArgDefPtr {} }
   }
 {
@@ -494,6 +494,7 @@ bool InterpretedFunction::operator!=(const InterpretedFunction &rhs) const {
 }
 
 //=============================================================================
+
 const ExpressionPtr TypeHelper::Null;
 
 bool TypeHelper::IsQuoteAList(const Quote &quote) {
