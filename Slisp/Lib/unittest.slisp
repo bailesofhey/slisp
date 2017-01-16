@@ -1,5 +1,12 @@
 # trivial unittest library
 
+(def has-error? (expr)
+  (try
+    (begin
+      (unquote expr)
+      false)
+    true))
+    
 (def runtests ()
   (let ((npass 0)
         (nfail 0)

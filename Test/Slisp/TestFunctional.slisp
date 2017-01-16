@@ -22,4 +22,27 @@
     (== 7 (adder1 1))
     (== 17 (adder1 10))
     (== 18 (adder2 3))))
+
+(def plusTwo (x)
+  (def binaryAdd (y) (+ x y))
+  (binaryAdd 2))
     
+#144
+(def test-subfunctions ()
+  (and
+    (== 7 (plusTwo 5))
+    (has-error? 'binaryAdd)))
+    
+# this doesn't quite work yet
+#(def make-person (f l)
+#  (let ((firstName f)
+#        (lastName l)
+#        (setFirstName (fn (x) (set firstName x))))
+#    (def setLastName (x) (set lastName x))
+#    (fn (args)
+#      (let ((firstArg (first args))
+#            (restArgs (rest args))
+#            (member (unquote firstArg)))
+#        (cond
+#          ((fn? member) (apply member restArgs))
+#          (true member))))))
