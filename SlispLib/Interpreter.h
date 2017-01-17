@@ -20,6 +20,7 @@ class StackFrame {
     explicit StackFrame(Interpreter &interp, InterpretedFunction &&func);
     explicit StackFrame(Interpreter &interp, InterpretedFunction &func);
     ~StackFrame();
+    void PutSymbol(const std::string &symbolName, ExpressionPtr &&value);
     void PutSymbol(const std::string &symbolName, ExpressionPtr &value);
 
     // these needed?
@@ -85,6 +86,15 @@ class EvaluationContext {
         AllocationError();
         return false;
       }
+    }
+
+    //TODO: move these to cpp
+    bool Return(ExpressionPtr &&expr) {
+      Expr_.swap(expr);
+      if (Expr_)
+        return true;
+      else
+        return false;
     }
 
     bool Return(ExpressionPtr &expr) {

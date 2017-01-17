@@ -1,4 +1,4 @@
-#include "gtest\gtest.h"
+#include "gtest/gtest.h"
 #include "BaseTest.h"
 #include "Expression.h"
 #include "ExpressionFactory.h"

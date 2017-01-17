@@ -37,6 +37,10 @@ StackFrame::~StackFrame() {
 }
 
 void StackFrame::PutSymbol(const string &symbolName, ExpressionPtr &value) {
+  return PutSymbol(symbolName, move(value));
+}
+
+void StackFrame::PutSymbol(const string &symbolName, ExpressionPtr &&value) {
   ExpressionPtr existingValue;
   if (Closure.GetSymbol(symbolName, existingValue))
     Closure.PutSymbol(symbolName, value);

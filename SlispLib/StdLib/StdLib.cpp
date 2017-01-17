@@ -27,7 +27,7 @@ bool StdLib::Load(Interpreter &interpreter) {
 
   // Constants
 
-  auto &symbols = interpreter.GetDynamicSymbols(SourceContext_);
+  auto symbols = interpreter.GetDynamicSymbols(SourceContext_);
   auto &settings = interpreter.GetSettings();
 
   LoadEnvironment(symbols, interpreter.GetEnvironment());
@@ -1736,7 +1736,7 @@ bool StdLib::Help(EvaluationContext &ctx) {
     }
   };
 
-  auto &symbols = ctx.Interp.GetDynamicSymbols(ctx.GetSourceContext());
+  auto symbols = ctx.Interp.GetDynamicSymbols(ctx.GetSourceContext());
   if (ctx.Args.empty()) {
     fullHelp = false;
     symbols.ForEach(functor);
@@ -3911,7 +3911,7 @@ bool StdLib::Try(EvaluationContext &ctx) {
   if (ctx.EvaluateNoError(expr))
     return ctx.Return(expr);
   else {
-    auto &errors = ctx.Interp.GetErrors();
+    auto errors = ctx.Interp.GetErrors();
     Scope scope(ctx.Interp.GetCurrentStackFrame().GetLocalSymbols(), ctx.GetSourceContext());
     scope.PutSymbol("$error.msg", ExpressionPtr { ctx.Alloc<Str>(errors.empty() ? "<unknown>" : errors.front().What) });
 

@@ -248,7 +248,7 @@ void Controller::SetupModules() {
     throw runtime_error("Failed to load Controller module");
   
   SourceContext sourceContext { thisMod, 0 };
-  auto &symbols = Interpreter_.GetDynamicSymbols(sourceContext);
+  auto symbols = Interpreter_.GetDynamicSymbols(sourceContext);
   symbols.PutSymbolFunction(
     "import", 
     {"(import file) -> nil"},
