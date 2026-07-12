@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.11)
 
 if(MSVC)
   # Multithreaded Debug DLL - not the default for gtest

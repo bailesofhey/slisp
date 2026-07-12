@@ -3,10 +3,12 @@
 #include <sstream>
 #include <algorithm>
 #include <iterator>
+#include <limits>
 #include <cctype>
 #include <cstdio>
 #include <cstdarg>
 #include <csignal>
+#include <cmath>
 
 #include "StdLib.h"
 #include "../Interpreter.h"

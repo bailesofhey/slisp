@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.6)
-
 project(SlispLib)
 
 file(GLOB_RECURSE CPP_FILES *.cpp)
